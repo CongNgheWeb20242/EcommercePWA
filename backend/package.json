@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "backend": "file:",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.28.1",
     "dotenv": "^10.0.0",
