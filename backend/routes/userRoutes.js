@@ -5,9 +5,9 @@ import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 import { isAuth, isAdmin, generateToken, baseUrl, mailgun } from '../lib/utils.js';
 
-const userRouter = express.Router();
+const router = express.Router();
 
-userRouter.get(
+router.get(
   '/',
   isAuth,
   isAdmin,
@@ -17,7 +17,7 @@ userRouter.get(
   })
 );
 
-userRouter.get(
+router.get(
   '/:id',
   isAuth,
   isAdmin,
@@ -31,7 +31,7 @@ userRouter.get(
   })
 );
 
-userRouter.put(
+router.put(
   '/profile',
   isAuth,
   expressAsyncHandler(async (req, res) => {
@@ -57,7 +57,7 @@ userRouter.put(
   })
 );
 
-userRouter.post(
+router.post(
   '/forget-password',
   expressAsyncHandler(async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
@@ -96,7 +96,7 @@ userRouter.post(
   })
 );
 
-userRouter.post(
+router.post(
   '/reset-password',
   expressAsyncHandler(async (req, res) => {
     jwt.verify(req.body.token, process.env.JWT_SECRET, async (err, decode) => {
@@ -120,7 +120,7 @@ userRouter.post(
   })
 );
 
-userRouter.put(
+router.put(
   '/:id',
   isAuth,
   isAdmin,
@@ -138,7 +138,7 @@ userRouter.put(
   })
 );
 
-userRouter.delete(
+router.delete(
   '/:id',
   isAuth,
   isAdmin,
@@ -156,7 +156,8 @@ userRouter.delete(
     }
   })
 );
-userRouter.post(
+
+router.post(
   '/signin',
   expressAsyncHandler(async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
@@ -176,7 +177,7 @@ userRouter.post(
   })
 );
 
-userRouter.post(
+router.post(
   '/signup',
   expressAsyncHandler(async (req, res) => {
     const newUser = new User({
@@ -195,4 +196,4 @@ userRouter.post(
   })
 );
 
-export default userRouter;
+export default router;

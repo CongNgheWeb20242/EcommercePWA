@@ -1,26 +1,25 @@
 import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema(
-  {
+  { // Danh sách sản phẩm trong đơn hàng
     orderItems: [
       {
-        slug: { type: String, required: true },
-        name: { type: String, required: true },
-        quantity: { type: Number, required: true },
-        image: { type: String, required: true },
-        price: { type: Number, required: true },
         product: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Product',
           required: true,
         },
+        quantity: { type: Number, required: true },
+        price: { type: Number, required: true },
       },
     ],
+    // Địa chỉ giao hàng
     shippingAddress: {
       fullName: { type: String, required: true },
       address: { type: String, required: true },
       city: { type: String, required: true },
-      postalCode: { type: String, required: true },
+      // Mã bưu điện
+      postalCode: String,
       country: { type: String, required: true },
       location: {
         lat: Number,
@@ -31,17 +30,20 @@ const orderSchema = new mongoose.Schema(
         googleAddressId: String,
       },
     },
+    // Thanh toán
     paymentMethod: { type: String, required: true },
     paymentResult: {
       id: String,
       status: String,
       update_time: String,
-      email_address: String,
+      amount: Number,
+      bankCode: String, // Mã ngân hàng (VNPay)
+      payType: String, // Loại thanh toán (MoMo: `captureWallet`, `payWithATM`)
     },
-    itemsPrice: { type: Number, required: true },
+    itemsPrice: { type: Number, required: true }, // // Tổng giá trị sản phẩm trong đơn
     shippingPrice: { type: Number, required: true },
-    taxPrice: { type: Number, required: true },
-    totalPrice: { type: Number, required: true },
+    taxPrice: { type: Number, required: true }, // Thuế VAT
+    totalPrice: { type: Number, required: true }, // Tổng tiền cần thanh toán
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     isPaid: { type: Boolean, default: false },
     paidAt: { type: Date },

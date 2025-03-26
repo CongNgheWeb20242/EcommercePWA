@@ -14,6 +14,7 @@
     "backend": "file:",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.28.1",
+    "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.2",
     "express-async-handler": "^1.2.0",

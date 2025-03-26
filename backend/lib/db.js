@@ -1,10 +1,13 @@
 import mongoose from "mongoose"
+import "dotenv/config"
+
+mongoose.set("strictQuery", false); // Xoá dòng cảnh báo
 
 export const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI);
-        console.log(`MongoDB connected: ${conn.connection.host}`);
+        await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+        console.log("MongoDB Connected");
     } catch (error) {
-        console.log("MongoDB connection error: ", error);
+        console.error("MongoDB Connection Error:", error);
     } 
 }
