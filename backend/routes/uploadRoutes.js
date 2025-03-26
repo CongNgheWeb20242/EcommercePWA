@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import streamifier from 'streamifier';
-import { isAdmin, isAuth } from '../utils.js';
+import { isAdmin, isAuth } from '../lib/utils.js';
 
 const upload = multer();
 
