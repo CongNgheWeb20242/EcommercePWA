@@ -1,6 +1,6 @@
 import { mockDashboardData } from '../../data/mockData';
 
-// Component Card thống kê
+
 interface StatCardProps {
   title: string;
   value: string | number;
@@ -14,7 +14,7 @@ const StatCard = ({ title, value, bgColor = 'bg-white' }: StatCardProps) => (
   </div>
 );
 
-// Component hàng trong bảng đơn hàng
+
 interface OrderRowProps {
   id: string;
   customer: string;

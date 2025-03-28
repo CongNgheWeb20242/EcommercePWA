@@ -1,9 +1,9 @@
 import { Routes, Route } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
-import Revenue from './pages/admin/Revenue'; // Import trang Revenue
+import Revenue from './pages/admin/Revenue'; 
 
-// Placeholder cho các trang chưa tạo
+
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div>
     <h1 className="text-2xl font-bold mb-4">{title}</h1>

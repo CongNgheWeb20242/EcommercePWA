@@ -1,6 +1,6 @@
 import { mockRevenueData } from '../../data/mockData';
 
-// Component Card thống kê
+
 interface StatCardProps {
   title: string;
   value: string | number;
@@ -16,7 +16,6 @@ const StatCard = ({ title, value, subText, bgColor = 'bg-white' }: StatCardProps
   </div>
 );
 
-// Component cho biểu đồ doanh thu (giả lập)
 const RevenueChart = () => {
   const { monthlyRevenue } = mockRevenueData;
   
