@@ -2,6 +2,8 @@ import express from "express";
 import path from "path";
 import 'dotenv/config'
 import cors from "cors"
+import swaggerUi from 'swagger-ui-express';
+import YAML from "yamljs";
 
 import { connectDB } from "./lib/db.js";
 
@@ -15,7 +17,11 @@ const __dirname = path.resolve();
 
 // Connect Database
 connectDB();
+
 const app = express();
+
+const swaggerDocument = YAML.load(path.join(__dirname, 'docs', 'swagger.yaml'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -31,7 +37,7 @@ app.use(
 // Routes
 app.use("/api/upload", uploadRouter);
 app.use("/api/products", productRouter);
-app.use("/api/users", userRouter);
+app.use("/api/user", userRouter);
 app.use("/api/orders", orderRouter);
 
 // Test connect
@@ -49,4 +55,5 @@ if (process.env.NODE_ENV === "production") {
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`API Docs: http://localhost:${PORT}/api-docs/`);
 });

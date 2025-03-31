@@ -4,19 +4,22 @@ import expressAsyncHandler from 'express-async-handler';
 import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 import { isAuth, isAdmin, generateToken, baseUrl, mailgun } from '../lib/utils.js';
+import { login, signup } from '../controllers/userController.js';
 
 const router = express.Router();
 
+// GET All Users
 router.get(
   '/',
   isAuth,
-  isAdmin,
+  isAdmin,  
   expressAsyncHandler(async (req, res) => {
     const users = await User.find({});
     res.send(users);
   })
 );
 
+// GET user theo ID
 router.get(
   '/:id',
   isAuth,
@@ -138,6 +141,7 @@ router.put(
   })
 );
 
+// Delete user by id
 router.delete(
   '/:id',
   isAuth,
@@ -157,43 +161,10 @@ router.delete(
   })
 );
 
-router.post(
-  '/signin',
-  expressAsyncHandler(async (req, res) => {
-    const user = await User.findOne({ email: req.body.email });
-    if (user) {
-      if (bcrypt.compareSync(req.body.password, user.password)) {
-        res.send({
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          isAdmin: user.isAdmin,
-          token: generateToken(user),
-        });
-        return;
-      }
-    }
-    res.status(401).send({ message: 'Invalid email or password' });
-  })
-);
+// Login
+router.post('/login', login);
 
-router.post(
-  '/signup',
-  expressAsyncHandler(async (req, res) => {
-    const newUser = new User({
-      name: req.body.name,
-      email: req.body.email,
-      password: bcrypt.hashSync(req.body.password),
-    });
-    const user = await newUser.save();
-    res.send({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin,
-      token: generateToken(user),
-    });
-  })
-);
+// Sign up
+router.post('/signup', signup);
 
 export default router;

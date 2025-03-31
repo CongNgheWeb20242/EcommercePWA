@@ -1,0 +1,144 @@
+openapi: 3.0.0
+info:
+  title: EcommercePWA API
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+# Bổ sung thêm phần Cookies được lưu nữa
+paths:
+  /user/signup:
+    post:
+      summary: Register a new user
+      description: Create a new user account with name, email, and password.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  example: johndoe@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 6
+                  example: strongpassword123
+      responses:
+        '201':
+          description: User registered successfully. JWT token is set in cookies.
+          headers:
+            Set-Cookie:
+              description: JWT token stored in cookies for authentication.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    example: '60c72b2f5f1b2c6f2b77a8d9'
+                  name:
+                    type: string
+                    example: John Doe
+                  email:
+                    type: string
+                    example: johndoe@example.com
+        '400':
+          description: Bad request (missing fields, short password, or existing email)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'All fields are required'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Internal Server Error'
+  /user/login:
+    post:
+      summary: User login
+      description: Authenticate user with email and password.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: johndoe@example.com
+                password:
+                  type: string
+                  format: password
+                  example: strongpassword123
+      responses:
+        '200':
+          description: Login successful. JWT token is set in cookies.
+          headers:
+            Set-Cookie:
+              description: JWT token stored in cookies for authentication.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    example: '60c72b2f5f1b2c6f2b77a8d9'
+                  email:
+                    type: string
+                    example: johndoe@example.com
+                  password:
+                    type: string
+                    example: 'hashedpassword'
+                  profilePic:
+                    type: string
+                    example: 'https://example.com/profile.jpg'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Invalid Credentials'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Internal Server Error'
