@@ -8,7 +8,7 @@ export const baseUrl = () =>
     ? 'http://localhost:3000'
     : 'https://yourdomain.com';
 
-// Gen Token
+// Generate token
 export const generateToken = (userId, res) => {
   // jwt.sign(payload, secret, options)
   const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
@@ -39,14 +39,6 @@ export const isAuth = (req, res, next) => {
     });
   } else {
     res.status(401).send({ message: 'No Token' });
-  }
-};
-
-export const isAdmin = (req, res, next) => {
-  if (req.user && req.user.isAdmin) {
-    next();
-  } else {
-    res.status(401).send({ message: 'Invalid Admin Token' });
   }
 };
 

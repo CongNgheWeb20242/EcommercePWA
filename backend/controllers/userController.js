@@ -1,8 +1,93 @@
 import User from '../models/userModel.js';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../lib/utils.js';
+import cloudinary from '../lib/cloudinary.js';
 
-// signin
+// GET user by id
+export const getUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (user) {
+      res.status(200).json(user);
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// GET all users
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select(
+      'name email profilePic phone address createdAt'
+    );
+    res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// Delete user by id
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (user) {
+      if (user.isAdmin) {
+        res.status(400).json({ message: 'Cannot delete an admin user' });
+        return;
+      }
+      await user.remove();
+      res.status(200).json({ message: 'User deleted' });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// Update user
+export const updateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const { name, password, profilePic } = req.body;
+    if (user) {
+      user.name = name || user.name;
+      // Đang phân vân có nên thay cả email hay không
+      if (password) {
+        user.password = await bcrypt.hash(password, 10);
+      }
+      if (profilePic) {
+        const uploadResponse = await cloudinary.uploader.upload(profilePic, {
+          folder: 'users',
+          public_id: `user_${req.user._id} ${name}`, // Tên ảnh
+          overwrite: true, // Ghi đè nếu đã tồn tại
+        });
+        user.profilePic = uploadResponse.secure_url; // URL ảnh từ cloudinary
+      }
+      // Updated
+      const updatedUser = await user.save();
+
+      res.status(200).json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        profilePic: updatedUser.profilePic,
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// Login
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -19,8 +104,7 @@ export const login = async (req, res) => {
     res.status(200).json({
       _id: user._id,
       email: user.email,
-      // Nghiên cứu lại tại sao login lại return về password
-      password: user.password,
+      name: user.name,
       profilePic: user.profilePic,
     });
   } catch (error) {
@@ -29,7 +113,7 @@ export const login = async (req, res) => {
   }
 };
 
-// signup
+// Sign-up
 export const signup = async (req, res) => {
   const { name, email, password } = req.body;
 

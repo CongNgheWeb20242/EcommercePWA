@@ -38,6 +38,12 @@ const seedData = async () => {
         password: '123456',
         isAdmin: false,
       },
+      {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'test123@',
+        isAdmin: false,
+      },
     ]);
 
     // Product mẫu
@@ -118,7 +124,7 @@ const seedData = async () => {
         paidAt: new Date(),
       },
     ]);
-    console.log('Data Seeded Successfully!!');
+    console.log('Data seeded Successfully!!');
     process.exit();
   } catch (error) {
     console.error('Seed error:', error);

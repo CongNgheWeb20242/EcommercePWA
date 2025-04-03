@@ -1,7 +1,15 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 
-export const protectedRoute = async (req, req, next) => {
+export const isAdmin = async (req, res, next) => {
+  if (!req.user.isAdmin) {
+    // Không phải admin
+    return res.status(403).json({ message: "Forbidden - Admin access required" });
+  }
+  next();
+}
+
+export const protectedRoute = async (req, res, next) => {
   try {
     // Get token from request
     const token = req.cookies.jwt;
