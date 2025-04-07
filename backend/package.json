@@ -6,7 +6,9 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "seed:categories": "node ./seeds/seedCategories.js",
+    "seed:products": "node ./seeds/seedProducts.js"
   },
   "author": "",
   "license": "ISC",
@@ -24,6 +26,7 @@
     "mongoose": "^6.1.5",
     "multer": "^1.4.4",
     "streamifier": "^0.1.1",
+    "swagger-ui-express": "^5.0.1",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {

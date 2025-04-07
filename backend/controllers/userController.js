@@ -119,10 +119,10 @@ export const signup = async (req, res) => {
 
   try {
     if (!name || !email || !password) {
-      res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: 'All fields are required' });
     }
     if (password.length < 6) {
-      res
+      return res
         .status(400)
         .json({ message: 'Password must be at least 6 characters' });
     }
@@ -144,16 +144,16 @@ export const signup = async (req, res) => {
       generateToken(newUser._id, res);
       await newUser.save();
 
-      res.status(201).json({
+      return res.status(201).json({
         _id: newUser._id,
         name: newUser.name,
         email: newUser.email,
       });
     } else {
-      res.status(400).json({ message: 'Invalid user data' });
+      return res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
