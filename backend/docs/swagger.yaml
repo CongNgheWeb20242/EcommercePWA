@@ -446,3 +446,496 @@ paths:
                   message:
                     type: string
                     example: 'Internal Server Error'
+
+  /products/:
+    get:
+      summary: Get all products
+      description: Retrieve a list of all products available in the store.
+      tags:
+        - Product Management
+      responses:
+        '200':
+          description: Successfully retrieved the list of products.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: '60c72b2f5f1b2c6f2b77a8d9'
+                        name:
+                          type: string
+                          example: iPhone 15 Pro
+                        slug:
+                          type: string
+                          example: 'iphone-15-pro'
+                        image:
+                          type: string
+                          example: 'https://example.com/images/iphone15pro.jpg'
+                        images:
+                          type: array
+                          items:
+                            type: string
+                          example: 
+                            - 'https://example.com/images/iphone15pro-1.jpg'
+                            - 'https://example.com/images/iphone15pro-2.jpg'
+                        brand:
+                          type: string
+                          example: 'Apple'
+                        description:
+                          type: string
+                          example: 'Latest Apple smartphone with A17 chip'
+                        price:
+                          type: number
+                          format: float
+                          example: 999.99
+                        countInStock:
+                          type: integer
+                          example: 25
+                        rating:
+                          type: number
+                          format: float
+                          example: 4.8
+                        numReviews:
+                          type: integer
+                          example: 120
+                        category:
+                          type: string
+                          example: 'Electronics'
+                        reviews:
+                          type: array
+                          items:
+                            type: string
+                          example: 
+                            - '60c72b2f5f1b2c6f2b77a8d9'
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: '2025-04-01T12:00:00.000Z'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Internal Server Error'
+
+  /products/create:
+    post:
+      summary: Create a new product
+      description: Create a new product in the store. Only accessible by authenticated admins.
+      tags:
+        - Product Management
+      requestBody:
+        description: The product data to create a new product
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "iPhone 15 Pro"
+                slug:
+                  type: string
+                  example: "iphone-15-pro"
+                image:
+                  type: string
+                  example: "https://example.com/images/iphone15pro.jpg"
+                images:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - "https://example.com/images/iphone15pro-1.jpg"
+                    - "https://example.com/images/iphone15pro-2.jpg"
+                brand:
+                  type: string
+                  example: "Apple"
+                description:
+                  type: string
+                  example: "Latest Apple smartphone with A17 chip"
+                price:
+                  type: number
+                  format: float
+                  example: 999.99
+                countInStock:
+                  type: integer
+                  example: 50
+                rating:
+                  type: number
+                  format: float
+                  example: 4.8
+                numReviews:
+                  type: integer
+                  example: 120
+                category:
+                  type: string
+                  description: "The category ID of the product, should be an ObjectId referencing the Category collection."
+                  example: "60c72b2f5f1b2c6f2b77a8d9"
+      responses:
+        '201':
+          description: Successfully created a new product
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    example: "60c72b2f5f1b2c6f2b77a8d9"
+                  name:
+                    type: string
+                    example: "iPhone 15 Pro"
+                  slug:
+                    type: string
+                    example: "iphone-15-pro"
+                  image:
+                    type: string
+                    example: "https://example.com/images/iphone15pro.jpg"
+                  images:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - "https://example.com/images/iphone15pro-1.jpg"
+                      - "https://example.com/images/iphone15pro-2.jpg"
+                  brand:
+                    type: string
+                    example: "Apple"
+                  description:
+                    type: string
+                    example: "Latest Apple smartphone with A17 chip"
+                  price:
+                    type: number
+                    format: float
+                    example: 999.99
+                  countInStock:
+                    type: integer
+                    example: 50
+                  rating:
+                    type: number
+                    format: float
+                    example: 4.8
+                  numReviews:
+                    type: integer
+                    example: 120
+                  category:
+                    type: string
+                    example: "Electronics"
+                  createdAt:
+                    type: string
+                    format: date-time
+                    example: "2025-04-01T12:00:00.000Z"
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    example: "2025-04-01T12:00:00.000Z"
+        '400':
+          description: Bad request - Missing required fields or invalid data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid product data"
+        '401':
+          description: Unauthorized - User not authenticated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized - No Token Provided"
+        '403':
+          description: Forbidden - Admin access required.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Forbidden - Admin access required"
+        '500':
+          description: Internal Server Error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Internal Server Error"
+  
+  /products/{id}:
+    put:
+      summary: Update an existing product
+      description: Update details of an existing product in the store. Only accessible by authenticated admins.
+      tags:
+        - Product Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The product ID to update.
+          schema:
+            type: string
+            example: "60c72b2f5f1b2c6f2b77a8d9"
+      requestBody:
+        description: The updated product data to modify an existing product.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "iPhone 15 Pro Max"
+                slug:
+                  type: string
+                  example: "iphone-15-pro-max"
+                image:
+                  type: string
+                  example: "https://example.com/images/iphone15pro-max.jpg"
+                images:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - "https://example.com/images/iphone15pro-max-1.jpg"
+                    - "https://example.com/images/iphone15pro-max-2.jpg"
+                brand:
+                  type: string
+                  example: "Apple"
+                description:
+                  type: string
+                  example: "Updated version of Apple smartphone with A17 chip"
+                price:
+                  type: number
+                  format: float
+                  example: 1099.99
+                countInStock:
+                  type: integer
+                  example: 75
+                rating:
+                  type: number
+                  format: float
+                  example: 4.9
+                numReviews:
+                  type: integer
+                  example: 150
+                category:
+                  type: string
+                  description: "The category ID of the product, should be an ObjectId referencing the Category collection."
+                  example: "60c72b2f5f1b2c6f2b77a8d9"
+      responses:
+        '200':
+          description: Successfully updated the product.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product updated successfully"
+                  product:
+                    $ref: "#/components/schemas/Product"
+        '400':
+          description: Bad request - Missing required fields or invalid data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid product data"
+        '401':
+          description: Unauthorized - User not authenticated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized - No Token Provided"
+        '403':
+          description: Forbidden - Admin access required.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Forbidden - Admin access required"
+        '404':
+          description: Product not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product not found"
+        '500':
+          description: Internal Server Error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Internal Server Error"
+
+  /products/delete/{id}:
+    delete:
+      summary: Delete a product by its ID
+      description: Deletes a product from the store by its ID. This action is only available to authenticated admins.
+      tags:
+        - Product Management
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The ID of the product to delete.
+          schema:
+            type: string
+            example: "60c72b2f5f1b2c6f2b77a8d9"
+      responses:
+        '200':
+          description: Successfully deleted the product
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product Deleted"
+        '400':
+          description: Bad request - Invalid product ID or deletion failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Failed to delete product"
+        '404':
+          description: Product not found - No product exists with the given ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product Not Found"
+        '401':
+          description: Unauthorized - User not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized - No Token Provided"
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Forbidden - Admin access required"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Internal Server Error"
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "60c72b2f5f1b2c6f2b77a8d9"
+        name:
+          type: string
+          example: "iPhone 15 Pro Max"
+        slug:
+          type: string
+          example: "iphone-15-pro-max"
+        image:
+          type: string
+          example: "https://example.com/images/iphone15pro-max.jpg"
+        images:
+          type: array
+          items:
+            type: string
+          example:
+            - "https://example.com/images/iphone15pro-max-1.jpg"
+            - "https://example.com/images/iphone15pro-max-2.jpg"
+        brand:
+          type: string
+          example: "Apple"
+        description:
+          type: string
+          example: "Updated version of Apple smartphone with A17 chip"
+        price:
+          type: number
+          format: float
+          example: 1099.99
+        countInStock:
+          type: integer
+          example: 75
+        rating:
+          type: number
+          format: float
+          example: 4.9
+        numReviews:
+          type: integer
+          example: 150
+        category:
+          type: string
+          example: "Electronics"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-04-01T12:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-04-01T12:30:00.000Z"
