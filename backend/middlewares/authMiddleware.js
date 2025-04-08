@@ -9,15 +9,18 @@ export const isAdmin = async (req, res, next) => {
   next();
 }
 
+// protectedRoute là middleware để bảo vệ các route cần xác thực người dùn
 export const protectedRoute = async (req, res, next) => {
   try {
     // Get token from request
-    const token = req.cookies.jwt;
-    if (!token) {
+    const authHeader = req.headers.authorization;;
+    if (!authHeader || !authHeader.startsWith('Bearer')) {
       return res
         .status(401)
         .json({ message: 'Unauthorized - No Token Provided' });
     }
+
+    const token = authHeader.split(' ')[1]; // Bearer token
 
     // jwt.verify() -> return: payload
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
