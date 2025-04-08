@@ -2,6 +2,9 @@ import express from "express";
 import path from "path";
 import 'dotenv/config'
 import cors from "cors"
+import cookieParser from "cookie-parser";
+import swaggerUi from 'swagger-ui-express';
+import YAML from "yamljs";
 
 import { connectDB } from "./lib/db.js";
 
@@ -15,10 +18,17 @@ const __dirname = path.resolve();
 
 // Connect Database
 connectDB();
+
 const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Swagger API Docs
+const swaggerDocument = YAML.load(path.join(__dirname, 'docs', 'swagger.yaml'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+app.use(cookieParser());
+// Tăng giới hạn kích thước payload
+app.use(express.json({ limit: '10mb' })); // Cho phép payload JSON tối đa 10MB
+app.use(express.urlencoded({ limit: '10mb', extended: true })); // Cho phép payload URL-encoded tối đa 10MB
 
 // Cors
 app.use(
@@ -31,13 +41,8 @@ app.use(
 // Routes
 app.use("/api/upload", uploadRouter);
 app.use("/api/products", productRouter);
-app.use("/api/users", userRouter);
+app.use("/api/user", userRouter);
 app.use("/api/orders", orderRouter);
-
-// Test connect
-app.get("/api/user", (req, res) => {
-  res.json({ name: "John Doe", email: "john@example.com" });
-})
 
 // Liên quan đến production (tạm thời chưa động đến)
 if (process.env.NODE_ENV === "production") {
@@ -49,4 +54,5 @@ if (process.env.NODE_ENV === "production") {
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`API Docs: http://localhost:${PORT}/api-docs/`);
 });
