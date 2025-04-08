@@ -6,7 +6,7 @@ const Navbar = () => {
     const navigate = useNavigate();
 
     const handleHomelick = () => {
-        navigate('/user/home'); 
+        navigate('/home'); 
     };
     const handleSearchClick = () => {
         alert('Bạn đã bấm vào nút tìm kiếm!');

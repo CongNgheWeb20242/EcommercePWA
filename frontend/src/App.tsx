@@ -31,7 +31,7 @@ const App = () => {
       <Route path="/admin" element={<AdminLayout title="Dashboard"><Dashboard /></AdminLayout>} />
 
       {/* Redirect to admin dashboard */}
-      <Route path="/user/home" element={<UserLayout><HomePage /></UserLayout>} />
+      <Route path="/home" element={<UserLayout><HomePage /></UserLayout>} />
       <Route path="/user/register" element={<UserLayout><SignUp /></UserLayout>} />
       <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
     </Routes>
