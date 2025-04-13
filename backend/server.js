@@ -12,6 +12,7 @@ import productRouter from "./routes/productRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import orderRouter from "./routes/orderRoutes.js";
 import uploadRouter from "./routes/uploadRoutes.js";
+import paymentRoutes from './routes/paymentRoutes.js';
 
 const PORT = process.env.PORT;
 const __dirname = path.resolve();
@@ -43,6 +44,7 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/products", productRouter);
 app.use("/api/user", userRouter);
 app.use("/api/orders", orderRouter);
+app.use('/api/payment', paymentRoutes);
 
 // Liên quan đến production (tạm thời chưa động đến)
 if (process.env.NODE_ENV === "production") {
