@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-import 'dotenv/config'
+import dotenv from "dotenv"
 import cors from "cors"
 import cookieParser from "cookie-parser";
 import swaggerUi from 'swagger-ui-express';
@@ -13,6 +13,8 @@ import userRouter from "./routes/userRoutes.js";
 import orderRouter from "./routes/orderRoutes.js";
 import uploadRouter from "./routes/uploadRoutes.js";
 import paymentRoutes from './routes/paymentRoutes.js';
+
+dotenv.config();
 
 const PORT = process.env.PORT;
 const __dirname = path.resolve();
