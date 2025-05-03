@@ -13,9 +13,7 @@ const sampleProducts = [
     brand: 'Brand A',
     description: 'Sample description for product 1.',
     price: 100,
-    countInStock: 10,
-    rating: 4,
-    numReviews: 5,
+    countInStock: 10
   },
   {
     name: 'Product 2',
@@ -25,9 +23,7 @@ const sampleProducts = [
     brand: 'Brand B',
     description: 'Sample description for product 2.',
     price: 150,
-    countInStock: 15,
-    rating: 3.5,
-    numReviews: 3,
+    countInStock: 15
   },
   // Add more sample products as needed
 ];

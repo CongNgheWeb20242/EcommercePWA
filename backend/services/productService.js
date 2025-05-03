@@ -1,13 +1,31 @@
 import Product from '../models/productModel.js';
 import Category from '../models/categoryModel.js'
 import mongoose from 'mongoose';
+import Review from '../models/reviewModel.js';
 
-export const getProducts = async () => {
-  return await Product.find().populate('category');;
+export const getProducts = async (page = 1, pageSize = 10) => {
+  const products = await Product.find({ isVisible: true })
+    .populate('category')
+    .populate('reviews')
+    .skip(pageSize * (page - 1))
+    .limit(pageSize);
+  
+  const countProducts = await Product.countDocuments({ isVisible: true });
+  
+  return {
+    products,
+    countProducts,
+    page,
+    pages: Math.ceil(countProducts / pageSize)
+  };
 };
 
-export const getProductById = async (id) => {
-  return await Product.findById(id);
+export const getProductById = async (id, user = null) => {
+  const visibilityFilter = (!user || !user.isAdmin) ? { isVisible: true } : {};
+  return await Product.findById(id)
+    .where(visibilityFilter)
+    .populate('category')
+    .populate('reviews');
 };
 
 export const getProductBySlug = async (slug) => {
@@ -28,22 +46,22 @@ export const createProduct = async (productData) => {
     }
   
     const newProduct = new Product({
-      name: productData.name || 'sample name ' + Date.now(),
-      slug: productData.slug || 'sample-name-' + Date.now(),
-      image: productData.image || '/images/p1.jpg',
-      price: productData.price || 0,
-      category: productData.category, // Using the category ID directly
-      brand: productData.brand || 'sample brand',
-      countInStock: productData.countInStock || 0,
-      rating: productData.rating || 0,
-      numReviews: productData.numReviews || 0,
-      description: productData.description || 'sample description',
+      ...productData,
+      slug: productData.slug || `sample-name-${Date.now()}`,
+      isVisible: productData.isVisible ?? true
     });
   
-    return await newProduct.save();
+    const savedProduct = await newProduct.save();
+    return await Product.findById(savedProduct._id)
+      .populate('category')
+      .populate('reviews');
 };
 
 export const updateProduct = async (id, productData) => {
+  if (!id || !productData) {
+    throw new Error('Product ID and update data are required');
+  }
+
   if (productData.category) {
     const categoryExists = await Category.findById(productData.category);
     if (!categoryExists) {
@@ -52,21 +70,24 @@ export const updateProduct = async (id, productData) => {
   }
 
   const product = await Product.findById(id);
-  if (product) {
-    product.name = productData.name || product.name;
-    product.slug = productData.slug || product.slug;
-    product.price = productData.price || product.price;
-    product.image = productData.image || product.image;
-    product.images = productData.images || product.images;
-    product.category = productData.category || product.category;
-    product.brand = productData.brand || product.brand;
-    product.countInStock = productData.countInStock || product.countInStock;
-    product.description = productData.description || product.description;
-    
-    // Save and return the updated product
-    return await product.save();
+  if (!product) {
+    return null;
   }
-  return null;
+
+  // Only update fields that are provided in productData
+  const updateFields = Object.keys(productData).reduce((acc, key) => {
+    if (productData[key] !== undefined) {
+      acc[key] = productData[key];
+    }
+    return acc;
+  }, {});
+
+  Object.assign(product, updateFields);
+  await product.save();
+  
+  return await Product.findById(id)
+    .populate('category')
+    .populate('reviews');
 };
 
 export const deleteProduct = async (id) => {
@@ -81,20 +102,34 @@ export const deleteProduct = async (id) => {
 export const addReview = async (productId, reviewData) => {
   const product = await Product.findById(productId);
   if (product) {
-    if (product.reviews.find((x) => x.name === reviewData.name)) {
+    // Check if user has already reviewed this product
+    const existingReview = product.reviews.find(
+      (reviewId) => reviewId.toString() === reviewData.userId
+    );
+    
+    if (existingReview) {
       throw new Error('You already submitted a review');
     }
 
-    const review = {
+    // Create a new review
+    const review = new Review({
+      user: reviewData.userId,
       name: reviewData.name,
       rating: Number(reviewData.rating),
       comment: reviewData.comment,
-    };
-    product.reviews.push(review);
-    product.numReviews = product.reviews.length;
-    product.rating =
-      product.reviews.reduce((a, c) => c.rating + a, 0) / product.reviews.length;
-    return await product.save();
+      product: productId
+    });
+
+    // Save the review
+    const savedReview = await review.save();
+
+    // Add review ID to product's reviews array
+    product.reviews.push(savedReview._id);
+    await product.save();
+    
+    return await Product.findById(productId)
+      .populate('category')
+      .populate('reviews');
   }
   return null;
 };
@@ -107,7 +142,7 @@ export const getAdminProducts = async (page, pageSize) => {
   return { products, countProducts, page, pages: Math.ceil(countProducts / pageSize) };
 };
 
-export const searchProducts = async (queryParams) => {
+export const searchProducts = async (queryParams, user = null) => {
   const {
     pageSize = 3,
     page = 1,
@@ -136,6 +171,7 @@ export const searchProducts = async (queryParams) => {
           },
         }
       : {};
+  const visibilityFilter = (!user || !user.isAdmin) ? { isVisible: true } : {};
   const sortOrder =
     order === 'featured'
       ? { featured: -1 }
@@ -154,7 +190,10 @@ export const searchProducts = async (queryParams) => {
     ...categoryFilter,
     ...priceFilter,
     ...ratingFilter,
+    ...visibilityFilter,
   })
+    .populate('category')
+    .populate('reviews')
     .sort(sortOrder)
     .skip(pageSize * (page - 1))
     .limit(pageSize);
@@ -164,6 +203,7 @@ export const searchProducts = async (queryParams) => {
     ...categoryFilter,
     ...priceFilter,
     ...ratingFilter,
+    ...visibilityFilter,
   });
   return {
     products,
@@ -174,5 +214,6 @@ export const searchProducts = async (queryParams) => {
 };
 
 export const getCategories = async () => {
-  return await Category.find();
+  const categories = await Category.find();
+  return { categories };
 };
