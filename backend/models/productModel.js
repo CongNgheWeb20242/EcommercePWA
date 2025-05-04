@@ -13,9 +13,13 @@ const productSchema = new mongoose.Schema(
     countInStock: { type: Number, required: true },
     isVisible: { type: Boolean, default: true }, // Whether the product is visible to customers
 
-    //relations
-    category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
-    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
+    // relations
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      required: true,
+    },
+    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
   },
   {
     timestamps: true,

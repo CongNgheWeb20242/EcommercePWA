@@ -5,13 +5,13 @@ import Review from '../models/reviewModel.js';
 
 export const getProducts = async (page = 1, pageSize = 10) => {
   const products = await Product.find({ isVisible: true })
-    .populate('category')
+    .populate('category') // .populate() để lấy dữ liệu chi tiết từ các bảng liên kết (quan hệ), tương tự "JOIN" trong SQL
     .populate('reviews')
     .skip(pageSize * (page - 1))
     .limit(pageSize);
   
   const countProducts = await Product.countDocuments({ isVisible: true });
-  
+
   return {
     products,
     countProducts,

@@ -5,6 +5,7 @@ import cors from "cors"
 import cookieParser from "cookie-parser";
 import swaggerUi from 'swagger-ui-express';
 import YAML from "yamljs";
+import { devLogger } from "./middlewares/morganLogger.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -20,7 +21,7 @@ const PORT = process.env.PORT;
 const __dirname = path.resolve();
 
 // Connect Database
-connectDB();
+await connectDB();
 
 const app = express();
 
@@ -29,6 +30,8 @@ const swaggerDocument = YAML.load(path.join(__dirname, 'docs', 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(cookieParser());
+app.use(devLogger);
+
 // Tăng giới hạn kích thước payload
 app.use(express.json({ limit: '10mb' })); // Cho phép payload JSON tối đa 10MB
 app.use(express.urlencoded({ limit: '10mb', extended: true })); // Cho phép payload URL-encoded tối đa 10MB
