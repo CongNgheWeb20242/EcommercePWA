@@ -1,10 +1,11 @@
 import express from "express";
 import path from "path";
-import 'dotenv/config'
+import dotenv from "dotenv"
 import cors from "cors"
 import cookieParser from "cookie-parser";
 import swaggerUi from 'swagger-ui-express';
 import YAML from "yamljs";
+import { devLogger } from "./middlewares/morganLogger.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -12,12 +13,15 @@ import productRouter from "./routes/productRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import orderRouter from "./routes/orderRoutes.js";
 import uploadRouter from "./routes/uploadRoutes.js";
+import paymentRoutes from './routes/paymentRoutes.js';
+
+dotenv.config();
 
 const PORT = process.env.PORT;
 const __dirname = path.resolve();
 
 // Connect Database
-connectDB();
+await connectDB();
 
 const app = express();
 
@@ -26,6 +30,8 @@ const swaggerDocument = YAML.load(path.join(__dirname, 'docs', 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(cookieParser());
+app.use(devLogger);
+
 // Tăng giới hạn kích thước payload
 app.use(express.json({ limit: '10mb' })); // Cho phép payload JSON tối đa 10MB
 app.use(express.urlencoded({ limit: '10mb', extended: true })); // Cho phép payload URL-encoded tối đa 10MB
@@ -43,6 +49,7 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/products", productRouter);
 app.use("/api/user", userRouter);
 app.use("/api/orders", orderRouter);
+app.use('/api/payment', paymentRoutes);
 
 // Liên quan đến production (tạm thời chưa động đến)
 if (process.env.NODE_ENV === "production") {

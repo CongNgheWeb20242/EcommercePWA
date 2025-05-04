@@ -22,7 +22,7 @@ export const getUser = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({}).select(
-      'name email profilePic phone address createdAt'
+      'name email profilePic isAdmin phone address createdAt'
     );
     res.status(200).json(users);
   } catch (error) {
@@ -100,12 +100,13 @@ export const login = async (req, res) => {
     if (!isPasswordCorrect) {
       return res.status(400).json({ message: 'Invalid Credentials' });
     }
-    generateToken(user._id, res);
+    const token = generateToken(user._id, res);
     res.status(200).json({
       _id: user._id,
       email: user.email,
       name: user.name,
       profilePic: user.profilePic,
+      token,
     });
   } catch (error) {
     console.error(error);
@@ -141,13 +142,14 @@ export const signup = async (req, res) => {
     });
 
     if (newUser) {
-      generateToken(newUser._id, res);
+      const token = generateToken(newUser._id, res);
       await newUser.save();
 
       return res.status(201).json({
         _id: newUser._id,
         name: newUser.name,
         email: newUser.email,
+        token,
       });
     } else {
       return res.status(400).json({ message: 'Invalid user data' });
