@@ -406,16 +406,16 @@ paths:
               properties:
                 name:
                   type: string
-                  example: Nguyen Van B
+                  example: Nguyen Van A
                 email:
                   type: string
                   format: email
-                  example: nguyenvanb@gmail.com
+                  example: admin@gmail.account
                 password:
                   type: string
                   format: password
                   minLength: 6
-                  example: nguyenvanb123
+                  example: admin123
       responses:
         '201':
           description: User registered successfully!
@@ -429,10 +429,10 @@ paths:
                     example: '60c72b2f5f1b2c6f2b77a8d9'
                   name:
                     type: string
-                    example: Nguyen Van B
+                    example: Nguyen Van A
                   email:
                     type: string
-                    example: nguyenvanb@gmail.com
+                    example: admin@gmail.account
                   token:
                     type: string
                     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
@@ -476,11 +476,11 @@ paths:
                 email:
                   type: string
                   format: email
-                  example: nguyenvanb@gmail.com
+                  example: admin@gmail.account
                 password:
                   type: string
                   format: password
-                  example: nguyenvana123
+                  example: admin123
       responses:
         '200':
           description: Login successful!
@@ -494,7 +494,7 @@ paths:
                     example: '67e3c5f86358493802372e05'
                   email:
                     type: string
-                    example: nguyenvana@gmail.com
+                    example: admin@gmail.account
                   password:
                     type: string
                     example: 'hashedpassword'
@@ -647,14 +647,15 @@ paths:
                   example: "iphone-15-pro"
                 image:
                   type: string
-                  example: "https://example.com/images/iphone15pro.jpg"
+                  description: "Main product image in base64 format"
+                  example: "data:image/png;base64,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"
                 images:
                   type: array
                   items:
                     type: string
                   example:
-                    - "https://example.com/images/iphone15pro-1.jpg"
-                    - "https://example.com/images/iphone15pro-2.jpg"
+                    - "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAn1BMVEX///+/Hi6+FSy9ABi6AA/z4eLpw8S/FynGR1D15ee9DCLCOUfUgojbjZXDNEPJR1G8ABy9DSXx2tzWfojfpay5AAzGR1TCKDjsys27ABTZiY65AAD69fb56+7jr7PkrrXJWGHkt7zMY23cmp/FPU7anaLKUl7bk5nKWWHFRVTLWmjhsbHnwsf37+3TeX6+LDnNbXS8IjHv0tTCHDfanJ4jvFsnAAAGfklEQVR4nO2aCZeaPBSGVZaMcWnABaJgUUdtp27D1///2z5ASQJEcabqtOe8T9tzZsh236w3N200AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgPtg2bPlpNudbGa2+9W23ELgziaL8WtHw+smKOe2VmtuGozRFGaYo5dNVeV8fOj3+z/8amM7f9V9+9lX6Zwbmb+9XGMc/fqcPrfrcUZJq0UqJN/4uihxG3FGmgUI5eNZsc7eiDST8s5oXpI3i2jSmEOyZIExThMno6oFBWuIOfiEvmBPacniIlw13v3BHV0mwl/U4dqZ+feO2j/Bxiv3Tt5I0hOWcc2ME9OPr4nwQGsqpV2Ze+Zo9WVa2Ebm25risyW/+ocL+k6NzFm9QlaaK/UE3kWTNQqX/Npo86PIaIvhaEmFQ+NyaTp4lMJjfa1S4dC8npOLVaJTOOQ1jTxEYXxLpcs8c+1w83xf0Sj0rzZlJiXdmg5MGWk256vs6xZhs+m8h+fMa1UhYdzxvBY3CjV44SWFwaE8RZON+gwhPErzLK6NclbEiD4oMHhXTTY4N81RiimZvuS71y+lfWKuZ1aySwahfVTXJutdUrgx1KZGrHXojHN+rlenHXfSOjU9Kq53h58/027lcK4hlkbTzve5H7tWOyWUyCr7slXnXZks7Ug1PtQrDJTxd7xVnaFupEwNuvi82zQc0TNGVNeoL1eJ02kXkpTtiq2yLxWFK9ESZVFYqbzK2BD5159QlrPtTs50rbq8ypIl5T79KYaXnMypKFx2BZPdLab5Iv8+/qCqzyKXbL7YFHPk+PJseLXn4V+OK4ew1a6kRmIQjezA+msU9vrnG0T/WJdVHsfOopo6FKkn/6CssPctpz+vltbhvooStyzbS2xY7rZ7ddVMxBjq3Ao5wiS7JZQVrmne0PTGMXWFadPqlLmdlRyYfc1euhDbvaFZ+bu+mMM0/b2kcOfJXepG02SfmX+icCtPMuoNhrOc+dz23aLktVhpjq4v5EIcBVWFoehJcuvWfyeFO+UcJpQJDMPg5sh42fhCzauQ8K6r6egUDCopjMWv9NYr7J0UKnNPR3J3987xhaAjFB50FXWFQdytKvSlwo2u9AMV2rV3C9bJjnfpOJNXXUU9qTCuKpxLhUtd6QcqbLzVXi5oZ/fHCmeiI9nw2QrD+js+S0+4QPjdpPNvKWyE3y7GToTN6VkpFLY8XTVyHZqadfilCpPm14w511RmVr3U7KXSIKuqUFmHqy9QmNS2OnYYN7lhyAPDaTXzKziNGtIraRGqOw9/SKdFcx764h769L1UEoSuP599PzNbHT3Jf0n64JAHqN8199FgLeLX2SQuKbSkwmefh4+i7NM0W+dfn+3TPIySwmCcKzy5rTfwDIVtccseJG2E+0GOJhy0FIn7LIJTvlvsxZnEb7yxu87jFboiUjJNrT796CT/zMoLkMWSBCdLnGYKygpn4ndnf2PrT1Aoo8WZqyld2OJrS4o8K8jptCwrtMQsJfS2wNkzFMpDfJQe+XMZeWSlcVjJMM35CaASxYhk//RvsvjxCoOldOd49kFx79hCuam3u1I7YadlVlGo3EQdb3hDXOJ+CturXpnJpDtYHOSt4xSYaPQUiZREve9z27ZnvcW7GryNGnqFjY4aGfcW3eVQYVYNbdxNoU8YLZNuGKobx35nWXfFSPvpwlx6XTX8Swr9qZqPUKq0m9RTcebupXBXeS/RYJybWNW+0YoFqokmdq+WnpYPkXspjOtee1KzhaO1qLlMOmKT1cVLo2ulK/7qvRT6tcPSJAexL+w614MeTaFGpzB8uSKx4q8+TyFxlPkT9q8ZeZD7hS3mhvKOH7xdnjEPUxjXKCSsX9jmguOll3xiLJQXl3gkEtSTYcku9RArx2/aop3pR98Mi6wvDwohlB1+lwvY35hmqhKjFK1/PWdixeeC9r6pvW2T6kDlT3as9sHhOtbYNHRwgzXXA1vXffbi3VBPE0INZzEPyvXytBpzUa6hPTuOPZqGZDkXjfFD9TUjiE7plRo+TLy1t8nf05/8B9uPrcuOx267WfRPT88jenibzHVZk3rtrd4H3YWW68Zx7OfEWhVuYs5X/q+5IGy7Vnv3xz0MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgGv8D++4gf5DXD6NAAAAAElFTkSuQmCC"
+                    - "data:image/png;base64,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"
                 brand:
                   type: string
                   example: "Apple"
@@ -671,7 +672,7 @@ paths:
                 category:
                   type: string
                   description: "The category ID of the product"
-                  example: "60c72b2f5f1b2c6f2b77a8d9"
+                  example: "681701b764fb37f82048a461"
                 isVisible:
                   type: boolean
                   description: Whether the product is visible to customers
@@ -745,7 +746,7 @@ paths:
           description: The ID of the product to update
           schema:
             type: string
-            example: "60c72b2f5f1b2c6f2b77a8d9"
+            example: "68185df70f6f023fc4fe7632"
       requestBody:
         description: The product data to update
         required: true
@@ -756,20 +757,20 @@ paths:
               properties:
                 name:
                   type: string
-                  example: "iPhone 15 Pro"
+                  example: "iPhone 16 Pro"
                 slug:
                   type: string
-                  example: "iphone-15-pro"
+                  example: "iphone-16-pro"
                 image:
                   type: string
-                  example: "https://example.com/images/iphone15pro.jpg"
+                  example: "data:image/png;base64,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"
                 images:
                   type: array
                   items:
                     type: string
                   example:
-                    - "https://example.com/images/iphone15pro-1.jpg"
-                    - "https://example.com/images/iphone15pro-2.jpg"
+                    - "data:image/png;base64,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"
+                    - "data:image/png;base64,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"
                 brand:
                   type: string
                   example: "Apple"
@@ -786,7 +787,7 @@ paths:
                 category:
                   type: string
                   description: "The category ID of the product"
-                  example: "60c72b2f5f1b2c6f2b77a8d9"
+                  example: "681701b764fb37f82048a461"
                 isVisible:
                   type: boolean
                   description: Whether the product is visible to customers

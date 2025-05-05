@@ -1,7 +1,8 @@
 import Product from '../models/productModel.js';
-import Category from '../models/categoryModel.js'
+import Category from '../models/categoryModel.js';
 import mongoose from 'mongoose';
 import Review from '../models/reviewModel.js';
+import { uploadBase64Image } from '../lib/uploadImage.js';
 
 export const getProducts = async (page = 1, pageSize = 10) => {
   const products = await Product.find({ isVisible: true })
@@ -9,19 +10,19 @@ export const getProducts = async (page = 1, pageSize = 10) => {
     .populate('reviews')
     .skip(pageSize * (page - 1))
     .limit(pageSize);
-  
+
   const countProducts = await Product.countDocuments({ isVisible: true });
 
   return {
     products,
     countProducts,
     page,
-    pages: Math.ceil(countProducts / pageSize)
+    pages: Math.ceil(countProducts / pageSize),
   };
 };
 
 export const getProductById = async (id, user = null) => {
-  const visibilityFilter = (!user || !user.isAdmin) ? { isVisible: true } : {};
+  const visibilityFilter = !user || !user.isAdmin ? { isVisible: true } : {};
   return await Product.findById(id)
     .where(visibilityFilter)
     .populate('category')
@@ -33,28 +34,45 @@ export const getProductBySlug = async (slug) => {
 };
 
 export const createProduct = async (productData) => {
-    // Check if the category ID is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(productData.category)) {
-      throw new Error('Invalid category ID');
+  // Xử lý upload images
+  const { image, images, ...rest } = productData;
+
+  // Check if the category ID is a valid ObjectId
+  if (!mongoose.Types.ObjectId.isValid(productData.category)) {
+    throw new Error('Invalid category ID');
+  }
+
+  // Check if the category exists in the Category collection
+  const categoryExists = await Category.findById(productData.category);
+  if (!categoryExists) {
+    throw new Error('Category does not exist');
+  }
+
+  // Upload ảnh chính
+  if (!image) throw new Error('Main image is required'); // Nếu FE validate tốt thì không cần dòng này
+  const imageUrl = await uploadBase64Image(image);
+
+  // Upload ảnh phụ
+  const imageUrls = [];
+  if (Array.isArray(images)) {
+    for (const base64Img of images) {
+      const url = await uploadBase64Image(base64Img);
+      imageUrls.push(url);
     }
-  
-    // Check if the category exists in the Category collection
-    const categoryExists = await Category.findById(productData.category);
-    
-    if (!categoryExists) {
-      throw new Error('Category does not exist');
-    }
-  
-    const newProduct = new Product({
-      ...productData,
-      slug: productData.slug || `sample-name-${Date.now()}`,
-      isVisible: productData.isVisible ?? true
-    });
-  
-    const savedProduct = await newProduct.save();
-    return await Product.findById(savedProduct._id)
-      .populate('category')
-      .populate('reviews');
+  }
+
+  const newProduct = new Product({
+    ...rest,
+    slug: productData.slug || `product-${Date.now()}`,
+    image: imageUrl,
+    images: imageUrls,
+    isVisible: productData.isVisible ?? true, // Dùng để gán giá trị mặc định nếu biến là null hoặc undefined
+  });
+
+  const savedProduct = await newProduct.save();
+  return await Product.findById(savedProduct._id)
+    .populate('category')
+    .populate('reviews');
 };
 
 export const updateProduct = async (id, productData) => {
@@ -62,7 +80,11 @@ export const updateProduct = async (id, productData) => {
     throw new Error('Product ID and update data are required');
   }
 
+  // Validate category nếu có
   if (productData.category) {
+    if (!mongoose.Types.ObjectId.isValid(productData.category)) {
+      throw new Error('Invalid category ID');
+    }
     const categoryExists = await Category.findById(productData.category);
     if (!categoryExists) {
       throw new Error('Category not found');
@@ -71,20 +93,37 @@ export const updateProduct = async (id, productData) => {
 
   const product = await Product.findById(id);
   if (!product) {
-    return null;
+    throw new Error('Product not found');
   }
 
-  // Only update fields that are provided in productData
-  const updateFields = Object.keys(productData).reduce((acc, key) => {
-    if (productData[key] !== undefined) {
-      acc[key] = productData[key];
-    }
-    return acc;
-  }, {});
+  // Xử lý ảnh
+  const { image, images, ...rest } = productData;
 
-  Object.assign(product, updateFields);
+  // Upload ảnh chính nếu có
+  if (image) {
+    const uploadedImage = await uploadBase64Image(image);
+    product.image = uploadedImage;
+  }
+
+  // Upload ảnh phụ nếu có
+  if (Array.isArray(images)) {
+    const uploadedImages = [];
+    for (const base64Img of images) {
+      const url = await uploadBase64Image(base64Img);
+      uploadedImages.push(url);
+    }
+    product.images = uploadedImages;
+  }
+
+  // Cập nhật các trường còn lại
+  Object.keys(rest).forEach((key) => {
+    if (rest[key] !== undefined) {
+      product[key] = rest[key];
+    }
+  });
+
   await product.save();
-  
+
   return await Product.findById(id)
     .populate('category')
     .populate('reviews');
@@ -106,7 +145,7 @@ export const addReview = async (productId, reviewData) => {
     const existingReview = product.reviews.find(
       (reviewId) => reviewId.toString() === reviewData.userId
     );
-    
+
     if (existingReview) {
       throw new Error('You already submitted a review');
     }
@@ -117,7 +156,7 @@ export const addReview = async (productId, reviewData) => {
       name: reviewData.name,
       rating: Number(reviewData.rating),
       comment: reviewData.comment,
-      product: productId
+      product: productId,
     });
 
     // Save the review
@@ -126,7 +165,7 @@ export const addReview = async (productId, reviewData) => {
     // Add review ID to product's reviews array
     product.reviews.push(savedReview._id);
     await product.save();
-    
+
     return await Product.findById(productId)
       .populate('category')
       .populate('reviews');
@@ -139,7 +178,12 @@ export const getAdminProducts = async (page, pageSize) => {
     .skip(pageSize * (page - 1))
     .limit(pageSize);
   const countProducts = await Product.countDocuments();
-  return { products, countProducts, page, pages: Math.ceil(countProducts / pageSize) };
+  return {
+    products,
+    countProducts,
+    page,
+    pages: Math.ceil(countProducts / pageSize),
+  };
 };
 
 export const searchProducts = async (queryParams, user = null) => {
@@ -154,14 +198,10 @@ export const searchProducts = async (queryParams, user = null) => {
   } = queryParams;
 
   const queryFilter =
-    query && query !== 'all'
-      ? { name: { $regex: query, $options: 'i' } }
-      : {};
+    query && query !== 'all' ? { name: { $regex: query, $options: 'i' } } : {};
   const categoryFilter = category && category !== 'all' ? { category } : {};
   const ratingFilter =
-    rating && rating !== 'all'
-      ? { rating: { $gte: Number(rating) } }
-      : {};
+    rating && rating !== 'all' ? { rating: { $gte: Number(rating) } } : {};
   const priceFilter =
     price && price !== 'all'
       ? {
@@ -171,7 +211,7 @@ export const searchProducts = async (queryParams, user = null) => {
           },
         }
       : {};
-  const visibilityFilter = (!user || !user.isAdmin) ? { isVisible: true } : {};
+  const visibilityFilter = !user || !user.isAdmin ? { isVisible: true } : {};
   const sortOrder =
     order === 'featured'
       ? { featured: -1 }
