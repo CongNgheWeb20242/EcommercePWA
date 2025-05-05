@@ -8,7 +8,7 @@ interface UserLayoutProps {
 }
 
 
-const UserLayout = ({children} : UserLayoutProps) => {
+const UserLayout = ({ children }: UserLayoutProps) => {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Navbar */}
@@ -16,7 +16,7 @@ const UserLayout = ({children} : UserLayoutProps) => {
 
       {/* Content */}
       <main className="flex-1 min-h-[500px] mt-[80px] overflow-y-auto ">
-          {children}
+        {children}
       </main>
 
       <Footer />
