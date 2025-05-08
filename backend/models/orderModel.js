@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+// Sửa lại schema Order
 const orderSchema = new mongoose.Schema(
   { // Danh sách sản phẩm trong đơn hàng
     orderItems: [
@@ -21,6 +22,7 @@ const orderSchema = new mongoose.Schema(
       // Mã bưu điện
       postalCode: String,
       country: { type: String, required: true },
+      // API Maps
       location: {
         lat: Number,
         lng: Number,

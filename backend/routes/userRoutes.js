@@ -1,10 +1,8 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
 import expressAsyncHandler from 'express-async-handler';
-import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
-import { isAuth, generateToken, baseUrl, mailgun } from '../lib/utils.js';
-import { getUser, getAllUsers, login, signup, deleteUser, updateUser } from '../controllers/userController.js';
+import { isAuth } from '../lib/utils.js';
+import { getUser, getAllUsers, login, signup, deleteUser, updateUser, forgetPassword, resetPassword, getResetPassword } from '../controllers/userController.js';
 import { protectedRoute, isAdmin } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -18,70 +16,76 @@ router.get('/:id', protectedRoute, isAdmin, getUser);
 // Update profile by user
 router.put('/profile', protectedRoute, updateUser);
 
-// Forgot password
-router.post(
-  '/forget-password',
-  expressAsyncHandler(async (req, res) => {
-    const user = await User.findOne({ email: req.body.email });
-
-    if (user) {
-      const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: '3h',
-      });
-      user.resetToken = token;
-      await user.save();
-
-      //reset link
-      console.log(`${baseUrl()}/reset-password/${token}`);
-
-      mailgun()
-        .messages()
-        .send(
-          {
-            from: 'Amazona <me@mg.yourdomain.com>',
-            to: `${user.name} <${user.email}>`,
-            subject: `Reset Password`,
-            html: ` 
-             <p>Please Click the following link to reset your password:</p> 
-             <a href="${baseUrl()}/reset-password/${token}"}>Reset Password</a>
-             `,
-          },
-          (error, body) => {
-            console.log(error);
-            console.log(body);
-          }
-        );
-      res.send({ message: 'We sent reset password link to your email.' });
-    } else {
-      res.status(404).send({ message: 'User not found' });
-    }
-  })
-);
+// Forget password
+router.post("/forget-password", forgetPassword);
 
 // Reset password
-router.post(
-  '/reset-password',
-  expressAsyncHandler(async (req, res) => {
-    jwt.verify(req.body.token, process.env.JWT_SECRET, async (err, decode) => {
-      if (err) {
-        res.status(401).send({ message: 'Invalid Token' });
-      } else {
-        const user = await User.findOne({ resetToken: req.body.token });
-        if (user) {
-          if (req.body.password) {
-            user.password = bcrypt.hashSync(req.body.password, 8);
-            await user.save();
-            res.send({
-              message: 'Password reseted successfully',
-            });
-          }
-        } else {
-          res.status(404).send({ message: 'User not found' });
-        }
-      }
-    });
-  })
-);
+router.post("/reset-password", resetPassword);
+
+// Forgot password
+// router.post(
+//   '/forget-password',
+//   expressAsyncHandler(async (req, res) => {
+//     const user = await User.findOne({ email: req.body.email });
+
+//     if (user) {
+//       const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
+//         expiresIn: '3h',
+//       });
+//       user.resetToken = token;
+//       await user.save();
+
+//       //reset link
+//       console.log(`${baseUrl()}/reset-password/${token}`);
+
+//       mailgun()
+//         .messages()
+//         .send(
+//           {
+//             from: 'Amazona <me@mg.yourdomain.com>',
+//             to: `${user.name} <${user.email}>`,
+//             subject: `Reset Password`,
+//             html: ` 
+//              <p>Please Click the following link to reset your password:</p> 
+//              <a href="${baseUrl()}/reset-password/${token}"}>Reset Password</a>
+//              `,
+//           },
+//           (error, body) => {
+//             console.log(error);
+//             console.log(body);
+//           }
+//         );
+//       res.send({ message: 'We sent reset password link to your email.' });
+//     } else {
+//       res.status(404).send({ message: 'User not found' });
+//     }
+//   })
+// );
+
+// Reset password
+// router.post(
+//   '/reset-password',
+//   expressAsyncHandler(async (req, res) => {
+//     jwt.verify(req.body.token, process.env.JWT_SECRET, async (err, decode) => {
+//       if (err) {
+//         res.status(401).send({ message: 'Invalid Token' });
+//       } else {
+//         const user = await User.findOne({ resetToken: req.body.token });
+//         if (user) {
+//           if (req.body.password) {
+//             user.password = bcrypt.hashSync(req.body.password, 8);
+//             await user.save();
+//             res.send({
+//               message: 'Password reseted successfully',
+//             });
+//           }
+//         } else {
+//           res.status(404).send({ message: 'User not found' });
+//         }
+//       }
+//     });
+//   })
+// );
 
 // Update user by admin?
 router.put(
@@ -110,5 +114,7 @@ router.post('/login', login);
 
 // Sign up
 router.post('/signup', signup);
+
+router.get("/reset-password/:token", getResetPassword)
 
 export default router;

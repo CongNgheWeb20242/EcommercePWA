@@ -2,6 +2,8 @@ import User from '../models/userModel.js';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../lib/utils.js';
 import cloudinary from '../lib/cloudinary.js';
+import { sendResetPasswordEmail } from '../lib/resend.js';
+import jwt from 'jsonwebtoken';
 
 // GET user by id
 export const getUser = async (req, res) => {
@@ -158,4 +160,101 @@ export const signup = async (req, res) => {
     console.error(error);
     return res.status(500).json({ message: 'Internal Server Error' });
   }
+};
+
+// Link reset password
+export const forgetPassword = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  const token = generateToken(user._id, res);
+  user.resetToken = token;
+  await user.save();
+
+  // Check môi trường hiện tại:
+  const isDevP = process.env.NODE_ENV === 'development';
+  // Test từ BE nên để cổng 3000
+  const FE_BASE_URL = isDevP
+    ? 'http://localhost:3000'
+    : 'https://yourdomain.com';
+
+  const resetUrl = `${FE_BASE_URL}/api/user/reset-password/${token}`;
+  console.log('Reset password URL', resetUrl);
+
+  try {
+    await sendResetPasswordEmail(user.email, resetUrl);
+    res.json({ message: 'Đường dẫn đặt lại mật khẩu đã được gửi qua email.' });
+  } catch (err) {
+    console.error('Lỗi gửi email:', err);
+    res.status(500).json({ message: 'Không thể gửi email đặt lại mật khẩu.' });
+  }
+};
+
+// Reset password thực sự
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Thiếu token hoặc mật khẩu.' });
+    }
+
+    // Xác thực token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return res
+        .status(401)
+        .json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
+    }
+
+    // Tìm user theo token reset
+    const user = await User.findOne({ resetToken: token });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: 'Không tìm thấy người dùng với token này.' });
+    }
+
+    // Hash lại pass
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+    user.resetToken = null; // clear token sau khi dùng
+    await user.save();
+
+    return res.json({ message: 'Đặt lại mật khẩu thành công.' });
+  } catch (error) {
+    console.error('Lỗi reset password', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// Test
+// Tạo một route GET để test reset password UI đơn giản
+export const getResetPassword = async (req, res) => {
+  const { token } = req.params;
+
+  const html = `
+    <html>
+      <head>
+        <title>Reset Password</title>
+      </head>
+      <body>
+        <h2>Đặt lại mật khẩu</h2>
+        <form method="POST" action="/api/user/reset-password">
+          <input type="hidden" name="token" value="${token}" />
+          <label>Mật khẩu mới:</label><br/>
+          <input type="password" name="password" required /><br/><br/>
+          <button type="submit">Đặt lại</button>
+        </form>
+      </body>
+    </html>
+  `;
+
+  res.send(html);
 };

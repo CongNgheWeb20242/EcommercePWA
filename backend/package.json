@@ -30,6 +30,7 @@
     "ngrok": "^5.0.0-beta.2",
     "qs": "^6.14.0",
     "query-string": "^9.1.1",
+    "resend": "^4.5.1",
     "streamifier": "^0.1.1",
     "swagger-ui-express": "^5.0.1",
     "vnpay": "^2.2.0",

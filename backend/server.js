@@ -31,6 +31,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(cookieParser());
 app.use(devLogger);
+app.use(express.urlencoded({ extended: true }));
 
 // Tăng giới hạn kích thước payload
 app.use(express.json({ limit: '10mb' })); // Cho phép payload JSON tối đa 10MB
