@@ -1,6 +1,8 @@
+// Import hook useState và dữ liệu giả mockOrders
 import { useState } from 'react';
 import { mockOrders } from '../../data/mockData';
 
+// Khai báo interface cho từng sản phẩm trong đơn hàng
 interface OrderItem {
   productId: string;
   name: string;
@@ -9,6 +11,7 @@ interface OrderItem {
   total: number;
 }
 
+// Interface cho một đơn hàng
 interface Order {
   id: string;
   customerName: string;
@@ -24,10 +27,15 @@ interface Order {
   updatedAt: string;
 }
 
-const OrderCard = ({ order, onUpdateStatus }: { 
+// Component hiển thị từng đơn hàng
+const OrderCard = ({
+  order,
+  onUpdateStatus,
+}: {
   order: Order;
   onUpdateStatus: (orderId: string, newStatus: Order['status']) => void;
 }) => {
+  // Hàm trả về màu sắc tương ứng với trạng thái đơn hàng
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -39,6 +47,7 @@ const OrderCard = ({ order, onUpdateStatus }: {
     }
   };
 
+  // Hàm trả về nội dung tiếng Việt tương ứng với trạng thái đơn hàng
   const getStatusText = (status: Order['status']) => {
     switch (status) {
       case 'pending': return 'Chờ xử lý';
@@ -50,6 +59,7 @@ const OrderCard = ({ order, onUpdateStatus }: {
     }
   };
 
+  // Hàm chuyển phương thức thanh toán thành tiếng Việt
   const getPaymentMethodText = (method: Order['paymentMethod']) => {
     switch (method) {
       case 'cod': return 'Thanh toán khi nhận hàng';
@@ -59,6 +69,7 @@ const OrderCard = ({ order, onUpdateStatus }: {
     }
   };
 
+  // Hàm chuyển trạng thái thanh toán thành tiếng Việt
   const getPaymentStatusText = (status: Order['paymentStatus']) => {
     switch (status) {
       case 'pending': return 'Chờ thanh toán';
@@ -68,8 +79,10 @@ const OrderCard = ({ order, onUpdateStatus }: {
     }
   };
 
+  // Giao diện chính của thẻ đơn hàng
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm">
+      {/* Thông tin tiêu đề và trạng thái */}
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="font-medium text-lg">Đơn hàng #{order.id}</h3>
@@ -80,6 +93,7 @@ const OrderCard = ({ order, onUpdateStatus }: {
         </span>
       </div>
 
+      {/* Thông tin chi tiết đơn hàng */}
       <div className="mb-4">
         <p className="text-sm text-gray-600">Ngày đặt: {new Date(order.createdAt).toLocaleDateString()}</p>
         <p className="text-sm text-gray-600">Tổng tiền: ${order.totalAmount.toLocaleString()}</p>
@@ -87,6 +101,7 @@ const OrderCard = ({ order, onUpdateStatus }: {
         <p className="text-sm text-gray-600">Trạng thái thanh toán: {getPaymentStatusText(order.paymentStatus)}</p>
       </div>
 
+      {/* Danh sách sản phẩm trong đơn */}
       <div className="mb-4">
         <h4 className="font-medium mb-2">Sản phẩm:</h4>
         <ul className="space-y-2">
@@ -99,6 +114,7 @@ const OrderCard = ({ order, onUpdateStatus }: {
         </ul>
       </div>
 
+      {/* Thông tin giao hàng */}
       <div className="mb-4">
         <h4 className="font-medium mb-2">Thông tin giao hàng:</h4>
         <p className="text-sm text-gray-600">{order.shippingAddress}</p>
@@ -106,6 +122,7 @@ const OrderCard = ({ order, onUpdateStatus }: {
         <p className="text-sm text-gray-600">Email: {order.customerEmail}</p>
       </div>
 
+      {/* Chọn để cập nhật trạng thái đơn hàng */}
       <div className="flex space-x-2">
         <select
           value={order.status}
@@ -125,68 +142,78 @@ const OrderCard = ({ order, onUpdateStatus }: {
   );
 };
 
+// Component chính hiển thị danh sách đơn hàng
 const Orders = () => {
-  const [orders, setOrders] = useState<Order[]>(mockOrders.map(order => {
-    const shippingAddress = typeof order.shippingAddress === 'string' 
-      ? order.shippingAddress 
-      : order.shippingAddress 
-        ? `${order.shippingAddress.address}, ${order.shippingAddress.city}, ${order.shippingAddress.postalCode}, ${order.shippingAddress.country}`
-        : '';
+  // State lưu danh sách đơn hàng sau khi chuẩn hóa từ mockOrders
+  const [orders, setOrders] = useState<Order[]>(
+    mockOrders.map(order => {
+      // Chuẩn hóa địa chỉ giao hàng nếu có dạng object
+      const shippingAddress = typeof order.shippingAddress === 'string'
+        ? order.shippingAddress
+        : order.shippingAddress
+          ? `${order.shippingAddress.address}, ${order.shippingAddress.city}, ${order.shippingAddress.postalCode}, ${order.shippingAddress.country}`
+          : '';
 
-    const items = order.items ? order.items.map(item => {
-      const productId = 'productId' in item ? item.productId : item.id;
-      const total = 'total' in item ? item.total : item.price * item.quantity;
-      
+      // Chuẩn hóa danh sách sản phẩm trong đơn
+      const items = order.items ? order.items.map(item => {
+        const productId = 'productId' in item ? item.productId : item.id;
+        const total = 'total' in item ? item.total : item.price * item.quantity;
+        return {
+          productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          total
+        };
+      }) : [];
+
+      // Trả về object đơn hàng chuẩn hóa
       return {
-        productId,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        total
+        id: order.id,
+        customerName: order.customerName || order.customer || '',
+        customerEmail: order.customerEmail || order.email || '',
+        customerPhone: order.customerPhone || '',
+        shippingAddress,
+        items,
+        totalAmount: order.totalAmount || order.total || 0,
+        status: (order.status as Order['status']) || 'pending',
+        paymentMethod: (order.paymentMethod as Order['paymentMethod']) || 'cod',
+        paymentStatus: (order.paymentStatus as Order['paymentStatus']) || 'pending',
+        createdAt: order.createdAt || order.date || new Date().toISOString(),
+        updatedAt: order.updatedAt || new Date().toISOString()
       };
-    }) : [];
+    })
+  );
 
-    return {
-      id: order.id,
-      customerName: order.customerName || order.customer || '',
-      customerEmail: order.customerEmail || order.email || '',
-      customerPhone: order.customerPhone || '',
-      shippingAddress,
-      items,
-      totalAmount: order.totalAmount || order.total || 0,
-      status: (order.status as Order['status']) || 'pending',
-      paymentMethod: (order.paymentMethod as Order['paymentMethod']) || 'cod',
-      paymentStatus: (order.paymentStatus as Order['paymentStatus']) || 'pending',
-      createdAt: order.createdAt || order.date || new Date().toISOString(),
-      updatedAt: order.updatedAt || new Date().toISOString()
-    };
-  }));
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<Order['status'] | ''>('');
+  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
+  const [statusFilter, setStatusFilter] = useState<Order['status'] | ''>(''); // Lọc theo trạng thái
 
+  // Lọc đơn hàng theo từ khóa tìm kiếm và trạng thái
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.id.includes(searchTerm) || 
+    const matchesSearch =
+      order.id.includes(searchTerm) ||
       order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
+  // Hàm cập nhật trạng thái đơn hàng
   const handleUpdateStatus = (orderId: string, newStatus: Order['status']) => {
-    setOrders(orders.map(order => 
-      order.id === orderId 
+    setOrders(orders.map(order =>
+      order.id === orderId
         ? { ...order, status: newStatus, updatedAt: new Date().toISOString() }
         : order
     ));
   };
 
+  // Giao diện hiển thị toàn bộ danh sách đơn hàng và các bộ lọc
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
       </div>
 
-      {/* Bộ lọc và tìm kiếm */}
+      {/* Bộ lọc tìm kiếm và trạng thái */}
       <div className="mb-6 flex space-x-4">
         <input
           type="text"
@@ -213,11 +240,11 @@ const Orders = () => {
         </select>
       </div>
 
-      {/* Danh sách đơn hàng */}
+      {/* Danh sách đơn hàng hiển thị dưới dạng thẻ */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredOrders.map((order) => (
-          <OrderCard 
-            key={order.id} 
+          <OrderCard
+            key={order.id}
             order={order}
             onUpdateStatus={handleUpdateStatus}
           />

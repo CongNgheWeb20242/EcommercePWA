@@ -1,3 +1,4 @@
+// Import các hook và thành phần cần thiết từ React và thư viện Recharts
 import { useState } from 'react';
 import { mockDashboardData, mockRevenueData } from '../../data/mockData';
 import { 
@@ -5,9 +6,10 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 
+// Mảng màu sắc dùng để tô các phần trong biểu đồ tròn
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-// Dữ liệu giả cho các khoảng thời gian
+// Hàm trả về dữ liệu doanh thu tương ứng với khoảng thời gian được chọn (tháng, quý, năm)
 const getRevenueData = (timeRange: string) => {
   switch (timeRange) {
     case 'month':
@@ -31,19 +33,20 @@ const getRevenueData = (timeRange: string) => {
 };
 
 const Dashboard = () => {
+  // State quản lý khoảng thời gian được chọn và trạng thái loading
   const [timeRange, setTimeRange] = useState('month');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Xử lý khi thay đổi khoảng thời gian (tháng, quý, năm)
   const handleTimeRangeChange = (value: string) => {
-    setIsLoading(true);
+    setIsLoading(true); // Hiển thị loading trong lúc chờ dữ liệu
     setTimeRange(value);
-    // Giả lập loading
-    setTimeout(() => setIsLoading(false), 500);
+    setTimeout(() => setIsLoading(false), 500); // Giả lập delay tải dữ liệu
   };
 
   return (
     <div className="space-y-6">
-      {/* Thống kê tổng quan */}
+      {/* Phần thống kê tổng quan (doanh thu, đơn hàng, sản phẩm, tăng trưởng) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
           <h3 className="text-gray-500 text-sm">Tổng doanh thu</h3>
@@ -67,10 +70,12 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Biểu đồ doanh thu theo tháng */}
+      {/* Biểu đồ doanh thu theo khoảng thời gian đã chọn */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Doanh thu theo {timeRange === 'month' ? 'tháng' : timeRange === 'quarter' ? 'quý' : 'năm'}</h2>
+          <h2 className="text-xl font-bold">
+            Doanh thu theo {timeRange === 'month' ? 'tháng' : timeRange === 'quarter' ? 'quý' : 'năm'}
+          </h2>
           <select 
             value={timeRange}
             onChange={(e) => handleTimeRangeChange(e.target.value)}
@@ -85,10 +90,12 @@ const Dashboard = () => {
         </div>
         <div className="h-80 relative">
           {isLoading ? (
+            // Hiển thị vòng quay khi đang tải dữ liệu
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             </div>
           ) : (
+            // Biểu đồ cột thể hiện doanh thu theo tháng, quý hoặc năm
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={getRevenueData(timeRange)}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -104,7 +111,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Biểu đồ phân loại sản phẩm */}
+        {/* Biểu đồ tròn thể hiện doanh thu theo từng loại sản phẩm */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="text-xl font-bold mb-4">Phân loại sản phẩm</h2>
           <div className="h-80">
@@ -130,7 +137,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Top 5 sản phẩm bán chạy */}
+        {/* Danh sách top 5 sản phẩm bán chạy nhất */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="text-xl font-bold mb-4">Top 5 sản phẩm bán chạy</h2>
           <div className="space-y-4">
@@ -150,7 +157,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Top 5 khách hàng */}
+      {/* Danh sách top 5 khách hàng mua nhiều nhất */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <h2 className="text-xl font-bold mb-4">Top 5 khách hàng</h2>
         <div className="space-y-4">
