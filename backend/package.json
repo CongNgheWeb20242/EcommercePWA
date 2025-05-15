@@ -48,7 +48,6 @@
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
     "nodemon": "^2.0.15",
-    "patch-package": "^8.0.0",
-    "postinstall-postinstall": "^2.1.0"
+    "patch-package": "^8.0.0"
   }
 }
