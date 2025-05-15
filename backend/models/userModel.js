@@ -4,7 +4,8 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true, minlength: 6 },
+    password: { type: String, minlength: 6 }, // Không required do SSO
+    googleId: { type: String },
     phone: String,
     address: String,
     profilePic: { type: String, default: "" },

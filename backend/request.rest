@@ -1,9 +1,9 @@
-POST http://localhost:3000/api/payment/create_payment_url
+POST https://localhost:3000/api/payment/create_payment_url
 Content-Type: application/json
 
 {
   "fullName": "Tu Minh Tuan",
-  "phone": "0912345678",
+  "phone": "091234567899",
   "email": "tuan@example.com",
   "address": "Hà Nội",
   "detailedAddress": "Số 123, đường ABC, phường XYZ",
@@ -14,14 +14,14 @@ Content-Type: application/json
       "id": "prod_001",
       "name": "Áo thun",
       "price": 500000,
-      "quantity": 2
+      "quantity": 3
     },
     {
       "id": "prod_002",
       "name": "Quần jean",
       "price": 1000000,
-      "quantity": 1
+      "quantity": 2
     }
   ],
-  "shippingFee": 30000
+  "shippingFee": 300000
 }

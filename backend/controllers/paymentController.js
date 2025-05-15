@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { createOrder } from '../services/paymentService.js';
 
 dotenv.config();
 
@@ -52,11 +53,21 @@ const vnpay = new VNPay({
 
 export const createPaymentUrl = async (req, res) => {
   try {
-    // Tạo đơn hàng
-    const order = await createOrder(req.body); // Hàm tạo đơn hàng, bạn cần tự triển khai
-    console.log(order);
+    const { paymentMethod } = req.body;
 
-    // Tạo URL thanh toán
+    // Tạo đơn hàng
+    const order = await createOrder(req.body); // Tự triển khai
+
+    // Nếu người dùng chọn thanh toán khi nhận hàng
+    if (paymentMethod === 'cod') {
+      return res.json({
+        success: true,
+        message: 'Đơn hàng đã được tạo. Thanh toán khi nhận hàng.',
+        order,
+      });
+    }
+
+    // Nếu là thanh toán VNPay
     const paymentUrl = vnpay.buildPaymentUrl({
       vnp_Amount: order.amount,
       vnp_IpAddr:
@@ -64,7 +75,7 @@ export const createPaymentUrl = async (req, res) => {
       vnp_TxnRef: order.order_id,
       vnp_OrderInfo: `Thanh toan don hang ${order.order_id}`,
       vnp_OrderType: ProductCode.Other,
-      vnp_ReturnUrl: 'http://localhost:3000/vnpay-return', // Frontend - Thay sau
+      vnp_ReturnUrl: 'https://localhost:3000/api/payment/vnpay_return', // Frontend - Thay sau
       vnp_Locale: 'vn',
     });
 
@@ -73,6 +84,7 @@ export const createPaymentUrl = async (req, res) => {
       paymentUrl,
       order,
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -81,6 +93,8 @@ export const createPaymentUrl = async (req, res) => {
     });
   }
 };
+
+// Đoạn này xử lý với backend, xử lý sau cùng
 export const vnpayIPN = async (req, res) => {
   try {
     console.log('📥 Nhận IPN từ VNPay:', req.query);
@@ -142,6 +156,8 @@ export const vnpayIPN = async (req, res) => {
     return res.json(IpnUnknownError);
   }
 };
+
+// Return khi client tiến hành thanh toán xong (Bất kể kết quả)
 export const vnpayReturn = async (req, res) => {
   let verify;
   try {

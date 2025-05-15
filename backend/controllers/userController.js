@@ -4,6 +4,21 @@ import { generateToken } from '../lib/utils.js';
 import cloudinary from '../lib/cloudinary.js';
 import { sendResetPasswordEmail } from '../lib/resend.js';
 import jwt from 'jsonwebtoken';
+import passport from 'passport';
+
+// SSO
+export const googleCallback = (req, res, next) => {
+  passport.authenticate('google', { session: false }, (err, user, info) => {
+    console.log('Google Auth callback:', { err, user, info });
+    if (err || !user) {
+      return res.status(401).json({ message: "Google login failed" })
+    }
+    const token = generateToken(user._id, res);
+
+    // Thay bằng link của FE
+    res.redirect(`http://localhost:3000/oauth-success?token=${token}`);
+  })(req, res, next)
+}
 
 // GET user by id
 export const getUser = async (req, res) => {

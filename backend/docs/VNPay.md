@@ -1,5 +1,32 @@
 # 📘 Tóm tắt lý thuyết IPN VNPAY
 
+<!-- Thẻ: Thành công -->
+Ngân hàng: NCB
+Số thẻ: 9704198526191432198
+Tên chủ thẻ:NGUYEN VAN A
+Ngày phát hành:07/15
+Mật khẩu OTP:123456
+
+<!-- Thẻ không đủ số dư -->
+Ngân hàng: NCB
+Số thẻ: 9704195798459170488
+Tên chủ thẻ:NGUYEN VAN A
+Ngày phát hành:07/15
+
+<!-- Thẻ bị khóa -->
+Ngân hàng: NCB
+Số thẻ: 9704193370791314
+Tên chủ thẻ:NGUYEN VAN A
+Ngày phát hành:07/15
+
+<!-- Thẻ bị hết hạn -->
+Ngân hàng: NCB
+Số thẻ: 9704194841945513
+Tên chủ thẻ:NGUYEN VAN A
+Ngày phát hành:07/15
+
+---
+
 ## 🔐 IPN URL là gì?
 
 - Là **đường dẫn trên server của bạn** mà VNPAY sẽ gửi request (dạng `GET`) sau khi khách hàng thanh toán xong.
