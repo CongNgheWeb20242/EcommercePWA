@@ -75,7 +75,7 @@ export const createPaymentUrl = async (req, res) => {
       vnp_TxnRef: order.order_id,
       vnp_OrderInfo: `Thanh toan don hang ${order.order_id}`,
       vnp_OrderType: ProductCode.Other,
-      vnp_ReturnUrl: 'https://localhost:3000/api/payment/vnpay_return', // Frontend - Thay sau
+      vnp_ReturnUrl: 'http://localhost:3000/api/payment/vnpay_return', // Frontend - Thay sau
       vnp_Locale: 'vn',
     });
 

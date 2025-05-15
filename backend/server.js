@@ -67,7 +67,6 @@ app.use('/api/user', userRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/payment', paymentRoutes);
 
-// Start HTTP Server (no HTTPS)
 app.listen(PORT, () => {
   console.log(`Server running at: http://localhost:${PORT}`);
   console.log(`API Docs: http://localhost:${PORT}/api-docs/`);
