@@ -11,7 +11,8 @@
     "start": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:categories": "node ./seeds/seedCategories.js",
-    "seed:products": "node ./seeds/seedProducts.js"
+    "seed:products": "node ./seeds/seedProducts.js",
+    "postinstall": "patch-package"
   },
   "author": "",
   "license": "ISC",
@@ -45,6 +46,8 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
-    "nodemon": "^2.0.15"
+    "nodemon": "^2.0.15",
+    "patch-package": "^8.0.0",
+    "postinstall-postinstall": "^2.1.0"
   }
 }
