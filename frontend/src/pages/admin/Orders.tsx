@@ -1,30 +1,49 @@
-// Import hook useState và dữ liệu giả mockOrders
-import { useState } from 'react';
-import { mockOrders } from '../../data/mockData';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
-// Khai báo interface cho từng sản phẩm trong đơn hàng
+// Định nghĩa các interfaces cần thiết
 interface OrderItem {
-  productId: string;
+  product: string; // MongoDB ID của sản phẩm
   name: string;
-  price: number;
   quantity: number;
-  total: number;
+  image: string;
+  price: number;
+  _id?: string;
 }
 
-// Interface cho một đơn hàng
+interface ShippingAddress {
+  fullName: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+}
+
 interface Order {
-  id: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  shippingAddress: string;
-  items: OrderItem[];
-  totalAmount: number;
+  _id: string;
+  orderItems: OrderItem[];
+  shippingAddress: ShippingAddress;
+  paymentMethod: string;
+  user: string; // ID của user
+  userName?: string; // Tên user (thêm từ frontend)
+  userEmail?: string; // Email user (thêm từ frontend)
+  isPaid: boolean;
+  paidAt?: string;
+  isDelivered: boolean;
+  deliveredAt?: string;
+  itemsPrice: number;
+  shippingPrice: number;
+  taxPrice: number;
+  totalPrice: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  paymentMethod: 'cod' | 'bank_transfer' | 'credit_card';
-  paymentStatus: 'pending' | 'paid' | 'failed';
   createdAt: string;
   updatedAt: string;
+}
+
+interface ApiResponse {
+  orders: Order[];
+  page: number;
+  pages: number;
 }
 
 // Component hiển thị từng đơn hàng
@@ -59,34 +78,15 @@ const OrderCard = ({
     }
   };
 
-  // Hàm chuyển phương thức thanh toán thành tiếng Việt
-  const getPaymentMethodText = (method: Order['paymentMethod']) => {
-    switch (method) {
-      case 'cod': return 'Thanh toán khi nhận hàng';
-      case 'bank_transfer': return 'Chuyển khoản';
-      case 'credit_card': return 'Thẻ tín dụng';
-      default: return method;
-    }
-  };
-
-  // Hàm chuyển trạng thái thanh toán thành tiếng Việt
-  const getPaymentStatusText = (status: Order['paymentStatus']) => {
-    switch (status) {
-      case 'pending': return 'Chờ thanh toán';
-      case 'paid': return 'Đã thanh toán';
-      case 'failed': return 'Thanh toán thất bại';
-      default: return status;
-    }
-  };
-
   // Giao diện chính của thẻ đơn hàng
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm">
       {/* Thông tin tiêu đề và trạng thái */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-medium text-lg">Đơn hàng #{order.id}</h3>
-          <p className="text-gray-600">{order.customerName}</p>
+          <h3 className="font-medium text-lg">Đơn hàng #{order._id.substring(order._id.length - 6)}</h3>
+          <p className="text-gray-600">{order.userName || 'Người dùng không xác định'}</p>
+          <p className="text-gray-500 text-sm">{order.userEmail || 'Không có email'}</p>
         </div>
         <span className={`px-2 py-1 rounded-full text-sm ${getStatusColor(order.status)}`}>
           {getStatusText(order.status)}
@@ -95,20 +95,25 @@ const OrderCard = ({
 
       {/* Thông tin chi tiết đơn hàng */}
       <div className="mb-4">
-        <p className="text-sm text-gray-600">Ngày đặt: {new Date(order.createdAt).toLocaleDateString()}</p>
-        <p className="text-sm text-gray-600">Tổng tiền: ${order.totalAmount.toLocaleString()}</p>
-        <p className="text-sm text-gray-600">Phương thức: {getPaymentMethodText(order.paymentMethod)}</p>
-        <p className="text-sm text-gray-600">Trạng thái thanh toán: {getPaymentStatusText(order.paymentStatus)}</p>
+        <p className="text-sm text-gray-600">Ngày đặt: {new Date(order.createdAt).toLocaleDateString('vi-VN')}</p>
+        <p className="text-sm text-gray-600">Tổng tiền: ${order.totalPrice.toLocaleString()}</p>
+        <p className="text-sm text-gray-600">Phương thức: {order.paymentMethod}</p>
+        <p className="text-sm text-gray-600">
+          Trạng thái thanh toán: {order.isPaid ? `Đã thanh toán (${new Date(order.paidAt || '').toLocaleDateString('vi-VN')})` : 'Chưa thanh toán'}
+        </p>
+        <p className="text-sm text-gray-600">
+          Trạng thái giao hàng: {order.isDelivered ? `Đã giao (${new Date(order.deliveredAt || '').toLocaleDateString('vi-VN')})` : 'Chưa giao'}
+        </p>
       </div>
 
       {/* Danh sách sản phẩm trong đơn */}
       <div className="mb-4">
         <h4 className="font-medium mb-2">Sản phẩm:</h4>
         <ul className="space-y-2">
-          {order.items.map((item, index) => (
+          {order.orderItems.map((item, index) => (
             <li key={index} className="flex justify-between text-sm">
               <span>{item.name} x {item.quantity}</span>
-              <span>${item.total.toLocaleString()}</span>
+              <span>${(item.price * item.quantity).toLocaleString()}</span>
             </li>
           ))}
         </ul>
@@ -117,19 +122,17 @@ const OrderCard = ({
       {/* Thông tin giao hàng */}
       <div className="mb-4">
         <h4 className="font-medium mb-2">Thông tin giao hàng:</h4>
-        <p className="text-sm text-gray-600">{order.shippingAddress}</p>
-        <p className="text-sm text-gray-600">Điện thoại: {order.customerPhone}</p>
-        <p className="text-sm text-gray-600">Email: {order.customerEmail}</p>
+        <p className="text-sm text-gray-600">{order.shippingAddress.fullName}</p>
+        <p className="text-sm text-gray-600">{`${order.shippingAddress.address}, ${order.shippingAddress.city}, ${order.shippingAddress.postalCode}, ${order.shippingAddress.country}`}</p>
       </div>
 
       {/* Chọn để cập nhật trạng thái đơn hàng */}
       <div className="flex space-x-2">
         <select
           value={order.status}
-          onChange={(e) => onUpdateStatus(order.id, e.target.value as Order['status'])}
+          onChange={(e) => onUpdateStatus(order._id, e.target.value as Order['status'])}
           className="px-3 py-1 border rounded-md"
           title="Cập nhật trạng thái đơn hàng"
-          aria-label="Cập nhật trạng thái đơn hàng"
         >
           <option value="pending">Chờ xử lý</option>
           <option value="processing">Đang xử lý</option>
@@ -144,92 +147,132 @@ const OrderCard = ({
 
 // Component chính hiển thị danh sách đơn hàng
 const Orders = () => {
-  // State lưu danh sách đơn hàng sau khi chuẩn hóa từ mockOrders
-  const [orders, setOrders] = useState<Order[]>(
-    mockOrders.map(order => {
-      // Chuẩn hóa địa chỉ giao hàng nếu có dạng object
-      const shippingAddress = typeof order.shippingAddress === 'string'
-        ? order.shippingAddress
-        : order.shippingAddress
-          ? `${order.shippingAddress.address}, ${order.shippingAddress.city}, ${order.shippingAddress.postalCode}, ${order.shippingAddress.country}`
-          : '';
-
-      // Chuẩn hóa danh sách sản phẩm trong đơn
-      const items = order.items ? order.items.map(item => {
-        const productId = 'productId' in item ? item.productId : item.id;
-        const total = 'total' in item ? item.total : item.price * item.quantity;
-        return {
-          productId,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          total
-        };
-      }) : [];
-
-      // Trả về object đơn hàng chuẩn hóa
-      return {
-        id: order.id,
-        customerName: order.customerName || order.customer || '',
-        customerEmail: order.customerEmail || order.email || '',
-        customerPhone: order.customerPhone || '',
-        shippingAddress,
-        items,
-        totalAmount: order.totalAmount || order.total || 0,
-        status: (order.status as Order['status']) || 'pending',
-        paymentMethod: (order.paymentMethod as Order['paymentMethod']) || 'cod',
-        paymentStatus: (order.paymentStatus as Order['paymentStatus']) || 'pending',
-        createdAt: order.createdAt || order.date || new Date().toISOString(),
-        updatedAt: order.updatedAt || new Date().toISOString()
-      };
-    })
-  );
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
   const [statusFilter, setStatusFilter] = useState<Order['status'] | ''>(''); // Lọc theo trạng thái
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Gọi API để lấy dữ liệu đơn hàng
+  const fetchOrders = async (page = 1) => {
+    setLoading(true);
+    try {
+      const { data } = await axios.get<ApiResponse>(
+        `http://localhost:5000/api/orders/admin?page=${page}`,
+        {
+          headers: {
+            authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+      
+      // Bổ sung thông tin user cho dễ hiển thị
+      const ordersWithUserInfo = await Promise.all(
+        data.orders.map(async (order) => {
+          try {
+            // Gọi API để lấy thông tin user từ ID
+            const userResponse = await axios.get(`http://localhost:5000/api/users/${order.user}`, {
+              headers: {
+                authorization: `Bearer ${localStorage.getItem('token')}`,
+              },
+            });
+            
+            return {
+              ...order,
+              userName: userResponse.data.name,
+              userEmail: userResponse.data.email,
+            };
+          } catch (err) {
+            return {
+              ...order,
+              userName: 'Không tìm thấy',
+              userEmail: 'Không tìm thấy',
+            };
+          }
+        })
+      );
+      
+      setOrders(ordersWithUserInfo);
+      setTotalPages(data.pages);
+      setCurrentPage(data.page);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Có lỗi xảy ra khi tải dữ liệu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   // Lọc đơn hàng theo từ khóa tìm kiếm và trạng thái
   const filteredOrders = orders.filter(order => {
     const matchesSearch =
-      order.id.includes(searchTerm) ||
-      order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+      order._id.includes(searchTerm) ||
+      (order.userName?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   // Hàm cập nhật trạng thái đơn hàng
-  const handleUpdateStatus = (orderId: string, newStatus: Order['status']) => {
-    setOrders(orders.map(order =>
-      order.id === orderId
-        ? { ...order, status: newStatus, updatedAt: new Date().toISOString() }
-        : order
-    ));
+  const handleUpdateStatus = async (orderId: string, newStatus: Order['status']) => {
+    setLoading(true);
+    try {
+      await axios.put(
+        `http://localhost:5000/api/orders/${orderId}/status`,
+        { status: newStatus },
+        {
+          headers: {
+            authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+      
+      // Cập nhật state sau khi API thành công
+      setOrders(orders.map(order => 
+        order._id === orderId ? { ...order, status: newStatus } : order
+      ));
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Có lỗi xảy ra khi cập nhật trạng thái');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Giao diện hiển thị toàn bộ danh sách đơn hàng và các bộ lọc
+  // Giao diện của Component Orders
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
-      </div>
+      <h1 className="text-2xl font-bold mb-6">Quản lý đơn hàng</h1>
 
-      {/* Bộ lọc tìm kiếm và trạng thái */}
+      {/* Hiển thị lỗi nếu có */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
+
+      {/* Bộ lọc và tìm kiếm */}
       <div className="mb-6 flex space-x-4">
         <input
           type="text"
-          placeholder="Tìm kiếm đơn hàng..."
+          placeholder="Tìm kiếm theo mã đơn hoặc tên khách hàng..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="px-4 py-2 border rounded-md flex-1"
           title="Tìm kiếm đơn hàng"
-          aria-label="Tìm kiếm đơn hàng"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as Order['status'] | '')}
           className="px-4 py-2 border rounded-md"
-          title="Lọc theo trạng thái đơn hàng"
-          aria-label="Lọc theo trạng thái đơn hàng"
+          title="Lọc theo trạng thái"
         >
           <option value="">Tất cả trạng thái</option>
           <option value="pending">Chờ xử lý</option>
@@ -240,16 +283,49 @@ const Orders = () => {
         </select>
       </div>
 
-      {/* Danh sách đơn hàng hiển thị dưới dạng thẻ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredOrders.map((order) => (
-          <OrderCard
-            key={order.id}
-            order={order}
-            onUpdateStatus={handleUpdateStatus}
-          />
-        ))}
-      </div>
+      {/* Hiển thị danh sách đơn hàng */}
+      {loading ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <>
+          {filteredOrders.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-gray-500">Không tìm thấy đơn hàng nào</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredOrders.map((order) => (
+                <OrderCard
+                  key={order._id}
+                  order={order}
+                  onUpdateStatus={handleUpdateStatus}
+                />
+              ))}
+            </div>
+          )}
+          
+          {/* Phân trang */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-8 space-x-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => fetchOrders(page)}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === page
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

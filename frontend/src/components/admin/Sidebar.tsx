@@ -5,7 +5,7 @@ const menuItems = [
   { path: '/admin', label: 'Dashboard' },
   { path: '/admin/products', label: 'Quản lý sản phẩm' },
   { path: '/admin/orders', label: 'Quản lý đơn hàng' },
-  { path: '/admin/customers', label: 'Quản lý người dùng ' },
+  { path: '/admin/users', label: 'Quản lý người dùng' },
   { path: '/admin/revenue', label: 'Quản lý doanh thu' },
   { path: '/admin/settings', label: 'Cài đặt' },
 ];
