@@ -37,3 +37,13 @@ export async function searchProducts(params: SearchProductsParams): Promise<Sear
         return null;
     }
 }
+
+export async function getProductById(id: string): Promise<Product | null> {
+    try {
+        const response = await apiClient.get<Product>(`/products/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error('Fetch product by id failed:', error);
+        return null;
+    }
+}

@@ -60,8 +60,8 @@ export default function Products({ searchText }: ProductsProps) {
                         </div>
                         {loading ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                {[...Array(8)].map((_, idx) => (
-                                    <div key={idx} className="bg-white rounded-lg shadow p-4">
+                                {[...Array(16)].map((_, idx) => (
+                                    <div key={idx} className="bg-white rounded-lg shadow">
                                         <div className="skeleton-shimmer w-full h-56 mb-4 rounded"></div>
                                         <div className="space-y-2">
                                             <div className="skeleton-shimmer h-4 w-1/4 rounded"></div>

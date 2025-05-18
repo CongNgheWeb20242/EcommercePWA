@@ -8,6 +8,7 @@ import HomePage from './pages/user/HomePage';
 import SignUp from './pages/user/SignUp';
 import SignIn from './pages/user/SignIn';
 import Products from './pages/user/Products';
+import Product from './pages/user/Product';
 
 
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -37,6 +38,7 @@ const App = () => {
       <Route path="/user/register" element={<UserLayout><SignUp /></UserLayout>} />
       <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
       <Route path="/user/products" element={<UserLayout><Products searchText={'Tất cả sản phẩm'} /></UserLayout>} />
+      <Route path="/user/product/:id" element={<UserLayout><Product /></UserLayout>} />
     </Routes>
   );
 };

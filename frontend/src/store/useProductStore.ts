@@ -12,6 +12,9 @@ interface ProductState {
     setSearchParams: (params: SearchProductsParams) => void;
 }
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms)); //TODO
+
+
 export const useProductStore = create<ProductState>((set, get) => ({
     products: [],
     total: 0,
@@ -23,6 +26,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
     },
     fetchProducts: async (params) => {
         set({ loading: true, error: null });
+        await sleep(1000); //TODO
         try {
             const mergedParams = { ...get().searchParams, ...params };
             const data = await searchProducts(mergedParams);
