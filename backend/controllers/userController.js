@@ -15,8 +15,7 @@ export const googleCallback = (req, res, next) => {
     }
     const token = generateToken(user._id, res);
 
-    // Thay bằng link của FE
-    res.redirect(`http://localhost:3000/oauth-success?token=${token}`);
+    res.redirect(`https://ecommercepwa-be.onrender.com/oauth-success?token=${token}`);
   })(req, res, next)
 }
 
