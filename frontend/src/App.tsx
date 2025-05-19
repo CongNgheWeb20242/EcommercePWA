@@ -9,6 +9,8 @@ import SignUp from './pages/user/SignUp';
 import SignIn from './pages/user/SignIn';
 import Products from './pages/user/Products';
 import Product from './pages/user/Product';
+import Cart from './pages/user/Cart';
+import CheckOut from './pages/user/CheckOut';
 
 
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -39,6 +41,8 @@ const App = () => {
       <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
       <Route path="/user/products" element={<UserLayout><Products searchText={'Tất cả sản phẩm'} /></UserLayout>} />
       <Route path="/user/product/:id" element={<UserLayout><Product /></UserLayout>} />
+      <Route path="/user/cart" element={<UserLayout><Cart /></UserLayout>} />
+      <Route path="/user/checkout" element={<UserLayout><CheckOut /></UserLayout>} />
     </Routes>
   );
 };
