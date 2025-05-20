@@ -2,6 +2,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faShoppingCart, faBars } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from "react-router-dom";
 import { useUserStore } from '@/store/userStore';
+import LiveSearchBar from './LiveSearchBar';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -10,12 +11,9 @@ const Navbar = () => {
   const handleHomelick = () => {
     navigate('/home');
   };
-  const handleSearchClick = () => {
-    alert('Bạn đã bấm vào nút tìm kiếm!');
-  };
 
   const handleCartClick = () => {
-    alert('Bạn đã bấm vào nút giỏ hàng!');
+    navigate('/user/cart');;
   };
 
   const handleMenuClick = () => {
@@ -52,14 +50,7 @@ const Navbar = () => {
 
       {/* Search and Icons */}
       <div className="flex items-center space-x-10">
-        <input
-          type="text"
-          placeholder="Tìm Kiếm Sản Phẩm...       "
-          className="border-2 rounded-md px-4 py-3 text-sm focus:outline-none"
-        />
-        <button className="text-lg text-black" onClick={handleSearchClick}>
-          <FontAwesomeIcon icon={faSearch} />
-        </button>
+        <LiveSearchBar />
         <button className="text-lg text-black" onClick={handleCartClick}>
           <FontAwesomeIcon icon={faShoppingCart} />
         </button>
