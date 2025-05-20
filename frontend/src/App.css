@@ -3,6 +3,32 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes shimmer {
+  0% {
+    background-position: -100% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: #e0e7ef;
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, #2196f3 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+  opacity: 0.4;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -114,6 +140,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
