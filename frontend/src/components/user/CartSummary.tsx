@@ -1,12 +1,20 @@
 import React from "react";
 import useCartStore from "@/store/useCartStore";
 import { useNavigate } from "react-router-dom";
+import useCheckoutStore from "@/store/useCheckOutStore";
+
 
 const CartSummary: React.FC = () => {
     const navigate = useNavigate();
-    const items = useCartStore(state => state.items);
-    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+    const { goToNextStep } = useCheckoutStore();
+    const { clearCart, selectAll, deselectAll } = useCartStore();
+    const total = useCartStore(state => state.totalPrice);
+    const totalQuantity = useCartStore(state => state.totalItems);
+
+    const handleNext = () => {
+        navigate('/user/checkout');
+        goToNextStep();
+    };
 
     return (
         <div className="w-full lg:w-96 bg-gray-50 rounded-lg p-6 border">
@@ -31,12 +39,27 @@ const CartSummary: React.FC = () => {
             </table>
             <button className="w-full bg-red-600 text-white py-3 rounded font-semibold mb-3 hover:bg-red-700 transition"
                 onClick={() => {
-                    navigate('/user/checkout');;
+                    handleNext();
                 }}>
                 Tiến hành thanh toán
             </button>
-            <button className="w-full border border-gray-400 text-gray-700 py-3 rounded font-semibold hover:bg-gray-100 transition">
-                Tiếp tục mua sắm
+            <button className="w-full border border-gray-400 text-gray-700 py-3 rounded font-semibold hover:bg-gray-100 transition"
+                onClick={() => {
+                    selectAll();
+                }}>
+                Chọn tât cả
+            </button>
+            <button className="w-full border border-gray-400 text-gray-700 py-3 rounded font-semibold hover:bg-gray-100 transition"
+                onClick={() => {
+                    deselectAll();
+                }}>
+                Bỏ chọn tât cả
+            </button>
+            <button className="w-full border border-gray-400 text-gray-700 py-3 rounded font-semibold hover:bg-gray-100 transition"
+                onClick={() => {
+                    clearCart();
+                }}>
+                Xóa giỏ hàng
             </button>
         </div>
     );

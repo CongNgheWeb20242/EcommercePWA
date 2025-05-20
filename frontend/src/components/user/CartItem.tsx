@@ -10,12 +10,17 @@ interface CartItemProps {
 
 const CartItem: React.FC<CartItemProps> = ({ item }) => {
   const removeItem = useCartStore(state => state.removeItem);
+  const selectItem = useCartStore(state => state.selectItem);
   const increaseQuantity = useCartStore(state => state.increaseQuantity);
   const decreaseQuantity = useCartStore(state => state.decreaseQuantity);
 
   return (
-    <div className="flex items-center gap-6">
-      {/* Ảnh sản phẩm */}
+    <div
+      className={
+        `flex items-center gap-6 border transition-colors ` +
+        (item.selected ? 'border-2 border-blue-600' : 'border-b')
+      }
+    >      {/* Ảnh sản phẩm */}
       <div className="w-32 h-32 flex items-center justify-center bg-gray-100 rounded">
         <CustomImage
           src={item._id} //TODO
@@ -43,14 +48,25 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
           {(item.price * item.quantity).toLocaleString("vi-VN")} đ
         </div>
       </div>
-      {/* Nút xóa */}
-      <button
-        className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 transition"
-        title="Xóa sản phẩm"
-        onClick={() => removeItem(item._id)}
-      >
-        <span className="text-xl font-bold">&times;</span>
-      </button>
+      {/* Nút xóa hoặc chọn*/}
+      <div className="flex gap-2">
+        <button
+          className="w-8 h-8 flex items-center justify-center rounded hover:bg-blue-100 transition"
+          title="Chọn sản phẩm"
+          onClick={() => selectItem(item._id, !(item.selected))}
+        >
+          <span className="text-xl font-bold">
+            {item.selected ? "-" : "+"}
+          </span>
+        </button>
+        <button
+          className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 transition"
+          title="Xóa sản phẩm"
+          onClick={() => removeItem(item._id)}
+        >
+          <span className="text-xl font-bold">&times;</span>
+        </button>
+      </div>
     </div>
   );
 };
