@@ -1064,7 +1064,8 @@ paths:
     post:
       summary: Tạo URL thanh toán VNPay hoặc đơn hàng COD
       description: |
-        Tạo đơn hàng và trả về URL thanh toán VNPay nếu người dùng chọn phương thức thanh toán là VNPay. Nếu là COD, trả về xác nhận đơn hàng.
+        Tạo đơn hàng và trả về URL thanh toán VNPay nếu người dùng chọn phương thức thanh toán là VNPay. Nếu là COD, trả về xác nhận đơn hàng. 
+        Lưu ý: Trường `user` là ObjectId của người dùng đã đăng nhập.
 
         Thông tin thẻ thanh toán (thành công):
         - Ngân hàng: NCB
@@ -1076,8 +1077,8 @@ paths:
         Thông tin thẻ thanh toán (Thẻ không đủ số dư):
         - Ngân hàng: NCB
         - Số thẻ: 9704195798459170488
-        - Tên chủ thẻ:NGUYEN VAN A
-        - Ngày phát hành:07/15
+        - Tên chủ thẻ: NGUYEN VAN A
+        - Ngày phát hành: 07/15
 
         Tham khảo chi tiết tại: `https://sandbox.vnpayment.vn/apis/vnpay-demo/`
       tags:
@@ -1093,19 +1094,19 @@ paths:
               properties:
                 fullName:
                   type: string
-                  example: Tu Minh Tuan
+                  example: Từ Minh Tuân
                 phone:
                   type: string
-                  example: '091234567899'
+                  example: '0912345678'
                 email:
                   type: string
-                  example: tuan@example.com
+                  example: tuminhtuan@example.com
                 address:
                   type: string
-                  example: Hà Nội
+                  example: Hai Bà Trưng, Hà Nội
                 detailedAddress:
                   type: string
-                  example: Số 123, đường ABC, phường XYZ
+                  example: Số 123, Đường Trần Đại Nghĩa
                 note:
                   type: string
                   example: Giao hàng trong giờ hành chính
@@ -1115,7 +1116,13 @@ paths:
                   example: vnpay
                 shippingFee:
                   type: number
-                  example: 300000
+                  example: 20000
+                taxRate:
+                  type: number
+                  example: 0.05
+                user:
+                  type: string
+                  example: 68185ba1a6b4acbbd19cb74a
                 products:
                   type: array
                   items:
@@ -1123,16 +1130,13 @@ paths:
                     properties:
                       id:
                         type: string
-                        example: prod_001
-                      name:
-                        type: string
-                        example: Áo thun
+                        example: 681701b764fb37f82048a467
                       price:
                         type: number
                         example: 500000
                       quantity:
                         type: integer
-                        example: 3
+                        example: 2
               required:
                 - fullName
                 - phone
@@ -1142,6 +1146,7 @@ paths:
                 - paymentMethod
                 - products
                 - shippingFee
+                - user
       responses:
         '200':
           description: Tạo đơn hàng thành công

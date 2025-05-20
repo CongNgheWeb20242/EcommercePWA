@@ -7,7 +7,7 @@ const router = express.Router();
 // Tạm thời bỏ qua middleware để test API
 
 router.post('/create_payment_url', protectedRoute, createPaymentUrl);
-router.get('/vnpay_ipn', protectedRoute, vnpayIPN);
-router.get('/vnpay_return', protectedRoute, vnpayReturn);
+router.get('/vnpay_ipn', vnpayIPN);
+router.get('/vnpay_return', vnpayReturn);
 
 export default router;

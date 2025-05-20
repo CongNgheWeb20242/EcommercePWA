@@ -1,29 +1,39 @@
 # Test API BE - localhost
 
-POST https://ecommercepwa-be.onrender.com/api/payment/create_payment_url
+POST http://localhost:3000/api/user/login
 Content-Type: application/json
 
 {
-  "fullName": "Tu Minh Tuan",
-  "phone": "091234567899",
-  "email": "tuan@example.com",
-  "address": "Hà Nội",
-  "detailedAddress": "Số 123, đường ABC, phường XYZ",
+  "email": "admin@gmail.account",
+  "password": "admin123"
+}
+
+###
+
+POST http://localhost:3000/api/payment/create_payment_url
+Content-Type: application/json
+
+{
+  "fullName": "Từ Minh Tuân",
+  "phone": "0912345678",
+  "email": "tuminhtuan@example.com",
+  "address": "Hai Bà Trưng, Hà Nội",
+  "detailedAddress": "Số 123, Đường Trần Đại Nghĩa",
   "note": "Giao hàng trong giờ hành chính",
   "paymentMethod": "vnpay",
+  "shippingFee": 20000,
+  "taxRate": 0.05,
   "products": [
     {
-      "id": "prod_001",
-      "name": "Áo thun",
+      "id": "681701b764fb37f82048a467",
       "price": 500000,
-      "quantity": 3
+      "quantity": 2
     },
     {
-      "id": "prod_002",
-      "name": "Quần jean",
-      "price": 1000000,
-      "quantity": 2
+      "id": "663e2e1fc8b5b7d3f18f6a9a",
+      "price": 400000,
+      "quantity": 1
     }
   ],
-  "shippingFee": 300000
+  "user": "68185ba1a6b4acbbd19cb74a"
 }
