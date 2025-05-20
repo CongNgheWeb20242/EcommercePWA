@@ -1,10 +1,18 @@
 import CartItem from "@/components/user/CartItem";
 import CartSummary from "@/components/user/CartSummary";
 import useCartStore from "@/store/useCartStore";
+import useCheckoutStore from "@/store/useCheckOutStore";
+import { useEffect } from "react";
 
 
 const CartPage = () => {
+    const { setStep } = useCheckoutStore();
+
     const items = useCartStore(state => state.items);
+
+    useEffect(() => {
+        setStep(1);
+    }, []);
 
     return (
         <div className="bg-white min-h-screen py-8 px-4">

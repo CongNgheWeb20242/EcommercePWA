@@ -3,7 +3,6 @@ import { Product } from '@/types/Product';
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-// Định nghĩa interface cho state
 interface CartState {
     // State
     items: CartItem[];
@@ -17,10 +16,12 @@ interface CartState {
     increaseQuantity: (productId: string) => void;
     decreaseQuantity: (productId: string) => void;
     updateSize: (productId: string, size: number) => void;
+    selectItem: (productId: string, select: Boolean) => void;
+    selectAll: () => void;
+    deselectAll: () => void;
     clearCart: () => void;
 }
 
-// Tạo store với Zustand
 export const useCartStore = create<CartState>()(
     persist(
         (set, get) => ({
@@ -54,20 +55,12 @@ export const useCartStore = create<CartState>()(
                         {
                             ...product,
                             size,
-                            quantity
+                            quantity,
+                            selected: false
                         }
                     ];
                 }
-
-                // Cập nhật state
-                const newTotalItems = get().totalItems + quantity;
-                const newTotalPrice = get().totalPrice + (product.price * quantity);
-
-                set({
-                    items: updatedItems,
-                    totalItems: newTotalItems,
-                    totalPrice: newTotalPrice,
-                });
+                set({ items: updatedItems, });
             },
 
             // Xóa sản phẩm khỏi giỏ hàng
@@ -78,14 +71,15 @@ export const useCartStore = create<CartState>()(
                 if (!itemToRemove) return;
 
                 const updatedItems = items.filter(item => item._id !== productId);
-                const newTotalItems = get().totalItems - itemToRemove.quantity;
-                const newTotalPrice = get().totalPrice - (itemToRemove.price * itemToRemove.quantity);
-
-                set({
-                    items: updatedItems,
-                    totalItems: newTotalItems,
-                    totalPrice: newTotalPrice,
-                });
+                if (itemToRemove.selected) {
+                    const newTotalItems = get().totalItems - itemToRemove.quantity;
+                    const newTotalPrice = get().totalPrice - (itemToRemove.price * itemToRemove.quantity);
+                    set({
+                        totalItems: newTotalItems,
+                        totalPrice: newTotalPrice,
+                    });
+                }
+                set({ items: updatedItems, });
             },
 
             // Tăng số lượng sản phẩm
@@ -102,11 +96,14 @@ export const useCartStore = create<CartState>()(
                     return item;
                 });
 
-                set({
-                    items: updatedItems,
-                    totalItems: get().totalItems + 1,
-                    totalPrice: get().totalPrice + existingItem.price,
-                });
+                if (existingItem.selected) {
+                    set({
+                        totalItems: get().totalItems + 1,
+                        totalPrice: get().totalPrice + existingItem.price,
+                    });
+                }
+
+                set({ items: updatedItems, });
             },
 
             // Giảm số lượng sản phẩm
@@ -129,11 +126,14 @@ export const useCartStore = create<CartState>()(
                     return item;
                 });
 
-                set({
-                    items: updatedItems,
-                    totalItems: get().totalItems - 1,
-                    totalPrice: get().totalPrice - existingItem.price,
-                });
+                if (existingItem.selected) {
+                    set({
+                        totalItems: get().totalItems - 1,
+                        totalPrice: get().totalPrice - existingItem.price,
+                    });
+                }
+
+                set({ items: updatedItems, });
             },
 
             // Cập nhật kích cỡ
@@ -147,6 +147,59 @@ export const useCartStore = create<CartState>()(
                 });
 
                 set({ items: updatedItems });
+            },
+
+            // Chọn/Bỏ chọn sản phẩm để thanh toán
+            selectItem: (productId, select) => {
+                const { items } = get();
+                var newTotalItems = get().totalItems;
+                var newTotalPrice = get().totalPrice;
+
+                const updatedItems = items.map(item => {
+                    if (item._id === productId) {
+                        if (select) {
+                            newTotalItems += item.quantity;
+                            newTotalPrice += item.price * item.quantity;
+                        }
+                        else {
+                            newTotalItems -= item.quantity;
+                            newTotalPrice -= item.price * item.quantity;
+                        }
+                        return { ...item, selected: select ? true : false };
+                    }
+                    return item;
+                });
+
+                set({
+                    items: updatedItems,
+                    totalItems: newTotalItems,
+                    totalPrice: newTotalPrice,
+                });
+            },
+
+            selectAll: () => {
+                const { items } = get();
+                const updatedItems = items.map(item => ({ ...item, selected: true }));
+                const newTotalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
+                const newTotalPrice = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+                set({
+                    items: updatedItems,
+                    totalItems: newTotalItems,
+                    totalPrice: newTotalPrice,
+                });
+            },
+
+            // Bỏ chọn tất cả sản phẩm
+            deselectAll: () => {
+                const { items } = get();
+                const updatedItems = items.map(item => ({ ...item, selected: false }));
+
+                set({
+                    items: updatedItems,
+                    totalItems: 0,
+                    totalPrice: 0,
+                });
             },
 
             // Xóa toàn bộ giỏ hàng
