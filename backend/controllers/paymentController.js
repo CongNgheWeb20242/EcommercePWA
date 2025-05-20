@@ -97,33 +97,33 @@ export const createPaymentUrl = async (req, res) => {
 // Đoạn này xử lý với backend, xử lý sau cùng
 export const vnpayIPN = async (req, res) => {
   try {
-    console.log('📥 Nhận IPN từ VNPay:', req.query);
+    console.log('Nhận IPN từ VNPay:', req.query);
 
     const verify = vnpay.verifyIpnCall(req.query);
-    console.log('✅ Kết quả verify:', verify);
+    console.log('Kết quả verify:', verify);
 
     if (!verify.isVerified) {
-      console.log('❌ Sai checksum');
+      console.log('Sai checksum');
       return res.json(IpnFailChecksum);
     }
 
     if (!verify.isSuccess) {
-      console.log('⚠️ Giao dịch không thành công từ VNPay');
+      console.log('Giao dịch không thành công từ VNPay');
       return res.json(IpnUnknownError);
     }
 
     // Tìm đơn hàng trong cơ sở dữ liệu
     const foundOrder = await findOrderById(verify.vnp_TxnRef);
-    console.log('🔎 Đơn hàng tìm thấy:', foundOrder);
+    console.log('Đơn hàng tìm thấy:', foundOrder);
 
     if (!foundOrder) {
-      console.log('❌ Không tìm thấy đơn hàng');
+      console.log('Không tìm thấy đơn hàng');
       return res.json(IpnOrderNotFound);
     }
 
     if (verify.vnp_TxnRef !== foundOrder.order_id) {
       console.log(
-        '❌ Mã đơn hàng không khớp. Gửi:',
+        'Mã đơn hàng không khớp. Gửi:',
         verify.vnp_TxnRef,
         ' DB:',
         foundOrder.order_id
@@ -133,7 +133,7 @@ export const vnpayIPN = async (req, res) => {
 
     if (verify.vnp_Amount !== foundOrder.amount) {
       console.log(
-        '❌ Số tiền không khớp. Gửi:',
+        'Số tiền không khớp. Gửi:',
         verify.vnp_Amount,
         ' DB:',
         foundOrder.amount
@@ -142,22 +142,23 @@ export const vnpayIPN = async (req, res) => {
     }
 
     if (foundOrder.status === 'completed') {
-      console.log('ℹ️ Đơn hàng đã được xác nhận từ trước');
+      console.log('Đơn hàng đã được xác nhận từ trước');
       return res.json(InpOrderAlreadyConfirmed);
     }
 
     // Cập nhật trạng thái đơn hàng
     await updateOrderStatus(foundOrder.order_id, 'completed');
-    console.log('✅ Cập nhật đơn hàng thành công:', foundOrder.order_id);
+    console.log('Cập nhật đơn hàng thành công:', foundOrder.order_id);
 
     return res.json(IpnSuccess);
   } catch (error) {
-    console.error('🔥 Lỗi xảy ra trong xử lý IPN:', error);
+    console.error('Lỗi xảy ra trong xử lý IPN:', error);
     return res.json(IpnUnknownError);
   }
 };
 
 // Return khi client tiến hành thanh toán xong (Bất kể kết quả)
+// Cái này sẽ sửa đổi sau, FE thiết kế một giao diện hiển thị
 export const vnpayReturn = async (req, res) => {
   let verify;
   try {

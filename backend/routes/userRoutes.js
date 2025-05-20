@@ -20,7 +20,7 @@ import passport from 'passport';
 const router = express.Router();
 
 // SSO
-router.get("/google",  passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get("/google", passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback', googleCallback);
 
 // GET all users: Chỉ admin mới GET được

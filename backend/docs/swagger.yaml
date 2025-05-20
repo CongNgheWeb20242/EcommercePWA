@@ -3,7 +3,7 @@ info:
   title: EcommercePWA API
   version: 1.0.0
 servers:
-  - url: https://ecommercepwa-be.onrender.com/api
+  - url: http://localhost:3000/api
 
 components:
   schemas:
@@ -1059,3 +1059,269 @@ paths:
                   message:
                     type: string
                     example: 'Internal Server Error'
+                    
+  /payment/create_payment_url:
+    post:
+      summary: Tạo URL thanh toán VNPay hoặc đơn hàng COD
+      description: |
+        Tạo đơn hàng và trả về URL thanh toán VNPay nếu người dùng chọn phương thức thanh toán là VNPay. Nếu là COD, trả về xác nhận đơn hàng.
+
+        Thông tin thẻ thanh toán (thành công):
+        - Ngân hàng: NCB
+        - Số thẻ: 9704198526191432198
+        - Tên chủ thẻ: NGUYEN VAN A
+        - Ngày phát hành: 07/15
+        - Mật khẩu OTP: 123456
+
+        Thông tin thẻ thanh toán (Thẻ không đủ số dư):
+        - Ngân hàng: NCB
+        - Số thẻ: 9704195798459170488
+        - Tên chủ thẻ:NGUYEN VAN A
+        - Ngày phát hành:07/15
+
+        Tham khảo chi tiết tại: `https://sandbox.vnpayment.vn/apis/vnpay-demo/`
+      tags:
+        - Payment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  example: Tu Minh Tuan
+                phone:
+                  type: string
+                  example: '091234567899'
+                email:
+                  type: string
+                  example: tuan@example.com
+                address:
+                  type: string
+                  example: Hà Nội
+                detailedAddress:
+                  type: string
+                  example: Số 123, đường ABC, phường XYZ
+                note:
+                  type: string
+                  example: Giao hàng trong giờ hành chính
+                paymentMethod:
+                  type: string
+                  enum: [cod, vnpay]
+                  example: vnpay
+                shippingFee:
+                  type: number
+                  example: 300000
+                products:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: prod_001
+                      name:
+                        type: string
+                        example: Áo thun
+                      price:
+                        type: number
+                        example: 500000
+                      quantity:
+                        type: integer
+                        example: 3
+              required:
+                - fullName
+                - phone
+                - email
+                - address
+                - detailedAddress
+                - paymentMethod
+                - products
+                - shippingFee
+      responses:
+        '200':
+          description: Tạo đơn hàng thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  paymentUrl:
+                    type: string
+                    example: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?...'
+                  order:
+                    type: object
+                    properties:
+                      order_id:
+                        type: string
+                        example: 'order_123456'
+                      amount:
+                        type: number
+                        example: 3400000
+        '500':
+          description: Lỗi máy chủ khi tạo đơn hàng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'Lỗi khi tạo đơn hàng'
+                  error:
+                    type: string
+                    example: 'Chi tiết lỗi hệ thống'
+  /payment/vnpay_ipn:
+    get:
+      summary: Xử lý IPN từ VNPay (FE không cần động đến API này, Webhook của VNPay tự động gọi)
+      description: VNPay gọi endpoint này để xác nhận giao dịch. Server xác minh checksum, tìm đơn hàng và cập nhật trạng thái nếu hợp lệ.
+      tags:
+        - Payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: vnp_TxnRef
+          schema:
+            type: string
+          required: true
+          description: Mã đơn hàng
+        - in: query
+          name: vnp_Amount
+          schema:
+            type: number
+          required: true
+          description: Số tiền giao dịch
+        - in: query
+          name: vnp_SecureHash
+          schema:
+            type: string
+          required: true
+          description: Chữ ký bảo mật từ VNPay
+      responses:
+        '200':
+          description: Phản hồi kết quả xử lý IPN
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  RspCode:
+                    type: string
+                    example: '00'
+                  Message:
+                    type: string
+                    example: 'Confirm Success'
+        '500':
+          description: Lỗi trong quá trình xử lý IPN
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  RspCode:
+                    type: string
+                    example: '99'
+                  Message:
+                    type: string
+                    example: 'Unknown Error'
+  /payment/vnpay_return:
+    get:
+      summary: Kết quả thanh toán trả về từ VNPay (FE sẽ phải thiết kế thêm UI để xử lý phần này)
+      description: VNPay redirect người dùng đến endpoint này (Endpoint của Frontend) sau khi thanh toán (thành công hoặc thất bại).
+      tags:
+        - Payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: vnp_TxnRef
+          schema:
+            type: string
+          required: true
+          description: Mã đơn hàng
+        - in: query
+          name: vnp_Amount
+          schema:
+            type: number
+          required: true
+          description: Số tiền giao dịch
+        - in: query
+          name: vnp_ResponseCode
+          schema:
+            type: string
+          required: true
+          description: Mã phản hồi của VNPay
+        - in: query
+          name: vnp_SecureHash
+          schema:
+            type: string
+          required: true
+          description: Chữ ký bảo mật từ VNPay
+      responses:
+        '200':
+          description: Thông báo kết quả cho người dùng
+          content:
+            text/html:
+              schema:
+                type: string
+                example: 'Thanh toán thành công!'
+        '400':
+          description: Lỗi xác thực dữ liệu từ VNPay
+          content:
+            text/html:
+              schema:
+                type: string
+                example: 'Xác thực tính toàn vẹn dữ liệu thất bại'
+
+  /auth/google:
+    get:
+      summary: Đăng nhập bằng Google
+      description: |
+        Chuyển hướng người dùng đến trang đăng nhập của Google để xác thực.
+        Sau khi xác thực thành công, Google sẽ gọi lại endpoint `/auth/google/callback`.
+      tags:
+        - Authentication (SSO)
+      responses:
+        '302':
+          description: Chuyển hướng đến trang đăng nhập Google
+        '500':
+          description: Lỗi nội bộ khi khởi tạo xác thực
+  /auth/google/callback:
+    get:
+      summary: Google SSO Callback
+      description: |
+        Endpoint này được Google gọi lại sau khi người dùng xác thực thành công.
+        Hệ thống sẽ xác minh thông tin người dùng, tạo tài khoản nếu chưa có,
+        sinh JWT token và chuyển hướng người dùng về frontend với token trong query string.
+
+        Ví dụ: `https://fake-frontend-url.com/oauth-success?token=eyJhbGciOi...`
+      tags:
+        - Authentication (SSO)
+      responses:
+        '302':
+          description: |
+            Chuyển hướng về frontend cùng với JWT token (trong query string).
+            Trường hợp xác thực thất bại sẽ trả về JSON lỗi.
+        '401':
+          description: Xác thực Google thất bại
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Google login failed"
+        '500':
+          description: Lỗi nội bộ khi xử lý callback
