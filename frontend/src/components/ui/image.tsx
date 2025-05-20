@@ -38,7 +38,7 @@ const CustomImage: React.FC<CustomImageProps> = ({
                 </div>
             )}
             <img
-                src={src}
+                src={`https://picsum.photos/300/300?random=${src}`}
                 alt={alt}
                 {...rest}
                 className={`w-full h-full object-cover transition-opacity duration-300 ${loading ? "opacity-0" : "opacity-100"

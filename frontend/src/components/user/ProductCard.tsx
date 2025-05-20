@@ -23,7 +23,7 @@ const Card: React.FC<CardProps> = ({ product }) => {
             <div className="relative w-full h-80 overflow-hidden bg-gray-200 rounded">
                 {/* Image */}
                 <CustomImage
-                    src={`https://picsum.photos/300/300?random=${product._id}`} //TODO
+                    src={product._id} //TODO
                     alt={product.name}
                     className={'w-full h-full object-cover'}
                     onLoad={() => setImageLoaded(true)}
