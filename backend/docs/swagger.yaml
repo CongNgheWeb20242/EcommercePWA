@@ -1289,12 +1289,12 @@ paths:
                 type: string
                 example: 'Xác thực tính toàn vẹn dữ liệu thất bại'
 
-  /auth/google:
+  /user/google:
     get:
       summary: Đăng nhập bằng Google
       description: |
         Chuyển hướng người dùng đến trang đăng nhập của Google để xác thực.
-        Sau khi xác thực thành công, Google sẽ gọi lại endpoint `/auth/google/callback`.
+        Sau khi xác thực thành công, Google sẽ gọi lại endpoint `/user/google/callback`.
       tags:
         - Authentication (SSO)
       responses:
@@ -1302,15 +1302,15 @@ paths:
           description: Chuyển hướng đến trang đăng nhập Google
         '500':
           description: Lỗi nội bộ khi khởi tạo xác thực
-  /auth/google/callback:
+  /user/google/callback:
     get:
       summary: Google SSO Callback
       description: |
         Endpoint này được Google gọi lại sau khi người dùng xác thực thành công.
         Hệ thống sẽ xác minh thông tin người dùng, tạo tài khoản nếu chưa có,
-        sinh JWT token và chuyển hướng người dùng về frontend với token trong query string.
+        sinh JWT token và chuyển hướng người dùng về frontend với token trong query string. FE lấy token từ URL và lưu trữ (như accessToken).
 
-        Ví dụ: `https://fake-frontend-url.com/oauth-success?token=eyJhbGciOi...`
+        Ví dụ: `https://ecommercepwa-be.onrender.com/oauth-success?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODJkOTU2ZTRlZTkxZTJiOWEyN2ExOWIiLCJpYXQiOjE3NDc4MTc4MzgsImV4cCI6MTc0NzkwNDIzOH0.lkT0k9rBPMQFhTBYBD1Vz68y5FEO67EJSzqserRW23w`
       tags:
         - Authentication (SSO)
       responses:
