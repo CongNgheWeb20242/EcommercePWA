@@ -186,7 +186,7 @@ const Orders = () => {
               userName: userResponse.data.name,
               userEmail: userResponse.data.email,
             };
-          } catch (err) {
+          } catch {
             return {
               ...order,
               userName: 'Không tìm thấy',

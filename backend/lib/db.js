@@ -1,13 +1,26 @@
-import mongoose from "mongoose"
-import "dotenv/config"
+import mongoose from "mongoose";
+import dotenv from "dotenv"
 
-mongoose.set("strictQuery", false); // Xoá dòng cảnh báo
+dotenv.config();
+
+mongoose.set("strictQuery", false);
 
 export const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-        console.log("MongoDB Connected");
-    } catch (error) {
-        console.error("MongoDB Connection Error:", error);
-    } 
-}
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri) {
+    console.error("❌ MONGODB_URI is undefined. Check your .env file.");
+    process.exit(1);
+  }
+
+  try {
+    await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("MongoDB Connected");
+  } catch (error) {
+    console.error("❌ MongoDB Connection Error:", error.message);
+    process.exit(1);
+  }
+};

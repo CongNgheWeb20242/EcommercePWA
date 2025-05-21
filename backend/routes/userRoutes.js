@@ -1,125 +1,44 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
 import expressAsyncHandler from 'express-async-handler';
-import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
-import { isAuth, isAdmin, generateToken, baseUrl, mailgun } from '../lib/utils.js';
+import { isAuth } from '../lib/utils.js';
+import {
+  getUser,
+  getAllUsers,
+  login,
+  signup,
+  deleteUser,
+  updateUser,
+  forgetPassword,
+  resetPassword,
+  getResetPassword,
+  googleCallback
+} from '../controllers/userController.js';
+import { protectedRoute, isAdmin } from '../middlewares/authMiddleware.js';
+import passport from 'passport';
 
 const router = express.Router();
 
-router.get(
-  '/',
-  isAuth,
-  isAdmin,
-  expressAsyncHandler(async (req, res) => {
-    const users = await User.find({});
-    res.send(users);
-  })
-);
+// SSO
+router.get("/google",  passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google/callback', googleCallback);
 
-router.get(
-  '/:id',
-  isAuth,
-  isAdmin,
-  expressAsyncHandler(async (req, res) => {
-    const user = await User.findById(req.params.id);
-    if (user) {
-      res.send(user);
-    } else {
-      res.status(404).send({ message: 'User Not Found' });
-    }
-  })
-);
+// GET all users: Chỉ admin mới GET được
+router.get('/', protectedRoute, isAdmin, getAllUsers);
 
-router.put(
-  '/profile',
-  isAuth,
-  expressAsyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id);
-    if (user) {
-      user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
-      if (req.body.password) {
-        user.password = bcrypt.hashSync(req.body.password, 8);
-      }
+// GET user by id
+router.get('/:id', protectedRoute, isAdmin, getUser);
 
-      const updatedUser = await user.save();
-      res.send({
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        isAdmin: updatedUser.isAdmin,
-        token: generateToken(updatedUser),
-      });
-    } else {
-      res.status(404).send({ message: 'User not found' });
-    }
-  })
-);
+// Update profile by user
+router.put('/profile', protectedRoute, updateUser);
 
-router.post(
-  '/forget-password',
-  expressAsyncHandler(async (req, res) => {
-    const user = await User.findOne({ email: req.body.email });
+// Forget password
+router.post('/forget-password', forgetPassword);
 
-    if (user) {
-      const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: '3h',
-      });
-      user.resetToken = token;
-      await user.save();
+// Reset password
+router.post('/reset-password', resetPassword);
 
-      //reset link
-      console.log(`${baseUrl()}/reset-password/${token}`);
-
-      mailgun()
-        .messages()
-        .send(
-          {
-            from: 'Amazona <me@mg.yourdomain.com>',
-            to: `${user.name} <${user.email}>`,
-            subject: `Reset Password`,
-            html: ` 
-             <p>Please Click the following link to reset your password:</p> 
-             <a href="${baseUrl()}/reset-password/${token}"}>Reset Password</a>
-             `,
-          },
-          (error, body) => {
-            console.log(error);
-            console.log(body);
-          }
-        );
-      res.send({ message: 'We sent reset password link to your email.' });
-    } else {
-      res.status(404).send({ message: 'User not found' });
-    }
-  })
-);
-
-router.post(
-  '/reset-password',
-  expressAsyncHandler(async (req, res) => {
-    jwt.verify(req.body.token, process.env.JWT_SECRET, async (err, decode) => {
-      if (err) {
-        res.status(401).send({ message: 'Invalid Token' });
-      } else {
-        const user = await User.findOne({ resetToken: req.body.token });
-        if (user) {
-          if (req.body.password) {
-            user.password = bcrypt.hashSync(req.body.password, 8);
-            await user.save();
-            res.send({
-              message: 'Password reseted successfully',
-            });
-          }
-        } else {
-          res.status(404).send({ message: 'User not found' });
-        }
-      }
-    });
-  })
-);
-
+// Update user by admin?
 router.put(
   '/:id',
   isAuth,
@@ -138,62 +57,16 @@ router.put(
   })
 );
 
-router.delete(
-  '/:id',
-  isAuth,
-  isAdmin,
-  expressAsyncHandler(async (req, res) => {
-    const user = await User.findById(req.params.id);
-    if (user) {
-      if (user.email === 'admin@example.com') {
-        res.status(400).send({ message: 'Can Not Delete Admin User' });
-        return;
-      }
-      await user.remove();
-      res.send({ message: 'User Deleted' });
-    } else {
-      res.status(404).send({ message: 'User Not Found' });
-    }
-  })
-);
+// Delete user by id
+router.delete('/:id', protectedRoute, isAdmin, deleteUser);
 
-router.post(
-  '/signin',
-  expressAsyncHandler(async (req, res) => {
-    const user = await User.findOne({ email: req.body.email });
-    if (user) {
-      if (bcrypt.compareSync(req.body.password, user.password)) {
-        res.send({
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          isAdmin: user.isAdmin,
-          token: generateToken(user),
-        });
-        return;
-      }
-    }
-    res.status(401).send({ message: 'Invalid email or password' });
-  })
-);
+// Login
+router.post('/login', login);
 
-router.post(
-  '/signup',
-  expressAsyncHandler(async (req, res) => {
-    const newUser = new User({
-      name: req.body.name,
-      email: req.body.email,
-      password: bcrypt.hashSync(req.body.password),
-    });
-    const user = await newUser.save();
-    res.send({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin,
-      token: generateToken(user),
-    });
-  })
-);
+// Sign up
+router.post('/signup', signup);
+
+router.get('/reset-password/:token', getResetPassword);
+
 
 export default router;

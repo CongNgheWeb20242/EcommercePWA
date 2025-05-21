@@ -1,0 +1,27 @@
+POST http://localhost:3000/api/payment/create_payment_url
+Content-Type: application/json
+
+{
+  "fullName": "Tu Minh Tuan",
+  "phone": "091234567899",
+  "email": "tuan@example.com",
+  "address": "Hà Nội",
+  "detailedAddress": "Số 123, đường ABC, phường XYZ",
+  "note": "Giao hàng trong giờ hành chính",
+  "paymentMethod": "vnpay",
+  "products": [
+    {
+      "id": "prod_001",
+      "name": "Áo thun",
+      "price": 500000,
+      "quantity": 3
+    },
+    {
+      "id": "prod_002",
+      "name": "Quần jean",
+      "price": 1000000,
+      "quantity": 2
+    }
+  ],
+  "shippingFee": 300000
+}

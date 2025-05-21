@@ -214,6 +214,7 @@ const ProductForm = ({
             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             required
+            title="Danh mục sản phẩm"
           >
             <option value="">Chọn danh mục</option>
             {mockCategories.map((category) => (
@@ -244,6 +245,8 @@ const ProductForm = ({
           onChange={handleImageChange}
           className="mt-1 block w-full"
           accept="image/*"
+          title="Chọn hình ảnh sản phẩm"
+          placeholder="Chọn hình ảnh sản phẩm"
         />
         {formData.image && (
           <div className="mt-2">
@@ -283,7 +286,6 @@ const Products = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [isAdding, setIsAdding] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -301,8 +303,9 @@ const Products = () => {
       setProducts(data.products);
       setTotalPages(data.pages);
       setCurrentPage(data.page);
-    } catch (err: any) {
-      setError(err.message || 'Có lỗi xảy ra khi tải dữ liệu');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Có lỗi xảy ra khi tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -331,10 +334,10 @@ const Products = () => {
         }
       );
       setEditingProduct(data.product);
-      setIsAdding(false);
       fetchProducts(); // Tải lại danh sách sản phẩm
-    } catch (err: any) {
-      setError(err.message || 'Có lỗi xảy ra khi thêm sản phẩm');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Có lỗi xảy ra khi thêm sản phẩm');
     } finally {
       setLoading(false);
     }
@@ -359,8 +362,9 @@ const Products = () => {
       
       setEditingProduct(null);
       fetchProducts(); // Tải lại danh sách sản phẩm
-    } catch (err: any) {
-      setError(err.message || 'Có lỗi xảy ra khi cập nhật sản phẩm');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Có lỗi xảy ra khi cập nhật sản phẩm');
     } finally {
       setLoading(false);
     }
@@ -378,8 +382,9 @@ const Products = () => {
       });
       
       fetchProducts(); // Tải lại danh sách sản phẩm
-    } catch (err: any) {
-      setError(err.message || 'Có lỗi xảy ra khi xóa sản phẩm');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Có lỗi xảy ra khi xóa sản phẩm');
     } finally {
       setLoading(false);
     }
@@ -413,11 +418,13 @@ const Products = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="px-4 py-2 border rounded-md flex-1"
+          title="Tìm kiếm sản phẩm"
         />
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
           className="px-4 py-2 border rounded-md"
+          title="Lọc theo danh mục"
         >
           <option value="">Tất cả danh mục</option>
           {mockCategories.map((category) => (

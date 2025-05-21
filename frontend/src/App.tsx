@@ -1,10 +1,12 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
 import Revenue from './pages/admin/Revenue';
 import Products from './pages/admin/Products';
 import Orders from './pages/admin/Orders';
 import Users from './pages/admin/Users';
+import PaymentReturn from './test/PaymentReturn';
+import './App.css';
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div>
@@ -24,8 +26,11 @@ const App = () => {
       <Route path="/admin/revenue" element={<AdminLayout title="Doanh thu"><Revenue /></AdminLayout>} />
       <Route path="/admin/settings" element={<AdminLayout title="Cài đặt"><PlaceholderPage title="Cài đặt cửa hàng" /></AdminLayout>} />
       
-      {/* Redirect to admin dashboard */}
-      <Route path="/" element={<AdminLayout title="Dashboard"><Dashboard /></AdminLayout>} />
+      {/* Payment Routes */}
+      <Route path="/payment/vnpay_return" element={<PaymentReturn />} />
+
+      {/* Redirect trang chủ về admin */}
+      <Route path="/" element={<Navigate to="/admin" replace />} />
     </Routes>
   );
 };
