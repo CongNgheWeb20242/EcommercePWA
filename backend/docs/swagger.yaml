@@ -456,7 +456,6 @@ paths:
                   message:
                     type: string
                     example: 'Internal Server Error'
-
   /user/login:
     post:
       summary: User login
@@ -524,6 +523,128 @@ paths:
                   message:
                     type: string
                     example: 'Internal Server Error'
+  /user/forget-password:
+    post:
+      summary: Yêu cầu đặt lại mật khẩu
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: Đường dẫn đặt lại mật khẩu đã được gửi qua email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Đường dẫn đặt lại mật khẩu đã được gửi qua email.
+        '404':
+          description: Không tìm thấy người dùng.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User not found
+        '500':
+          description: Lỗi gửi email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Không thể gửi email đặt lại mật khẩu.
+  /user/reset-password:
+    post:
+      summary: Đặt lại mật khẩu với token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                password:
+                  type: string
+                  format: password
+                  example: newStrongPassword123
+      responses:
+        '200':
+          description: Đặt lại mật khẩu thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Đặt lại mật khẩu thành công.
+        '400':
+          description: Thiếu token hoặc mật khẩu.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Thiếu token hoặc mật khẩu.
+        '401':
+          description: Token không hợp lệ hoặc đã hết hạn.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token không hợp lệ hoặc đã hết hạn.
+        '404':
+          description: Không tìm thấy người dùng với token này.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Không tìm thấy người dùng với token này.
+        '500':
+          description: Lỗi máy chủ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Internal Server Error
 
   /products:
     get:
