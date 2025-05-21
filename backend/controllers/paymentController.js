@@ -1,5 +1,9 @@
 import dotenv from 'dotenv';
-import { createOrder } from '../services/paymentService.js';
+import {
+  createOrder,
+  updateOrderStatus,
+  findOrderByID,
+} from '../services/paymentService.js';
 
 dotenv.config();
 
@@ -15,7 +19,6 @@ import {
   IpnSuccess,
 } from 'vnpay';
 
-// createPaymentUrl, vnpayIPN, vnpayReturn
 const vnpay = new VNPay({
   tmnCode: process.env.VNPAY_TMN_CODE,
   secureSecret: process.env.VNPAY_SECRET_KEY,
@@ -56,9 +59,13 @@ export const createPaymentUrl = async (req, res) => {
     const { paymentMethod } = req.body;
 
     // Tạo đơn hàng
-    const order = await createOrder(req.body); // Tự triển khai
+    const order = await createOrder(req.body);
+
+    // Order
+    console.log('Order:', order);
 
     // Nếu người dùng chọn thanh toán khi nhận hàng
+    // Thay bằng URL của Frontend
     if (paymentMethod === 'cod') {
       return res.json({
         success: true,
@@ -69,13 +76,17 @@ export const createPaymentUrl = async (req, res) => {
 
     // Nếu là thanh toán VNPay
     const paymentUrl = vnpay.buildPaymentUrl({
-      vnp_Amount: order.amount,
-      vnp_IpAddr:
-        req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip,
+      vnp_Amount: order.totalPrice,
+      vnp_IpAddr: req.ip,
       vnp_TxnRef: order.order_id,
       vnp_OrderInfo: `Thanh toan don hang ${order.order_id}`,
       vnp_OrderType: ProductCode.Other,
+<<<<<<< HEAD
       vnp_ReturnUrl: 'http://localhost:3000/api/payment/vnpay_return', // Frontend - Thay sau
+=======
+      vnp_ReturnUrl:
+        'https://ecommercepwa-be.onrender.com/api/payment/vnpay_return', // Frontend - Thay sau
+>>>>>>> origin/dev
       vnp_Locale: 'vn',
     });
 
@@ -84,7 +95,6 @@ export const createPaymentUrl = async (req, res) => {
       paymentUrl,
       order,
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -94,36 +104,36 @@ export const createPaymentUrl = async (req, res) => {
   }
 };
 
-// Đoạn này xử lý với backend, xử lý sau cùng
+// Đoạn này xử lý với backend
 export const vnpayIPN = async (req, res) => {
   try {
-    console.log('📥 Nhận IPN từ VNPay:', req.query);
+    console.log('Nhận IPN từ VNPay:', req.query);
 
     const verify = vnpay.verifyIpnCall(req.query);
-    console.log('✅ Kết quả verify:', verify);
+    console.log('Kết quả verify:', verify);
 
     if (!verify.isVerified) {
-      console.log('❌ Sai checksum');
+      console.log('Sai checksum');
       return res.json(IpnFailChecksum);
     }
 
     if (!verify.isSuccess) {
-      console.log('⚠️ Giao dịch không thành công từ VNPay');
+      console.log('Giao dịch không thành công từ VNPay');
       return res.json(IpnUnknownError);
     }
 
     // Tìm đơn hàng trong cơ sở dữ liệu
-    const foundOrder = await findOrderById(verify.vnp_TxnRef);
-    console.log('🔎 Đơn hàng tìm thấy:', foundOrder);
+    const foundOrder = await findOrderByID(verify.vnp_TxnRef);
+    console.log('Đơn hàng tìm thấy:', foundOrder);
 
     if (!foundOrder) {
-      console.log('❌ Không tìm thấy đơn hàng');
+      console.log('Không tìm thấy đơn hàng');
       return res.json(IpnOrderNotFound);
     }
 
     if (verify.vnp_TxnRef !== foundOrder.order_id) {
       console.log(
-        '❌ Mã đơn hàng không khớp. Gửi:',
+        'Mã đơn hàng không khớp. Gửi:',
         verify.vnp_TxnRef,
         ' DB:',
         foundOrder.order_id
@@ -131,33 +141,40 @@ export const vnpayIPN = async (req, res) => {
       return res.json(IpnOrderNotFound);
     }
 
-    if (verify.vnp_Amount !== foundOrder.amount) {
+    if (verify.vnp_Amount !== foundOrder.totalPrice) {
       console.log(
-        '❌ Số tiền không khớp. Gửi:',
+        'Số tiền không khớp. Gửi:',
         verify.vnp_Amount,
         ' DB:',
-        foundOrder.amount
+        foundOrder.totalPrice
       );
       return res.json(IpnInvalidAmount);
     }
 
     if (foundOrder.status === 'completed') {
-      console.log('ℹ️ Đơn hàng đã được xác nhận từ trước');
+      console.log('Đơn hàng đã được xác nhận từ trước');
       return res.json(InpOrderAlreadyConfirmed);
     }
 
     // Cập nhật trạng thái đơn hàng
-    await updateOrderStatus(foundOrder.order_id, 'completed');
-    console.log('✅ Cập nhật đơn hàng thành công:', foundOrder.order_id);
+    await updateOrderStatus(foundOrder.order_id, {
+      isPaid: true,
+      paidAt: new Date(),
+      paymentResult: {
+        status: 'success',
+      },
+    });
+    console.log('Cập nhật đơn hàng thành công:', foundOrder.order_id);
 
     return res.json(IpnSuccess);
   } catch (error) {
-    console.error('🔥 Lỗi xảy ra trong xử lý IPN:', error);
+    console.error('Lỗi xảy ra trong xử lý IPN:', error);
     return res.json(IpnUnknownError);
   }
 };
 
 // Return khi client tiến hành thanh toán xong (Bất kể kết quả)
+// Cái này sẽ sửa đổi sau, FE thiết kế một giao diện hiển thị
 export const vnpayReturn = async (req, res) => {
   let verify;
   try {

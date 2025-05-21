@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 // Sửa lại schema Order
 const orderSchema = new mongoose.Schema(
   { // Danh sách sản phẩm trong đơn hàng
+    order_id: { type: String, required: true },
     orderItems: [
       {
         product: {

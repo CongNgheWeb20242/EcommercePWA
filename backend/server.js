@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import { devLogger } from './middlewares/morganLogger.js';
 import { connectDB } from './lib/db.js';
 import './lib/passport.js';
+import { baseUrl } from './lib/utils.js';
 
 // Routes
 import productRouter from './routes/productRoutes.js';
@@ -23,7 +24,6 @@ import paymentRoutes from './routes/paymentRoutes.js';
 // Config
 dotenv.config();
 const PORT = process.env.PORT;
-const NODE_ENV = process.env.NODE_ENV || 'development';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,18 +44,25 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Serve frontend in production
-if (NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '/frontend/build')));
-  app.get('*', (req, res) =>
-    res.sendFile(path.join(__dirname, '/frontend/build/index.html'))
-  );
-}
+/* Do đã deploy tách biệt fe - be nên không cần: host riêng 
 
-// CORS
+// Serve frontend in production
+// if (NODE_ENV === 'production') {
+//   app.use(express.static(path.join(__dirname, '/frontend/build')));
+//   app.get('*', (req, res) =>
+//     res.sendFile(path.join(__dirname, '/frontend/build/index.html'))
+//   );
+// }
+
+*/
+
+// CORS - Cho phép FE gọi API từ cả local + hosting
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? ['http://localhost:5173', 'https://your-fe-domain.com']
+        : 'http://localhost:5173',
     credentials: true,
   })
 );
@@ -67,7 +74,16 @@ app.use('/api/user', userRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/payment', paymentRoutes);
 
+<<<<<<< HEAD
+=======
+app.use('/', (req, res) => {
+  res.send(
+    `Hello from ${process.env.NODE_ENV} mode, Server running at ${baseUrl()}`
+  );
+});
+
+>>>>>>> origin/dev
 app.listen(PORT, () => {
-  console.log(`Server running at: http://localhost:${PORT}`);
-  console.log(`API Docs: http://localhost:${PORT}/api-docs/`);
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`API Docs: ${baseUrl()}/api-docs`);
 });

@@ -9,7 +9,7 @@ export const isAdmin = async (req, res, next) => {
   next();
 }
 
-// protectedRoute là middleware để bảo vệ các route cần xác thực người dùn
+// protectedRoute là middleware để bảo vệ các route cần xác thực người dùng
 export const protectedRoute = async (req, res, next) => {
   try {
     // Get token from request
