@@ -7,6 +7,61 @@ servers:
 
 components:
   schemas:
+    Order:
+      type: object
+      properties:
+        _id:
+          type: string
+        user:
+          type: object
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+        orderItems:
+          type: array
+          items:
+            type: object
+        shippingAddress:
+          type: object
+        paymentMethod:
+          type: string
+        itemsPrice:
+          type: number
+        shippingPrice:
+          type: number
+        taxPrice:
+          type: number
+        totalPrice:
+          type: number
+        isDelivered:
+          type: boolean
+        deliveredAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    OrderInput:
+      type: object
+      properties:
+        orderItems:
+          type: array
+          items:
+            type: object
+        shippingAddress:
+          type: object
+        paymentMethod:
+          type: string
+        itemsPrice:
+          type: number
+        shippingPrice:
+          type: number
+        taxPrice:
+          type: number
+        totalPrice:
+          type: number
     Category:
       type: object
       properties:
@@ -456,7 +511,6 @@ paths:
                   message:
                     type: string
                     example: 'Internal Server Error'
-
   /user/login:
     post:
       summary: User login
@@ -524,6 +578,128 @@ paths:
                   message:
                     type: string
                     example: 'Internal Server Error'
+  /user/forget-password:
+    post:
+      summary: Yêu cầu đặt lại mật khẩu
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: Đường dẫn đặt lại mật khẩu đã được gửi qua email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Đường dẫn đặt lại mật khẩu đã được gửi qua email.
+        '404':
+          description: Không tìm thấy người dùng.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User not found
+        '500':
+          description: Lỗi gửi email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Không thể gửi email đặt lại mật khẩu.
+  /user/reset-password:
+    post:
+      summary: Đặt lại mật khẩu với token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                password:
+                  type: string
+                  format: password
+                  example: newStrongPassword123
+      responses:
+        '200':
+          description: Đặt lại mật khẩu thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Đặt lại mật khẩu thành công.
+        '400':
+          description: Thiếu token hoặc mật khẩu.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Thiếu token hoặc mật khẩu.
+        '401':
+          description: Token không hợp lệ hoặc đã hết hạn.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token không hợp lệ hoặc đã hết hạn.
+        '404':
+          description: Không tìm thấy người dùng với token này.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Không tìm thấy người dùng với token này.
+        '500':
+          description: Lỗi máy chủ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Internal Server Error
 
   /products:
     get:
@@ -1330,3 +1506,238 @@ paths:
                     example: "Google login failed"
         '500':
           description: Lỗi nội bộ khi xử lý callback
+  /orders/report:
+    get:
+      summary: Get order report (admin only)
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+          required: false
+          description: Start date (YYYY-MM-DD) for the report range
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+          required: false
+          description: End date (YYYY-MM-DD) for the report range
+      responses:
+        '200':
+          description: Order report statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalOrders:
+                    type: integer
+                    example: 25
+                  totalRevenue:
+                    type: number
+                    format: float
+                    example: 1500.50
+                  dailyStats:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          example: "2024-06-01"
+                        orderCount:
+                          type: integer
+                          example: 5
+                        revenue:
+                          type: number
+                          format: float
+                          example: 300.00
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (not admin)
+        '500':
+          description: Server error
+
+  /orders:
+    get:
+      summary: Get all orders (admin only)
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of all orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (not admin)
+    post:
+      summary: Create a new order
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderInput'
+      responses:
+        '201':
+          description: New order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized
+
+  /orders/summary:
+    get:
+      summary: Get order summary (admin only)
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Order summary statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        numUsers:
+                          type: integer
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        numOrders:
+                          type: integer
+                        totalSales:
+                          type: number
+                  dailyOrders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        orders:
+                          type: integer
+                        sales:
+                          type: number
+                  productCategories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        count:
+                          type: integer
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (not admin)
+
+  /orders/mine:
+    get:
+      summary: Get orders of the current user
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of user's orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized
+
+  /orders/{id}:
+    get:
+      summary: Get order by ID
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Order ID
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /orders/{id}/deliver:
+    put:
+      summary: Mark order as delivered
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Order ID
+      responses:
+        '200':
+          description: Order delivered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found

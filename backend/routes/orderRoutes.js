@@ -5,6 +5,7 @@ import User from '../models/userModel.js';
 import Product from '../models/productModel.js';
 import { isAuth } from '../lib/utils.js';
 import { isAdmin } from '../middlewares/authMiddleware.js';
+import { v4 as uuidv4 } from 'uuid'; // Nếu muốn dùng uuid
 
 const orderRouter = express.Router();
 
@@ -23,6 +24,7 @@ orderRouter.post(
   isAuth,
   expressAsyncHandler(async (req, res) => {
     const newOrder = new Order({
+      order_id: uuidv4(),
       orderItems: req.body.orderItems.map((x) => ({ ...x, product: x._id })),
       shippingAddress: req.body.shippingAddress,
       paymentMethod: req.body.paymentMethod,
@@ -164,19 +166,19 @@ orderRouter.put(
 //   })
 // );
 
-orderRouter.delete(
-  '/:id',
-  isAuth,
-  isAdmin,
-  expressAsyncHandler(async (req, res) => {
-    const order = await Order.findById(req.params.id);
-    if (order) {
-      await order.remove();
-      res.send({ message: 'Order Deleted' });
-    } else {
-      res.status(404).send({ message: 'Order Not Found' });
-    }
-  })
-);
+// orderRouter.delete(
+//   '/:id',
+//   isAuth,
+//   isAdmin,
+//   expressAsyncHandler(async (req, res) => {
+//     const order = await Order.findById(req.params.id);
+//     if (order) {
+//       await order.remove();
+//       res.send({ message: 'Order Deleted' });
+//     } else {
+//       res.status(404).send({ message: 'Order Not Found' });
+//     }
+//   })
+// );
 
 export default orderRouter;

@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 
 export const isAdmin = async (req, res, next) => {
+  console.log(req.user)
   if (!req.user.isAdmin) {
     // Không phải admin
     return res.status(403).json({ message: "Forbidden - Admin access required" });
