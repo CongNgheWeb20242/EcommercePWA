@@ -1,4 +1,5 @@
 import { connectDB } from './lib/db.js';
+import bcrypt from 'bcryptjs';
 
 import User from './models/userModel.js';
 import Category from './models/categoryModel.js';
@@ -17,6 +18,12 @@ const seedData = async () => {
     await Product.deleteMany();
     await Review.deleteMany();
 
+    // Hash mật khẩu
+    const salt = await bcrypt.genSalt(10);
+    const adminPassword = await bcrypt.hash('123456', salt);
+    const userPassword = await bcrypt.hash('123456', salt);
+    const testPassword = await bcrypt.hash('test123@', salt);
+
     // Categorie mẫu
     const categories = await Category.insertMany([
       { name: "Men's Clothing", description: 'Clothes for men' },
@@ -29,19 +36,19 @@ const seedData = async () => {
       {
         name: 'Admin User',
         email: 'admin@example.com',
-        password: '123456',
+        password: adminPassword,
         isAdmin: true,
       },
       {
         name: 'John Doe',
         email: 'john@example.com',
-        password: '123456',
+        password: userPassword,
         isAdmin: false,
       },
       {
         name: 'Test User',
         email: 'test@example.com',
-        password: 'test123@',
+        password: testPassword,
         isAdmin: false,
       },
     ]);
@@ -96,8 +103,11 @@ const seedData = async () => {
     ]);
 
     // Order mẫu
+    // Có thể cần thêm order_id nếu là trường bắt buộc
+    try {
     await Order.insertMany([
       {
+          order_id: "ORD-" + Date.now(),
         orderItems: [
           {
             name: products[0].name,
@@ -124,6 +134,11 @@ const seedData = async () => {
         paidAt: new Date(),
       },
     ]);
+    } catch (orderError) {
+      console.error('Không thể tạo dữ liệu order:', orderError);
+      // Tiếp tục chạy dù có lỗi với Order
+    }
+
     console.log('Data seeded Successfully!!');
     process.exit();
   } catch (error) {

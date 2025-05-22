@@ -1,12 +1,12 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faShoppingCart, faBars } from '@fortawesome/free-solid-svg-icons';
+import { faShoppingCart, faBars } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from "react-router-dom";
 import { useUserStore } from '@/store/userStore';
 import LiveSearchBar from './LiveSearchBar';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const user = useUserStore((state) => state.user);
+  const { user, logout } = useUserStore();
 
   const handleHomelick = () => {
     navigate('/home');
@@ -26,6 +26,15 @@ const Navbar = () => {
 
   const handleRegisterClick = () => {
     navigate('/user/register');
+  };
+  
+  const handleLogout = () => {
+    logout();
+    navigate('/home');
+  };
+  
+  const handleAdminDashboard = () => {
+    navigate('/admin');
   };
 
   return (
@@ -51,10 +60,18 @@ const Navbar = () => {
       {/* Search and Icons */}
       <div className="flex items-center space-x-10">
         <LiveSearchBar />
-        <button className="text-lg text-black" onClick={handleCartClick}>
+        <button 
+          className="text-lg text-black" 
+          onClick={handleCartClick} 
+          aria-label="Giỏ hàng"
+        >
           <FontAwesomeIcon icon={faShoppingCart} />
         </button>
-        <button className="text-lg text-black" onClick={handleMenuClick}>
+        <button 
+          className="text-lg text-black" 
+          onClick={handleMenuClick} 
+          aria-label="Menu"
+        >
           <FontAwesomeIcon icon={faBars} />
         </button>
       </div>
@@ -65,22 +82,21 @@ const Navbar = () => {
           <>
             <li className="flex items-center space-x-2">
               {/* Avatar */}
-              {/* TODO: thay avatar */}
-              {/* {user.avatar && (
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            )} */}
               <span className="w-8 h-8 flex items-center justify-center bg-blue-500 rounded-full text-white font-bold uppercase">
                 {user.name.charAt(0)}
               </span>
               {/* Tên người dùng */}
               <span>{user.name}</span>
             </li>
-            <li style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <button onClick={() => { }} className="hover:text-gray-600">
+            {user.isAdmin && (
+              <li className="flex items-center justify-center">
+                <button onClick={handleAdminDashboard} className="hover:text-blue-600">
+                  Admin
+                </button>
+              </li>
+            )}
+            <li className="flex items-center justify-center">
+              <button onClick={handleLogout} className="hover:text-gray-600">
                 Đăng xuất
               </button>
             </li>

@@ -1,4 +1,5 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useUserStore } from '@/store/userStore';
 
 // Định nghĩa các menu item
 const menuItems = [
@@ -12,16 +13,23 @@ const menuItems = [
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useUserStore();
+  
+  const handleLogout = () => {
+    logout();
+    navigate('/user/login');
+  };
   
   return (
-    <div className="w-64 bg-white border-r h-full">
+    <div className="w-64 bg-white border-r h-full flex flex-col">
       {/* Logo */}
       <div className="flex items-center justify-center h-16 border-b">
         <Link to="/admin" className="text-xl font-bold text-gray-800">Shop Admin</Link>
       </div>
       
       {/* Menu Items */}
-      <nav className="mt-6 px-4">
+      <nav className="mt-6 px-4 flex-grow">
         <ul className="space-y-2">
           {menuItems.map((item) => (
             <li key={item.path}>
@@ -39,6 +47,16 @@ const Sidebar = () => {
           ))}
         </ul>
       </nav>
+      
+      {/* Logout Button */}
+      <div className="p-4 border-t">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center px-4 py-3 text-sm rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
+        >
+          <span className="ml-3">Đăng xuất</span>
+        </button>
+      </div>
     </div>
   );
 };

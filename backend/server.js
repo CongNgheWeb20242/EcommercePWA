@@ -74,15 +74,12 @@ app.use('/api/user', userRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/payment', paymentRoutes);
 
-<<<<<<< HEAD
-=======
 app.use('/', (req, res) => {
   res.send(
     `Hello from ${process.env.NODE_ENV} mode, Server running at ${baseUrl()}`
   );
 });
 
->>>>>>> origin/dev
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   console.log(`API Docs: ${baseUrl()}/api-docs`);

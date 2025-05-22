@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import Sidebar from '../components/admin/Sidebar';
+import { useUserStore } from '@/store/userStore';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -7,6 +8,9 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout = ({ children, title = "Dashboard" }: AdminLayoutProps) => {
+  const { user } = useUserStore();
+  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'A';
+  
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -21,9 +25,9 @@ const AdminLayout = ({ children, title = "Dashboard" }: AdminLayoutProps) => {
           {/* User Profile */}
           <div className="flex items-center">
             <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-              A
+              {userInitial}
             </div>
-            <span className="ml-2 font-medium text-sm">Admin User</span>
+            <span className="ml-2 font-medium text-sm">{user?.name || 'Admin User'}</span>
           </div>
         </header>
         
