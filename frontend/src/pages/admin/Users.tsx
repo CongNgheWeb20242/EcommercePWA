@@ -4,6 +4,43 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faFilter, faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
 import { useUserStore } from '../../store/userStore';
 import { Navigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+
+// Component hộp thoại xác nhận
+interface ConfirmDialogProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-80 max-w-md shadow-lg">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
+        <p className="text-sm text-gray-500 mb-4">{message}</p>
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={onCancel}
+            className="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 cursor-pointer"
+          >
+            Hủy bỏ
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-3 py-1 text-sm bg-blue-500 rounded-md text-white hover:bg-blue-600 cursor-pointer"
+          >
+            Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface User {
   _id: string;
@@ -20,7 +57,6 @@ const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [adminFilter, setAdminFilter] = useState<boolean | ''>('');
@@ -30,6 +66,19 @@ const Users = () => {
   const [sortField, setSortField] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [redirectToHome, setRedirectToHome] = useState(false);
+  
+  // State cho hộp thoại xác nhận
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Gọi API để lấy dữ liệu người dùng
   const fetchUsers = async (page = currentPage) => {
@@ -151,67 +200,58 @@ const Users = () => {
     return matchesSearch && matchesAdminFilter;
   }) : [];
 
-  // Xử lý xóa người dùng
+  // Xử lý xóa người dùng với xác nhận
   const handleDeleteUser = async (userId: string) => {
     // Kiểm tra xem người dùng hiện tại có phải admin không
     if (!currentUser?.isAdmin) {
-      setError('Bạn không có quyền xóa người dùng');
+      toast.error('Bạn không có quyền xóa người dùng');
       return;
     }
     
     // Ngăn xóa tài khoản admin
     const userToDelete = users.find(u => u._id === userId);
     if (userToDelete?.isAdmin) {
-      setError('Không thể xóa tài khoản Admin');
-      
-      // Tự động ẩn thông báo lỗi sau 3 giây
-      setTimeout(() => {
-        setError(null);
-      }, 3000);
-      
+      toast.error('Không thể xóa tài khoản Admin');
       return;
     }
     
-    if (!window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      // Sử dụng đúng đường dẫn API theo cấu hình trong axiosInstance
-      const response = await axiosInstance.delete(`/user/${userId}`);
-      
-      // Kiểm tra phản hồi từ server
-      if (response.status === 200) {
-        // Cập nhật danh sách sau khi xóa
-        setUsers(prevUsers => prevUsers.filter(user => user._id !== userId));
-        setSuccessMessage('Đã xóa người dùng thành công');
+    const performDelete = async () => {
+      setLoading(true);
+      try {
+        // Sử dụng đúng đường dẫn API theo cấu hình trong axiosInstance
+        const response = await axiosInstance.delete(`/user/${userId}`);
         
-        // Xóa thông báo thành công sau 3 giây
-        setTimeout(() => {
-          setSuccessMessage(null);
-        }, 3000);
-      } else {
-        setError('Lỗi khi xóa người dùng: ' + (response.data?.message || 'Không thể xóa người dùng'));
+        // Kiểm tra phản hồi từ server
+        if (response.status === 200) {
+          // Cập nhật danh sách sau khi xóa
+          setUsers(prevUsers => prevUsers.filter(user => user._id !== userId));
+          toast.success('Đã xóa người dùng thành công');
+        } else {
+          toast.error('Lỗi khi xóa người dùng: ' + (response.data?.message || 'Không thể xóa người dùng'));
+        }
+      } catch (err: unknown) {
+        // Kiểm tra kiểu của lỗi và trích xuất thông điệp lỗi
+        const errorMessage = err && typeof err === 'object' && 'response' in err && 
+          err.response && typeof err.response === 'object' && 'data' in err.response && 
+          err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data
+          ? String(err.response.data.message) 
+          : 'Lỗi khi xóa người dùng';
+        
+        toast.error(errorMessage);
+        console.error('Error deleting user:', err);
+      } finally {
+        setLoading(false);
+        setConfirmDialog({...confirmDialog, isOpen: false});
       }
-    } catch (err: unknown) {
-      // Kiểm tra kiểu của lỗi và trích xuất thông điệp lỗi
-      const errorMessage = err && typeof err === 'object' && 'response' in err && 
-        err.response && typeof err.response === 'object' && 'data' in err.response && 
-        err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data
-        ? String(err.response.data.message) 
-        : 'Lỗi khi xóa người dùng';
-      
-      setError(errorMessage);
-      console.error('Error deleting user:', err);
-      
-      // Xóa thông báo lỗi sau 5 giây
-      setTimeout(() => {
-        setError(null);
-      }, 5000);
-    } finally {
-      setLoading(false);
-    }
+    };
+    
+    // Hiển thị hộp thoại xác nhận
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Xóa người dùng',
+      message: `Bạn có chắc chắn muốn xóa người dùng ${userToDelete?.name || ''} không?`,
+      onConfirm: performDelete
+    });
   };
 
   // Xử lý sắp xếp
@@ -246,11 +286,11 @@ const Users = () => {
       </div>
 
       {/* Hiển thị thông báo thành công */}
-      {successMessage && (
+      {/* {successMessage && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
           <span className="block sm:inline">{successMessage}</span>
         </div>
-      )}
+      )} */}
 
       {/* Hiển thị lỗi nếu có */}
       {error && (
@@ -292,25 +332,25 @@ const Users = () => {
 
       {/* Bảng người dùng */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('_id')}>
+              <th scope="col" className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hidden md:table-cell" onClick={() => handleSort('_id')}>
                 ID {getSortIcon('_id')}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('name')}>
+              <th scope="col" className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('name')}>
                 Tên Người Dùng {getSortIcon('name')}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('email')}>
+              <th scope="col" className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('email')}>
                 Email {getSortIcon('email')}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                 Số Điện Thoại
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('isAdmin')}>
+              <th scope="col" className="px-2 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('isAdmin')}>
                 Chức Vụ {getSortIcon('isAdmin')}
               </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-2 py-2 md:px-6 md:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Hành Động
               </th>
             </tr>
@@ -318,7 +358,7 @@ const Users = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-6 py-4 text-center">
+                <td colSpan={6} className="px-2 py-2 md:px-6 md:py-4 text-center">
                   <div className="flex justify-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                   </div>
@@ -326,41 +366,38 @@ const Users = () => {
               </tr>
             ) : filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={6} className="px-2 py-2 md:px-6 md:py-4 text-center text-xs text-gray-500">
                   Không tìm thấy người dùng nào
                 </td>
               </tr>
             ) : (
               filteredUsers.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{user._id.substring(user._id.length - 5)}</div>
+                  <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap hidden md:table-cell">
+                    <div className="text-xs md:text-sm text-gray-900">{user._id.substring(user._id.length - 5)}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                  <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap">
+                    <div className="text-xs md:text-sm font-medium text-gray-900">{user.name}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{user.email}</div>
+                  <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap">
+                    <div className="text-xs md:text-sm text-gray-500">{user.email}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">N/A</div>
+                  <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap hidden md:table-cell">
+                    <div className="text-xs md:text-sm text-gray-500">N/A</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       user.isAdmin ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                     }`}>
                       {user.isAdmin ? 'Quản Trị Viên' : 'Người dùng'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
                     <button
                       onClick={() => handleDeleteUser(user._id)}
                       disabled={user.isAdmin || loading}
-                      className={`${
-                        user.isAdmin 
-                          ? 'bg-gray-300 cursor-not-allowed' 
-                          : 'bg-red-500 hover:bg-red-600 cursor-pointer'
-                      } text-white px-3 py-1 rounded-md text-xs`}
+                      className={`px-3 py-1 rounded-md text-xs text-white 
+                        ${user.isAdmin ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 cursor-pointer'}`}
                       title={user.isAdmin ? 'Không thể xóa tài khoản Admin' : 'Xóa người dùng'}
                     >
                       Xóa Người Dùng
@@ -417,6 +454,15 @@ const Users = () => {
           </nav>
         </div>
       )}
+
+      {/* Hộp thoại xác nhận */}
+      <ConfirmDialog 
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   );
 };

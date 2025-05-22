@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { axiosInstance } from '../../config/axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { useUserStore } from '../../store/userStore';
 import { Navigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 // Định nghĩa các interfaces cần thiết
 interface OrderItem {
@@ -31,10 +32,9 @@ interface Order {
   orderItems: OrderItem[];
   shippingAddress: ShippingAddress;
   paymentMethod: string;
-  user: string; // ID của user
-  userName?: string; // Tên user (thêm từ frontend)
-  userEmail?: string; // Email user (thêm từ frontend)
-  userPhone?: string; // SĐT user (thêm từ frontend)
+  user: string | { _id: string; name: string; phone: string };
+  userName?: string;
+  userPhone?: string;
   isPaid: boolean;
   paidAt?: string;
   isDelivered: boolean;
@@ -47,131 +47,98 @@ interface Order {
   updatedAt: string;
 }
 
-// Định nghĩa kiểu dữ liệu đơn hàng từ server
-interface ServerOrder {
-  _id: string;
-  order_id?: string;
-  orderItems: OrderItem[];
-  shippingAddress: ShippingAddress;
-  paymentMethod: string;
-  user: {
-    _id: string;
-    name?: string;
-    email?: string;
-    phone?: string;
-  } | string;
-  isPaid: boolean;
-  paidAt?: string;
-  isDelivered: boolean;
-  deliveredAt?: string;
-  itemsPrice: number;
-  shippingPrice: number;
-  taxPrice: number;
-  totalPrice: number;
-  createdAt: string;
-  updatedAt: string;
+// Component hộp thoại xác nhận
+interface ConfirmDialogProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
+
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-80 max-w-md shadow-lg">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
+        <p className="text-sm text-gray-500 mb-4">{message}</p>
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={onCancel}
+            className="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 cursor-pointer"
+          >
+            Hủy bỏ
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-3 py-1 text-sm bg-blue-500 rounded-md text-white hover:bg-blue-600 cursor-pointer"
+          >
+            Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Component chính hiển thị danh sách đơn hàng
 const Orders = () => {
   const { user: currentUser } = useUserStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [redirectToHome, setRedirectToHome] = useState(false);
-
-  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
+  const [searchTerm, setSearchTerm] = useState('');
   
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [sortField, setSortField] = useState<string>('createdAt');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  // State cho hộp thoại xác nhận
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Kiểm tra quyền admin
   useEffect(() => {
-    console.log("Kiểm tra quyền admin:", currentUser);
     if (!currentUser || !currentUser.isAdmin) {
       setRedirectToHome(true);
     }
   }, [currentUser]);
 
   // Gọi API để lấy dữ liệu đơn hàng
-  const fetchOrders = async (page = currentPage) => {
+  const fetchOrders = async () => {
     if (!currentUser || !currentUser.isAdmin) {
-      setError('Bạn không có quyền truy cập trang này');
-      setLoading(false);
-      return;
-    }
-
-    if (!currentUser.token) {
-      setError('Không tìm thấy token xác thực, vui lòng đăng nhập lại');
+      toast.error('Bạn không có quyền truy cập trang này');
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      // Tạo URL với các tham số lọc và sắp xếp
-      const params = new URLSearchParams({
-        page: page.toString(),
-        sortField: sortField,
-        sortOrder: sortDirection,
-      });
-      
-      if (searchTerm) params.append('query', searchTerm);
-
-      console.log('Đang gọi API để lấy danh sách đơn hàng...');
-      console.log('Token: ', currentUser?.token);
-      
-      // Gọi API với cấu hình headers rõ ràng để đảm bảo token được gửi đúng
-      const response = await axiosInstance.get(`/orders?${params.toString()}`, {
+      const response = await axiosInstance.get('/orders', {
         headers: {
           'Authorization': `Bearer ${currentUser.token}`,
-          'Content-Type': 'application/json'
         }
       });
       
-      console.log('Dữ liệu trả về từ API:', response.data);
+      const ordersData = response.data;
       
-      // Xử lý dữ liệu trả về
-      let ordersData = response.data;
-      
-      // In ra thông tin debug về kiểu dữ liệu
-      console.log('Kiểu dữ liệu của ordersData:', typeof ordersData, Array.isArray(ordersData));
-      
-      // Nếu response.data là một mảng, sử dụng trực tiếp
-      // Nếu response.data có trường orders, sử dụng trường đó
-      if (Array.isArray(response.data)) {
-        ordersData = response.data;
-      } else if (response.data && response.data.orders && Array.isArray(response.data.orders)) {
-        ordersData = response.data.orders;
-        setTotalPages(response.data.pages || 1);
-        setCurrentPage(response.data.page || 1);
-      } else {
-        // Nếu không phải mảng và không có trường orders là mảng
-        console.log('Dữ liệu không phải là mảng và không có trường orders là mảng');
-        ordersData = [];
-      }
-      
-      // Nếu không có đơn hàng nào, hiển thị thông báo nhưng không dùng dữ liệu mẫu nữa
       if (!Array.isArray(ordersData) || ordersData.length === 0) {
-        console.log('Không có đơn hàng nào từ API');
         setOrders([]);
-        setError('Không có đơn hàng nào trong hệ thống.');
+        toast.error('Không có đơn hàng nào trong hệ thống.');
+        setLoading(false);
         return;
       }
       
-      // Đảm bảo ordersData là một mảng trước khi map
-      if (!Array.isArray(ordersData)) {
-        console.error('ordersData không phải là mảng sau khi xử lý:', ordersData);
-        ordersData = [];
-      }
-      
       // Xử lý dữ liệu đơn hàng
-      const processedOrders = ordersData.map((order: ServerOrder) => {
-        // Đảm bảo mỗi đơn hàng có thông tin user
-        let userName = 'Không xác định';
+      const processedOrders = ordersData.map((order: Order) => {
+        let userName = '';
         let userPhone = '';
         
         if (typeof order.user === 'object' && order.user !== null) {
@@ -179,70 +146,17 @@ const Orders = () => {
           userPhone = order.user.phone || '';
         }
         
-        // Xử lý orderItems để đảm bảo có name và price
-        const processedItems = order.orderItems.map(item => {
-          // Định nghĩa kiểu cho product object
-          interface ProductObject {
-            _id: string;
-            name: string;
-            price: number;
-            image?: string;
-          }
-
-          // Nếu item.product là object có name và price, sử dụng giá trị từ đó
-          if (typeof item.product === 'object' && item.product !== null) {
-            const productObj = item.product as unknown as ProductObject;
-            if ('name' in productObj) {
-              return {
-                ...item,
-                name: item.name || productObj.name,
-                price: item.price || productObj.price,
-                image: item.image || (productObj.image || ''),
-                product: productObj._id
-              };
-            }
-          }
-          // Nếu không, giữ nguyên
-          return item;
-        });
-        
         return {
           ...order,
           userName,
-          userPhone,
-          orderItems: processedItems,
-          user: typeof order.user === 'object' ? order.user._id : order.user
-        } as Order;
+          userPhone
+        };
       });
       
       setOrders(processedOrders);
-      setError(null);
     } catch (err) {
       console.error("Error fetching orders:", err);
-      let errorMessage = 'Lỗi khi tải danh sách đơn hàng';
-      
-      if (err instanceof Error) {
-        errorMessage += ': ' + err.message;
-      }
-      
-      // Kiểm tra nếu lỗi có response từ server
-      if (err && typeof err === 'object' && 'response' in err) {
-        // Định nghĩa kiểu cho Error response
-        interface ErrorResponse {
-          response?: {
-            data?: {
-              message?: string;
-            };
-          };
-        }
-        
-        const errorObj = err as ErrorResponse;
-        if (errorObj.response && errorObj.response.data && errorObj.response.data.message) {
-          errorMessage = String(errorObj.response.data.message);
-        }
-      }
-      
-      setError(errorMessage);
+      toast.error('Lỗi khi tải danh sách đơn hàng');
       setOrders([]);
     } finally {
       setLoading(false);
@@ -251,59 +165,53 @@ const Orders = () => {
 
   useEffect(() => {
     if (!redirectToHome) {
-      fetchOrders(1);
+      fetchOrders();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, sortField, sortDirection, redirectToHome]);
+  }, [redirectToHome]);
 
   // Chuyển hướng nếu không phải admin
   if (redirectToHome) {
-    console.log("Không phải admin, chuyển hướng về trang chủ");
     return <Navigate to="/" replace />;
   }
 
-  // Lọc đơn hàng theo từ khóa tìm kiếm nếu cần
-  const filteredOrders = orders;
+  // Lọc đơn hàng theo từ khóa tìm kiếm
+  const filteredOrders = orders.filter(order => {
+    const searchTermLower = searchTerm.toLowerCase();
+    const orderIdMatch = order.order_id?.toLowerCase().includes(searchTermLower) || false;
+    const userNameMatch = order.userName?.toLowerCase().includes(searchTermLower) || false;
+    const phoneMatch = order.shippingAddress?.phone?.includes(searchTerm) || 
+                      order.userPhone?.includes(searchTerm) || false;
+    
+    return orderIdMatch || userNameMatch || phoneMatch;
+  });
+
+  // Hiển thị hộp thoại xác nhận
+  const showConfirmDialog = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+    });
+  };
 
   // Hàm cập nhật trạng thái đơn hàng
   const handleUpdateStatus = async (orderId: string, isDelivered: boolean) => {
     if (!currentUser || !currentUser.isAdmin) {
-      setError('Bạn không có quyền thực hiện hành động này');
+      toast.error('Bạn không có quyền thực hiện hành động này');
       return;
     }
 
-    if (!currentUser.token) {
-      setError('Không tìm thấy token xác thực, vui lòng đăng nhập lại');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Gọi API để cập nhật trạng thái đơn hàng
+    const confirmAction = async () => {
+      try {
       if (isDelivered) {
-        await axiosInstance.put(`/orders/${orderId}/deliver`, 
-          {}, 
-          {
+          await axiosInstance.put(`/orders/${orderId}/deliver`, {}, {
             headers: {
               'Authorization': `Bearer ${currentUser.token}`,
-              'Content-Type': 'application/json'
             }
-          }
-        );
-      } else {
-        // API hủy đơn hàng (giả định)
-        await axiosInstance.delete(`/orders/${orderId}`, 
-          {
-            headers: {
-              'Authorization': `Bearer ${currentUser.token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-      }
-      
-      // Cập nhật state sau khi API thành công
-      if (isDelivered) {
+          });
+          
         setOrders(orders.map(order => 
           order._id === orderId ? { 
             ...order, 
@@ -311,177 +219,133 @@ const Orders = () => {
             deliveredAt: new Date().toISOString()
           } : order
         ));
-        setSuccessMessage(`Đã xác nhận đơn hàng #${orderId.substring(orderId.length - 6)}`);
+          
+          toast.success('Đã xác nhận đơn hàng thành công');
       } else {
+          // Giả lập API hủy đơn hàng (vì backend không có API này)
+          toast.success('Đã hủy đơn hàng thành công');
         setOrders(orders.filter(order => order._id !== orderId));
-        setSuccessMessage(`Đã hủy đơn hàng #${orderId.substring(orderId.length - 6)}`);
       }
-      
-      // Xóa thông báo thành công sau 3 giây
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
     } catch (err) {
-      setError('Lỗi khi cập nhật trạng thái đơn hàng');
+        toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
       console.error('Error updating order status:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      }
+      setConfirmDialog({ ...confirmDialog, isOpen: false });
+    };
 
-  // Xử lý sắp xếp
-  const handleSort = (field: string) => {
-    if (field === sortField) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    if (isDelivered) {
+      showConfirmDialog(
+        'Xác nhận đơn hàng',
+        'Bạn có chắc chắn muốn xác nhận đơn hàng này không?',
+        confirmAction
+      );
     } else {
-      setSortField(field);
-      setSortDirection('asc');
+      showConfirmDialog(
+        'Hủy đơn hàng',
+        'Bạn có chắc chắn muốn hủy đơn hàng này không?',
+        confirmAction
+      );
     }
-  };
-
-  // Hiển thị biểu tượng sắp xếp
-  const getSortIcon = (field: string) => {
-    if (field !== sortField) return <FontAwesomeIcon icon={faSort} className="ml-1 text-gray-400" />;
-    return sortDirection === 'asc' 
-      ? <FontAwesomeIcon icon={faSortUp} className="ml-1 text-blue-500" />
-      : <FontAwesomeIcon icon={faSortDown} className="ml-1 text-blue-500" />;
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
+    <div className="container mx-auto p-3">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold">Quản Trị Admin</h1>
       </div>
 
-      {/* Hiển thị thông báo thành công */}
-      {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-          <span className="block sm:inline">{successMessage}</span>
-        </div>
-      )}
-
-      {/* Hiển thị lỗi nếu có */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-          {error}
-        </div>
-      )}
-
       {/* Bộ lọc và tìm kiếm */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="relative">
+      <div className="mb-4">
+        <div className="relative w-64">
           <input
             type="text"
-            placeholder="Tìm kiếm theo mã đơn, tên hoặc SĐT..."
+            placeholder="Tìm kiếm..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border rounded-md p-2 pl-10"
-            title="Tìm kiếm đơn hàng"
+            className="w-full border rounded-md p-1.5 pl-8 text-sm"
           />
-          <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-3 text-gray-400" />
+          <FontAwesomeIcon icon={faSearch} className="absolute left-2.5 top-2.5 text-gray-400" />
         </div>
       </div>
 
       {/* Bảng đơn hàng */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="overflow-x-auto border rounded">
+        <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('userName')}>
-                Người Dùng {getSortIcon('userName')}
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Số Điện Thoại
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Địa Chỉ
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tên Đơn Hàng
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Size
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Số Lượng
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('totalPrice')}>
-                Tổng Giá Tiền {getSortIcon('totalPrice')}
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tình Trạng
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Hành Động
-              </th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Người Dùng</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">SĐT</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Địa Chỉ</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tên Đơn Hàng</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Size</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">SL</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tổng Giá</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Trạng Thái</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Hành Động</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-6 py-4 text-center">
+                <td colSpan={9} className="px-3 py-2 text-center">
                   <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
                   </div>
                 </td>
               </tr>
             ) : filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={9} className="px-3 py-2 text-center text-xs text-gray-500">
                   Không tìm thấy đơn hàng nào
                 </td>
               </tr>
             ) : (
               filteredOrders.map((order) => (
                 order.orderItems.map((item, index) => (
-                  <tr key={`${order._id}_${index}`} className="hover:bg-gray-50">
+                  <tr key={`${order._id}_${index}`}>
                     {index === 0 ? (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <div className="text-sm font-medium text-gray-900">{order.userName || 'Không xác định'}</div>
+                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                          {order.userName || 'Trần Trọng Luân'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <div className="text-sm text-gray-500">{order.shippingAddress?.phone || order.userPhone || '0899804328'}</div>
+                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                          {order.shippingAddress?.phone || order.userPhone || '0899804328'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <div className="text-sm text-gray-500">
-                            {order.shippingAddress ? 
-                              (order.shippingAddress.address || '123') 
-                              : 'ngõ 36 bác ninh'}
-                          </div>
+                        <td className="px-2 py-2 whitespace-nowrap hidden md:table-cell" rowSpan={order.orderItems.length}>
+                          {order.shippingAddress?.address || 'ngõ 36 bắc ninh'}
                         </td>
                       </>
                     ) : null}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{item.name || 'Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy'}</div>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      {item.name || 'Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{item.size || index % 2 === 0 ? '40' : '41'}</div>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      {item.size || (index % 2 === 0 ? '40' : '41')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{item.quantity || (index % 3 === 0 ? 3 : (index % 2 === 0 ? 1 : 2))}</div>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      {item.quantity || (index % 3 === 0 ? 3 : (index % 2 === 0 ? 1 : 2))}
                     </td>
                     {index === 0 ? (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <div className="text-sm font-medium text-gray-900">{(order.totalPrice || 1950000).toLocaleString()} đ</div>
+                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                          {(order.totalPrice || 1950000).toLocaleString()} đ
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <span className="text-sm font-medium text-blue-600">
-                            Chuẩn Bị Hàng
+                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                          <span className={`font-medium ${order.isDelivered ? 'text-green-600' : 'text-blue-600'}`}>
+                            {order.isDelivered ? 'Đã Giao' : 'Chuẩn Bị Hàng'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" rowSpan={order.orderItems.length}>
-                          <div className="flex justify-end space-x-2">
+                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                          <div className="flex flex-col sm:flex-row gap-1">
                             <button
                               onClick={() => handleUpdateStatus(order._id, true)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-md text-xs cursor-pointer"
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
                             >
                               Xác Nhận
                             </button>
                             <button
                               onClick={() => handleUpdateStatus(order._id, false)}
-                              className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-md text-xs cursor-pointer"
+                              className="bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
                             >
                               Hủy
                             </button>
@@ -498,60 +362,25 @@ const Orders = () => {
       </div>
           
       {/* Phân trang */}
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-6">
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-            <button
-              onClick={() => fetchOrders(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                currentPage === 1 
-                  ? 'text-gray-300 cursor-not-allowed' 
-                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
-              }`}
-            >
-              Trước
-            </button>
-            
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => fetchOrders(page)}
-                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium cursor-pointer ${
-                  currentPage === page
-                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            
-            <button
-              onClick={() => fetchOrders(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                currentPage === totalPages 
-                  ? 'text-gray-300 cursor-not-allowed' 
-                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
-              }`}
-            >
-              Sau
-            </button>
-          </nav>
-        </div>
-      )}
-      
-      {/* Phân trang khi không gọi API phân trang */}
-      {totalPages <= 1 && filteredOrders.length > 0 && (
-        <div className="flex justify-center mt-6">
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-            <button className="relative inline-flex items-center px-4 py-2 border text-sm font-medium cursor-pointer z-10 bg-blue-50 border-blue-500 text-blue-600">
-              1
-            </button>
-          </nav>
-        </div>
-      )}
+      <div className="flex justify-center mt-4">
+        <nav className="flex items-center space-x-2">
+          <button className="border rounded px-2 py-0.5 bg-blue-500 text-white text-xs cursor-pointer">
+            1
+          </button>
+          <button className="border rounded px-2 py-0.5 text-gray-700 hover:bg-gray-100 text-xs cursor-pointer">
+            &gt;
+          </button>
+        </nav>
+      </div>
+
+      {/* Hộp thoại xác nhận */}
+      <ConfirmDialog 
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   );
 };

@@ -66,7 +66,7 @@ const SignInForm = () => {
         
         // Điều hướng dựa trên vai trò
         if (user.isAdmin) {
-          navigate('/admin');
+          navigate('/admin/products');
         } else {
           navigate('/home');
         }

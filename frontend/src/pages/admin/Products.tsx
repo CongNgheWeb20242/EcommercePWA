@@ -6,6 +6,7 @@ import {
   faFilter, faEye, faEyeSlash,
   faTimes, faSort, faSortUp, faSortDown
 } from '@fortawesome/free-solid-svg-icons';
+import toast from 'react-hot-toast';
 
 interface Product {
   _id: string;
@@ -44,38 +45,47 @@ interface ApiError {
   };
 }
 
-interface ProductFormData {
-  name: string;
-  slug: string;
-  description: string;
-  price: number;
-  countInStock: number;
-  brand: string;
-  category: string;
-  isVisible: boolean;
-  image?: string;
-  images?: string[];
+// Component hộp thoại xác nhận
+interface ConfirmDialogProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
-// Interface cho dữ liệu cập nhật sản phẩm
-interface UpdateProductData {
-  name: string;
-  slug: string;
-  description: string;
-  price: number;
-  countInStock: number;
-  brand: string;
-  category: string;
-  isVisible: boolean;
-  image?: string;
-}
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-80 max-w-md shadow-lg">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
+        <p className="text-sm text-gray-500 mb-4">{message}</p>
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={onCancel}
+            className="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 cursor-pointer"
+          >
+            Hủy bỏ
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-3 py-1 text-sm bg-blue-500 rounded-md text-white hover:bg-blue-600 cursor-pointer"
+          >
+            Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Products = () => {
   // State for products data
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // State for modal and editing
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -99,6 +109,44 @@ const Products = () => {
 
   // Form reference for resetting
   const formRef = useRef<HTMLFormElement>(null);
+
+  // State cho hộp thoại xác nhận
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  // Thêm state cho form sản phẩm
+  const [formState, setFormState] = useState<{
+    name: string;
+    slug: string;
+    description: string;
+    price: string;
+    countInStock: string;
+    brand: string;
+    category: string;
+    isVisible: boolean;
+    image: string;
+    images: string[];
+  }>({
+    name: '',
+    slug: '',
+    description: '',
+    price: '',
+    countInStock: '',
+    brand: '',
+    category: '',
+    isVisible: true,
+    image: '',
+    images: [],
+  });
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -410,113 +458,99 @@ const Products = () => {
     setExistingImages(updatedImages);
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    console.log('Form đang được gửi...');
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    
-    // Kiểm tra các trường bắt buộc
-    const name = formData.get('name') as string;
-    const slug = formData.get('slug') as string;
-    const description = formData.get('description') as string;
-    const price = formData.get('price') as string;
-    const countInStock = formData.get('countInStock') as string;
-    const brand = formData.get('brand') as string;
-    const category = formData.get('category') as string;
-    const imageUrl = formData.get('imageUrl') as string;
-    
-    if (!name || !slug || !description || !price || !countInStock || !brand || !category) {
-      alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
-      return;
-    }
-    
-    // Kiểm tra nếu là sản phẩm mới, bắt buộc phải có URL ảnh
-    if (!editingProduct && !imageUrl) {
-      alert('Vui lòng nhập URL ảnh cho sản phẩm mới!');
-      return;
-    }
-    
-    // Đảm bảo định dạng dữ liệu đúng cho backend
-    const productData: ProductFormData = {
-      name,
-      slug,
-      description,
-      price: parseFloat(price),
-      countInStock: parseInt(countInStock),
-      brand,
-      category,
-      isVisible: formData.get('isVisible') === 'on',
+  // Toggle product visibility với xác nhận
+  const toggleVisibility = async (product: Product) => {
+    const confirmAction = async () => {
+      try {
+        await axiosInstance.put(`/products/${product._id}/update`, {
+          isVisible: !product.isVisible
+        });
+        
+        // Update local state
+        setProducts(products.map(p => 
+          p._id === product._id ? {...p, isVisible: !p.isVisible} : p
+        ));
+        
+        toast.success(`Sản phẩm đã được ${!product.isVisible ? 'hiển thị' : 'ẩn'}`);
+      } catch (err: unknown) {
+        const error = err as ApiError;
+        toast.error(error.response?.data?.message || 'Lỗi khi cập nhật trạng thái hiển thị');
+      }
+      setConfirmDialog({...confirmDialog, isOpen: false});
     };
 
-    // Luôn sử dụng URL ảnh
-    if (imageUrl && imageUrl.trim() !== '') {
-      productData.image = imageUrl.trim();
-      console.log('Sử dụng URL ảnh:', productData.image);
+    // Hiển thị hộp thoại xác nhận trước khi thực hiện hành động
+    setConfirmDialog({
+      isOpen: true,
+      title: product.isVisible ? 'Ẩn sản phẩm' : 'Hiện sản phẩm',
+      message: product.isVisible 
+        ? `Bạn có chắc chắn muốn ẩn sản phẩm "${product.name}" không?` 
+        : `Bạn có chắc chắn muốn hiển thị sản phẩm "${product.name}" không?`,
+      onConfirm: confirmAction
+    });
+  };
+
+  // Generate slug from name
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-');
+  };
+
+  // Xử lý thay đổi input trong form
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    let newValue: string | boolean = value;
+    if (type === 'checkbox' && e.target instanceof HTMLInputElement) {
+      newValue = e.target.checked;
     }
+    setFormState(prev => ({
+      ...prev,
+      [name]: newValue
+    }));
+    if (name === 'name') {
+      setFormState(prev => ({ ...prev, slug: generateSlug(value) }));
+    }
+    if (name === 'image') {
+      setImagePreview(value);
+    }
+  };
 
-    console.log('Dữ liệu sản phẩm:', productData);
-    
-    // Hiển thị loading message
-    setLoading(true);
-    setError(null);
-    
-    try {
-      if (editingProduct) {
-        // Cập nhật sản phẩm - không gửi ảnh để tránh lỗi
-        console.log('Đang cập nhật sản phẩm với ID:', editingProduct._id);
-        
-        // Chỉ gửi các trường cơ bản
-        const updateData: UpdateProductData = {
-          name: productData.name,
-          slug: productData.slug,
-          description: productData.description,
-          price: productData.price,
-          countInStock: productData.countInStock,
-          brand: productData.brand,
-          category: productData.category,
-          isVisible: productData.isVisible
-        };
-
-        // Cập nhật cả ảnh nếu có URL mới
-        if (imageUrl && imageUrl.trim() !== '') {
-          updateData.image = imageUrl.trim();
+  // Xử lý submit form với xác nhận
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const productData = {
+      ...formState,
+      price: formState.price === '' ? 0 : Number(formState.price),
+      countInStock: formState.countInStock === '' ? 0 : Number(formState.countInStock),
+    };
+    const submitForm = async () => {
+      try {
+        if (editingProduct) {
+          await axiosInstance.put(`/products/${editingProduct._id}/update`, productData);
+          toast.success('Sản phẩm đã được cập nhật thành công');
+        } else {
+          await axiosInstance.post('/products/create', productData);
+          toast.success('Sản phẩm đã được thêm thành công');
         }
-        
-        const response = await axiosInstance.put(`/products/${editingProduct._id}/update`, updateData);
-        console.log('Phản hồi từ API:', response.data);
-        console.log('Cập nhật sản phẩm thành công!');
-        setSuccessMessage('Cập nhật sản phẩm thành công!');
-      } else {
-        // Create new product
-        console.log('Đang tạo sản phẩm mới...');
-        const response = await axiosInstance.post('/products/create', productData);
-        console.log('Phản hồi từ API:', response.data);
-        console.log('Thêm sản phẩm mới thành công!');
-        setSuccessMessage('Thêm sản phẩm mới thành công!');
+        setShowModal(false);
+        resetForm();
+        fetchProducts(1); // Gọi lại API để cập nhật bảng
+      } catch (err) {
+        console.error('Error saving product:', err);
+        toast.error('Lỗi khi lưu sản phẩm');
       }
-      
-      // Close modal and reset form
-      setShowModal(false);
-      resetForm();
-      fetchProducts();
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-    } catch (err: unknown) {
-      console.error('Lỗi khi lưu sản phẩm:', err);
-      const error = err as ApiError;
-      const errorMessage = error.response?.data?.message || 'Lỗi khi lưu sản phẩm';
-      console.log('Chi tiết lỗi:', errorMessage);
-      setError(errorMessage);
-      
-      // Hiển thị thông báo lỗi rõ ràng
-      alert(`Lỗi: ${errorMessage}`);
-      setLoading(false);
-    }
+      setConfirmDialog({ ...confirmDialog, isOpen: false });
+    };
+    setConfirmDialog({
+      isOpen: true,
+      title: editingProduct ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới',
+      message: editingProduct
+        ? `Bạn có chắc chắn muốn cập nhật sản phẩm "${formState.name}" không?`
+        : `Bạn có chắc chắn muốn thêm sản phẩm "${formState.name}" mới không?`,
+      onConfirm: submitForm
+    });
   };
 
   // Reset form
@@ -528,51 +562,56 @@ const Products = () => {
     setImageFile(null);
     setImagePreview(null);
     setExistingImages([]);
+    setFormState({
+      name: '',
+      slug: '',
+      description: '',
+      price: '',
+      countInStock: '',
+      brand: '',
+      category: '',
+      isVisible: true,
+      image: '',
+      images: [],
+    });
   };
 
-  // Add new product
+  // Khi mở modal thêm sản phẩm
   const handleAddProduct = () => {
     resetForm();
+    setFormState({
+      name: '',
+      slug: '',
+      description: '',
+      price: '',
+      countInStock: '',
+      brand: '',
+      category: '',
+      isVisible: true,
+      image: '',
+      images: [],
+    });
     setShowModal(true);
   };
 
-  // Edit product
+  // Khi mở modal chỉnh sửa sản phẩm
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setImagePreview(product.image);
-    // Lưu trữ danh sách ảnh hiện có để hiển thị và chỉnh sửa
     setExistingImages(product.images || []);
+    setFormState({
+      name: product.name,
+      slug: typeof product.slug === 'string' ? product.slug : '',
+      description: product.description,
+      price: product.price.toString(),
+      countInStock: product.countInStock.toString(),
+      brand: product.brand,
+      category: typeof product.category === 'object' ? product.category._id : product.category,
+      isVisible: product.isVisible,
+      image: product.image,
+      images: product.images || [],
+    });
     setShowModal(true);
-  };
-
-  // Toggle product visibility
-  const toggleVisibility = async (product: Product) => {
-    try {
-      await axiosInstance.put(`/products/${product._id}/update`, {
-        isVisible: !product.isVisible
-      });
-      
-      // Update local state
-      setProducts(products.map(p => 
-        p._id === product._id ? {...p, isVisible: !p.isVisible} : p
-      ));
-      
-      setSuccessMessage(`Sản phẩm đã được ${!product.isVisible ? 'hiển thị' : 'ẩn'}`);
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-    } catch (err: unknown) {
-      const error = err as ApiError;
-      setError(error.response?.data?.message || 'Lỗi khi cập nhật trạng thái hiển thị');
-    }
-  };
-
-  // Generate slug from name
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-');
   };
 
   return (
@@ -589,11 +628,11 @@ const Products = () => {
       </div>
 
       {/* Success message */}
-      {successMessage && (
+      {/* {successMessage && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
           <span className="block sm:inline">{successMessage}</span>
         </div>
-      )}
+      )} */}
 
       {/* Error message */}
       {error && (
@@ -649,48 +688,22 @@ const Products = () => {
 
       {/* Products table */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ảnh
-              </th>
-              <th 
-                scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort('name')}
-              >
-                Tên sản phẩm {getSortIcon('name')}
-              </th>
-              <th 
-                scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort('price')}
-              >
-                Giá {getSortIcon('price')}
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Danh mục
-              </th>
-              <th 
-                scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort('countInStock')}
-              >
-                Tồn kho {getSortIcon('countInStock')}
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Hiển thị
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thao tác
-              </th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ảnh</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer" onClick={() => handleSort('name')}>Tên sản phẩm {getSortIcon('name')}</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer" onClick={() => handleSort('price')}>Giá {getSortIcon('price')}</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Danh mục</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer" onClick={() => handleSort('countInStock')}>Tồn kho {getSortIcon('countInStock')}</th>
+              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Hiển thị</th>
+              <th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Thao tác</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-4 text-center">
+                <td colSpan={7} className="px-2 py-2 text-center">
                   <div className="flex justify-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
             </div>
@@ -698,15 +711,15 @@ const Products = () => {
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={7} className="px-2 py-2 text-center text-xs text-gray-500">
                   Không tìm thấy sản phẩm nào
                 </td>
               </tr>
             ) : (
               products.map((product) => (
                 <tr key={product._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="h-12 w-12 bg-gray-100 rounded overflow-hidden">
+                  <td className="px-2 py-2 whitespace-nowrap">
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gray-100 rounded overflow-hidden">
                       {product.image ? (
                         <img 
                           src={product.image} 
@@ -720,17 +733,17 @@ const Products = () => {
           )}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                    <div className="text-sm text-gray-500 truncate max-w-xs">{product.description}</div>
+                  <td className="px-2 py-2">
+                    <div className="text-xs sm:text-sm font-medium text-gray-900">{product.name}</div>
+                    <div className="text-xs text-gray-500 truncate max-w-[80px] sm:max-w-xs">{product.description}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-2 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                     ${product.price.toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-2 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500 hidden md:table-cell">
                     {typeof product.category === 'object' ? product.category.name : product.category}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 py-2 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       product.countInStock > 10 
                         ? 'bg-green-100 text-green-800' 
@@ -741,7 +754,7 @@ const Products = () => {
                       {product.countInStock} sản phẩm
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 py-2 whitespace-nowrap">
                     <button 
                       onClick={() => toggleVisibility(product)}
                       className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer ${
@@ -754,7 +767,7 @@ const Products = () => {
                       <FontAwesomeIcon icon={product.isVisible ? faEye : faEyeSlash} />
                     </button>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-2 py-2 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
                     <button 
                       onClick={() => handleEditProduct(product)}
                       className="text-blue-600 hover:text-blue-900 mx-2 cursor-pointer"
@@ -817,7 +830,7 @@ const Products = () => {
 
       {/* Add/Edit Product Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 overflow-auto backdrop-blur-sm bg-white/30 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-3xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">
@@ -850,15 +863,8 @@ const Products = () => {
                     type="text"
                     name="name"
                     required
-                    defaultValue={editingProduct?.name || ''}
-                    onChange={(e) => {
-                      if (!editingProduct) {
-                        const slugInput = formRef.current?.querySelector('input[name="slug"]') as HTMLInputElement;
-                        if (slugInput) {
-                          slugInput.value = generateSlug(e.target.value);
-                        }
-                      }
-                    }}
+                    value={formState.name}
+                    onChange={handleFormChange}
                     className="w-full p-2 border rounded-md"
                     aria-label="Tên sản phẩm"
                     placeholder="Nhập tên sản phẩm"
@@ -873,7 +879,8 @@ const Products = () => {
                     type="text"
                     name="slug"
                     required
-                    defaultValue={editingProduct?.slug || ''}
+                    value={formState.slug}
+                    onChange={handleFormChange}
                     className="w-full p-2 border rounded-md"
                     aria-label="Slug sản phẩm"
                     placeholder="Nhập slug sản phẩm"
@@ -887,7 +894,8 @@ const Products = () => {
                   <textarea
                     name="description"
                     required
-                    defaultValue={editingProduct?.description || ''}
+                    value={formState.description}
+                    onChange={handleFormChange}
                     rows={3}
                     className="w-full p-2 border rounded-md"
                     aria-label="Mô tả sản phẩm"
@@ -905,7 +913,8 @@ const Products = () => {
                     step="0.01"
                     min="0"
                     required
-                    defaultValue={editingProduct?.price || ''}
+                    value={formState.price === '' ? '' : formState.price}
+                    onChange={handleFormChange}
                     className="w-full p-2 border rounded-md"
                     aria-label="Giá sản phẩm"
                     placeholder="Nhập giá sản phẩm"
@@ -921,7 +930,8 @@ const Products = () => {
                     name="countInStock"
                     min="0"
                     required
-                    defaultValue={editingProduct?.countInStock || ''}
+                    value={formState.countInStock === '' ? '' : formState.countInStock}
+                    onChange={handleFormChange}
                     className="w-full p-2 border rounded-md"
                     aria-label="Số lượng tồn kho"
                     placeholder="Nhập số lượng tồn kho"
@@ -936,7 +946,8 @@ const Products = () => {
                     type="text"
                     name="brand"
                     required
-                    defaultValue={editingProduct?.brand || ''}
+                    value={formState.brand}
+                    onChange={handleFormChange}
                     className="w-full p-2 border rounded-md"
                     aria-label="Thương hiệu"
                     placeholder="Nhập thương hiệu"
@@ -950,11 +961,8 @@ const Products = () => {
                   <select
                     name="category"
                     required
-                    defaultValue={
-                      typeof editingProduct?.category === 'object' 
-                        ? editingProduct?.category._id 
-                        : editingProduct?.category || ''
-                    }
+                    value={formState.category}
+                    onChange={handleFormChange}
                     className="w-full p-2 border rounded-md"
                     aria-label="Danh mục sản phẩm"
                   >
@@ -992,8 +1000,8 @@ const Products = () => {
                       className="w-full p-2 border rounded-md"
                       aria-label="URL hình ảnh sản phẩm"
                       required={!editingProduct}
-                      defaultValue={editingProduct?.image || ''}
-                      onChange={handleImageChange}
+                      value={formState.image}
+                      onChange={handleFormChange}
                     />
                     <p className="text-xs text-green-600 font-semibold mt-1">Nhập URL ảnh từ internet</p>
                     <p className="text-xs text-gray-500 mt-1">Gợi ý: Tìm ảnh sản phẩm trên Google, nhấp chuột phải vào ảnh và chọn "Sao chép địa chỉ hình ảnh"</p>
@@ -1016,7 +1024,8 @@ const Products = () => {
                     type="checkbox"
                     name="isVisible"
                     id="isVisible"
-                    defaultChecked={editingProduct?.isVisible !== false}
+                    checked={formState.isVisible}
+                    onChange={handleFormChange}
                     className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                   />
                   <label htmlFor="isVisible" className="ml-2 block text-sm text-gray-700">
@@ -1044,6 +1053,15 @@ const Products = () => {
           </div>
         </div>
       )}
+      
+      {/* Hộp thoại xác nhận */}
+      <ConfirmDialog 
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUserStore } from '../../store/userStore';
 import { Navigate } from 'react-router-dom';
 import { axiosInstance } from '../../config/axios';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 // Dữ liệu mẫu cứng để hiển thị khi API lỗi hoặc không có dữ liệu
 const DEFAULT_DATA = {
@@ -37,6 +38,17 @@ const StatCard = ({ title, value }: StatCardProps) => (
   </div>
 );
 
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6666', '#00BFFF'];
+
+// Map _id sang tên danh mục (có thể mở rộng nếu có thêm danh mục mới)
+const CATEGORY_NAME_MAP: Record<string, string> = {
+  '682dafa0b610839036b63530': 'Giày nam',
+  '682dafa0b610839036b63531': 'Giày nữ',
+  '682dafa0b610839036b63532': 'Giày trẻ em',
+  '682ece5b0a1aff696cb13820': 'Giày nam',
+  '682ece5b0a1aff696cb13821': 'Giày nữ',
+};
+
 const Revenue = () => {
   const { user: currentUser } = useUserStore();
   const [redirectToHome, setRedirectToHome] = useState(false);
@@ -44,6 +56,7 @@ const Revenue = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingMockData, setUsingMockData] = useState(false);
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
   
   // Kiểm tra quyền admin
   useEffect(() => {
@@ -100,6 +113,53 @@ const Revenue = () => {
   const totalSales = data.orders && data.orders[0] ? data.orders[0].totalSales : 0;
   const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
   
+  // Hàm gộp dữ liệu theo tháng
+  const groupByMonth = (data: typeof DEFAULT_DATA.dailyOrders) => {
+    const result: Record<string, { orders: number; sales: number }> = {};
+    data.forEach(item => {
+      const d = new Date(item._id);
+      const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+      if (!result[key]) result[key] = { orders: 0, sales: 0 };
+      result[key].orders += item.orders;
+      result[key].sales += item.sales;
+    });
+    return Object.entries(result).map(([month, val]) => ({ date: month, ...val }));
+  };
+
+  // Hàm gộp dữ liệu theo quý
+  const groupByQuarter = (data: typeof DEFAULT_DATA.dailyOrders) => {
+    const result: Record<string, { orders: number; sales: number }> = {};
+    data.forEach(item => {
+      const d = new Date(item._id);
+      const quarter = Math.floor(d.getMonth() / 3) + 1;
+      const key = `${d.getFullYear()}-Q${quarter}`;
+      if (!result[key]) result[key] = { orders: 0, sales: 0 };
+      result[key].orders += item.orders;
+      result[key].sales += item.sales;
+    });
+    return Object.entries(result).map(([quarter, val]) => ({ date: quarter, ...val }));
+  };
+
+  // Chuẩn hóa dữ liệu cho biểu đồ theo chế độ xem
+  let dailyChartData: { date: string; orders: number; sales: number }[] = [];
+  if (viewMode === 'day') {
+    dailyChartData = (data.dailyOrders || []).map(item => ({
+      date: item._id,
+      orders: item.orders,
+      sales: item.sales,
+    }));
+  } else if (viewMode === 'month') {
+    dailyChartData = groupByMonth(data.dailyOrders || []);
+  } else if (viewMode === 'quarter') {
+    dailyChartData = groupByQuarter(data.dailyOrders || []);
+  }
+
+  // Chuẩn hóa dữ liệu cho biểu đồ
+  const categoryChartData = (data.productCategories || []).map(item => ({
+    name: CATEGORY_NAME_MAP[item._id] || item._id,
+    value: item.count,
+  }));
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Quản lý Doanh Thu</h1>
@@ -126,11 +186,11 @@ const Revenue = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         <StatCard 
           title="Tổng doanh thu" 
-          value={`${totalSales.toLocaleString()} đ`} 
+          value={`$${totalSales.toLocaleString()}`} 
         />
         <StatCard 
           title="Giá trị trung bình/đơn hàng" 
-          value={`${averageOrderValue.toLocaleString()} đ`} 
+          value={`$${averageOrderValue.toLocaleString()}`} 
         />
         <StatCard 
           title="Tổng số đơn hàng" 
@@ -142,39 +202,86 @@ const Revenue = () => {
         />
       </div>
 
-      {/* Bảng danh mục sản phẩm */}
+      {/* Biểu đồ doanh thu theo ngày/tháng/quý */}
       <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <h2 className="text-lg font-medium mb-4">Phân bố danh mục sản phẩm</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-sm font-medium text-gray-500 border-b">
-                <th className="pb-3">Danh mục</th>
-                <th className="pb-3">Số lượng sản phẩm</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.productCategories && data.productCategories.map((item, index) => (
-                <tr key={index} className="border-b">
-                  <td className="py-3">{item._id}</td>
-                  <td className="py-3">{item.count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+          <h2 className="text-lg font-medium">Biểu đồ doanh thu theo {viewMode === 'day' ? 'ngày' : viewMode === 'month' ? 'tháng' : 'quý'}</h2>
+          <select
+            className="border rounded-md p-2 text-xs sm:text-sm w-full sm:w-auto"
+            value={viewMode}
+            onChange={e => setViewMode(e.target.value as 'day' | 'month' | 'quarter')}
+            aria-label="Chọn chế độ xem doanh thu"
+          >
+            <option value="day">Theo ngày</option>
+            <option value="month">Theo tháng</option>
+            <option value="quarter">Theo quý</option>
+          </select>
+        </div>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={dailyChartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tickFormatter={d => {
+                if (viewMode === 'day') return new Date(d).toLocaleDateString('vi-VN');
+                if (viewMode === 'month') {
+                  const [y, m] = d.split('-');
+                  return `${m}/${y}`;
+                }
+                return d.replace('-', ' ');
+              }} />
+              <YAxis />
+              <Tooltip formatter={(value: number) => value.toLocaleString()} labelFormatter={d => {
+                if (viewMode === 'day') return `Ngày: ${new Date(d).toLocaleDateString('vi-VN')}`;
+                if (viewMode === 'month') {
+                  const [y, m] = d.split('-');
+                  return `Tháng: ${m}/${y}`;
+                }
+                return `Quý: ${d.replace('-', ' ')}`;
+              }} />
+              <Legend />
+              <Bar dataKey="sales" fill="#8884d8" name="Doanh thu ($)" />
+              <Bar dataKey="orders" fill="#82ca9d" name="Số đơn hàng" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Biểu đồ tròn phân bố danh mục sản phẩm */}
+      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+        <h2 className="text-lg font-medium mb-4">Phân bố sản phẩm theo danh mục</h2>
+        <div className="h-80 flex items-center justify-center">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={categoryChartData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label
+              >
+                {categoryChartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value: number) => value.toLocaleString()} />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
       
       {/* Bảng doanh thu gần đây */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
         <h2 className="text-lg font-medium mb-4">Doanh thu gần đây</h2>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-xs md:text-sm">
             <thead>
-              <tr className="text-left text-sm font-medium text-gray-500 border-b">
-                <th className="pb-3">Ngày</th>
-                <th className="pb-3">Số đơn hàng</th>
-                <th className="pb-3">Doanh thu</th>
+              <tr className="text-left font-medium text-gray-500 border-b">
+                <th className="pb-2 md:pb-3">Ngày</th>
+                <th className="pb-2 md:pb-3">Số đơn hàng</th>
+                <th className="pb-2 md:pb-3">Doanh thu</th>
               </tr>
             </thead>
             <tbody>
@@ -182,9 +289,9 @@ const Revenue = () => {
                 const date = new Date(item._id);
                 return (
                   <tr key={index} className="border-b">
-                    <td className="py-3">{date.toLocaleDateString('vi-VN')}</td>
-                    <td className="py-3">{item.orders}</td>
-                    <td className="py-3">{item.sales.toLocaleString()} đ</td>
+                    <td className="py-2 md:py-3">{date.toLocaleDateString('vi-VN')}</td>
+                    <td className="py-2 md:py-3">{item.orders}</td>
+                    <td className="py-2 md:py-3">{item.sales.toLocaleString()} $</td>
                   </tr>
                 );
               })}

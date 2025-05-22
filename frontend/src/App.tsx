@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
 import UserLayout from './layouts/UserLayout';
-import Dashboard from './pages/admin/Dashboard';
 import Revenue from './pages/admin/Revenue';
 import Products from './pages/admin/Products';
 import Orders from './pages/admin/Orders';
@@ -22,22 +21,10 @@ import CheckOut from './pages/user/CheckOut';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import UserProtectedRoute from './components/UserProtectedRoute';
 
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div>
-    <h1 className="text-2xl font-bold mb-4">{title}</h1>
-    <p>Trang đang được phát triển</p>
-  </div>
-);
-
 const App = () => {
   return (
     <Routes>
       {/* Admin Routes - Được bảo vệ bởi AdminProtectedRoute */}
-      <Route path="/admin" element={
-        <AdminProtectedRoute>
-          <AdminLayout title="Dashboard"><Dashboard /></AdminLayout>
-        </AdminProtectedRoute>
-      } />
       <Route path="/admin/products" element={
         <AdminProtectedRoute>
           <AdminLayout title="Sản phẩm"><Products /></AdminLayout>
@@ -56,11 +43,6 @@ const App = () => {
       <Route path="/admin/revenue" element={
         <AdminProtectedRoute>
           <AdminLayout title="Doanh thu"><Revenue /></AdminLayout>
-        </AdminProtectedRoute>
-      } />
-      <Route path="/admin/settings" element={
-        <AdminProtectedRoute>
-          <AdminLayout title="Cài đặt"><PlaceholderPage title="Cài đặt cửa hàng" /></AdminLayout>
         </AdminProtectedRoute>
       } />
       
