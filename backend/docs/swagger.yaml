@@ -1451,3 +1451,61 @@ paths:
                     example: "Google login failed"
         '500':
           description: Lỗi nội bộ khi xử lý callback
+  /report:
+    get:
+      summary: Get order report (admin only)
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+          required: false
+          description: Start date (YYYY-MM-DD) for the report range
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+          required: false
+          description: End date (YYYY-MM-DD) for the report range
+      responses:
+        '200':
+          description: Order report statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalOrders:
+                    type: integer
+                    example: 25
+                  totalRevenue:
+                    type: number
+                    format: float
+                    example: 1500.50
+                  dailyStats:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          example: "2024-06-01"
+                        orderCount:
+                          type: integer
+                          example: 5
+                        revenue:
+                          type: number
+                          format: float
+                          example: 300.00
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (not admin)
+        '500':
+          description: Server error

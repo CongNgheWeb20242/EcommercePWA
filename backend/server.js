@@ -7,6 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import passport from 'passport';
 import { fileURLToPath } from 'url';
+import orderReportRoutes from './routes/orderReportRoutes.js';
 
 // Custom middlewares & config
 import { devLogger } from './middlewares/morganLogger.js';
@@ -73,6 +74,7 @@ app.use('/api/products', productRouter);
 app.use('/api/user', userRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/orders', orderReportRoutes);
 
 app.use('/', (req, res) => {
   res.send(
