@@ -3,7 +3,7 @@ info:
   title: EcommercePWA API
   version: 1.0.0
 servers:
-  - url: https://ecommercepwa-be.onrender.com/api
+  - url: http://localhost:3000/api
 
 components:
   schemas:
