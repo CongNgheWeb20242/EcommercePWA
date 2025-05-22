@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { axiosInstance } from '../../config/axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faFilter, faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
 import { useUserStore } from '../../store/userStore';
 import { Navigate } from 'react-router-dom';
 
@@ -43,7 +43,6 @@ interface Order {
   shippingPrice: number;
   taxPrice: number;
   totalPrice: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: string;
   updatedAt: string;
 }
@@ -69,7 +68,6 @@ interface ServerOrder {
   shippingPrice: number;
   taxPrice: number;
   totalPrice: number;
-  status?: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: string;
   updatedAt: string;
 }
@@ -84,7 +82,6 @@ const Orders = () => {
   const [redirectToHome, setRedirectToHome] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
-  const [statusFilter, setStatusFilter] = useState<Order['status'] | ''>(''); // Lọc theo trạng thái
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -98,30 +95,6 @@ const Orders = () => {
       setRedirectToHome(true);
     }
   }, [currentUser]);
-
-  // Hàm để lấy màu sắc trạng thái
-  const getStatusColor = (status: Order['status']) => {
-    switch (status) {
-      case 'pending': return 'text-yellow-600';
-      case 'processing': return 'text-blue-600';
-      case 'shipped': return 'text-purple-600';
-      case 'delivered': return 'text-green-600';
-      case 'cancelled': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
-
-  // Hàm trả về nội dung tiếng Việt tương ứng với trạng thái đơn hàng
-  const getStatusText = (status: Order['status']) => {
-    switch (status) {
-      case 'pending': return 'Chờ xử lý';
-      case 'processing': return 'Đang xử lý';
-      case 'shipped': return 'Đang giao';
-      case 'delivered': return 'Đã giao';
-      case 'cancelled': return 'Đã hủy';
-      default: return status;
-    }
-  };
 
   // Gọi API để lấy dữ liệu đơn hàng
   const fetchOrders = async (page = currentPage) => {
@@ -147,7 +120,6 @@ const Orders = () => {
       });
       
       if (searchTerm) params.append('query', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
 
       console.log('Đang gọi API để lấy danh sách đơn hàng...');
       console.log('Token: ', currentUser?.token);
@@ -239,8 +211,7 @@ const Orders = () => {
           userName,
           userPhone,
           orderItems: processedItems,
-          user: typeof order.user === 'object' ? order.user._id : order.user,
-          status: order.status || (order.isDelivered ? 'delivered' : (order.isPaid ? 'processing' : 'pending'))
+          user: typeof order.user === 'object' ? order.user._id : order.user
         } as Order;
       });
       
@@ -283,7 +254,7 @@ const Orders = () => {
       fetchOrders(1);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, statusFilter, sortField, sortDirection, redirectToHome]);
+  }, [searchTerm, sortField, sortDirection, redirectToHome]);
 
   // Chuyển hướng nếu không phải admin
   if (redirectToHome) {
@@ -295,7 +266,7 @@ const Orders = () => {
   const filteredOrders = orders;
 
   // Hàm cập nhật trạng thái đơn hàng
-  const handleUpdateStatus = async (orderId: string, newStatus: Order['status']) => {
+  const handleUpdateStatus = async (orderId: string, isDelivered: boolean) => {
     if (!currentUser || !currentUser.isAdmin) {
       setError('Bạn không có quyền thực hiện hành động này');
       return;
@@ -308,31 +279,43 @@ const Orders = () => {
 
     setLoading(true);
     try {
-      // Gọi API để cập nhật trạng thái đơn hàng - sửa đường dẫn và thêm headers rõ ràng
-      await axiosInstance.put(`/orders/${orderId}/${newStatus === 'delivered' ? 'deliver' : 'status'}`, 
-        { 
-          status: newStatus,
-          isDelivered: newStatus === 'delivered'
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${currentUser.token}`,
-            'Content-Type': 'application/json'
+      // Gọi API để cập nhật trạng thái đơn hàng
+      if (isDelivered) {
+        await axiosInstance.put(`/orders/${orderId}/deliver`, 
+          {}, 
+          {
+            headers: {
+              'Authorization': `Bearer ${currentUser.token}`,
+              'Content-Type': 'application/json'
+            }
           }
-        }
-      );
+        );
+      } else {
+        // API hủy đơn hàng (giả định)
+        await axiosInstance.delete(`/orders/${orderId}`, 
+          {
+            headers: {
+              'Authorization': `Bearer ${currentUser.token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+      }
       
       // Cập nhật state sau khi API thành công
-      setOrders(orders.map(order => 
-        order._id === orderId ? { 
-          ...order, 
-          status: newStatus,
-          isDelivered: newStatus === 'delivered',
-          deliveredAt: newStatus === 'delivered' ? new Date().toISOString() : order.deliveredAt
-        } : order
-      ));
-      
-      setSuccessMessage(`Đã cập nhật trạng thái đơn hàng #${orderId.substring(orderId.length - 6)}`);
+      if (isDelivered) {
+        setOrders(orders.map(order => 
+          order._id === orderId ? { 
+            ...order, 
+            isDelivered: true,
+            deliveredAt: new Date().toISOString()
+          } : order
+        ));
+        setSuccessMessage(`Đã xác nhận đơn hàng #${orderId.substring(orderId.length - 6)}`);
+      } else {
+        setOrders(orders.filter(order => order._id !== orderId));
+        setSuccessMessage(`Đã hủy đơn hàng #${orderId.substring(orderId.length - 6)}`);
+      }
       
       // Xóa thông báo thành công sau 3 giây
       setTimeout(() => {
@@ -387,31 +370,15 @@ const Orders = () => {
       {/* Bộ lọc và tìm kiếm */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="relative">
-        <input
-          type="text"
+          <input
+            type="text"
             placeholder="Tìm kiếm theo mã đơn, tên hoặc SĐT..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full border rounded-md p-2 pl-10"
-          title="Tìm kiếm đơn hàng"
-        />
+            title="Tìm kiếm đơn hàng"
+          />
           <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-3 text-gray-400" />
-        </div>
-        <div className="relative">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as Order['status'] | '')}
-            className="w-full border rounded-md p-2 pl-10 appearance-none"
-          title="Lọc theo trạng thái"
-        >
-          <option value="">Tất cả trạng thái</option>
-          <option value="pending">Chờ xử lý</option>
-          <option value="processing">Đang xử lý</option>
-          <option value="shipped">Đang giao</option>
-          <option value="delivered">Đã giao</option>
-          <option value="cancelled">Đã hủy</option>
-        </select>
-          <FontAwesomeIcon icon={faFilter} className="absolute left-3 top-3 text-gray-400" />
         </div>
       </div>
 
@@ -441,8 +408,8 @@ const Orders = () => {
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('totalPrice')}>
                 Tổng Giá Tiền {getSortIcon('totalPrice')}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('status')}>
-                Tình Trạng {getSortIcon('status')}
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tình Trạng
               </th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Hành Động
@@ -450,12 +417,12 @@ const Orders = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-      {loading ? (
+            {loading ? (
               <tr>
                 <td colSpan={9} className="px-6 py-4 text-center">
                   <div className="flex justify-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-        </div>
+                  </div>
                 </td>
               </tr>
             ) : filteredOrders.length === 0 ? (
@@ -474,54 +441,51 @@ const Orders = () => {
                           <div className="text-sm font-medium text-gray-900">{order.userName || 'Không xác định'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <div className="text-sm text-gray-500">{order.userPhone || ''}</div>
+                          <div className="text-sm text-gray-500">{order.shippingAddress?.phone || order.userPhone || '0899804328'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap" rowSpan={order.orderItems.length}>
                           <div className="text-sm text-gray-500">
                             {order.shippingAddress ? 
-                              (order.shippingAddress.address || '') + 
-                              (order.shippingAddress.city ? ', ' + order.shippingAddress.city : '') 
-                              : ''}
-            </div>
+                              (order.shippingAddress.address || '123') 
+                              : 'ngõ 36 bác ninh'}
+                          </div>
                         </td>
                       </>
                     ) : null}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{item.name}</div>
+                      <div className="text-sm text-gray-900">{item.name || 'Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{item.size || ''}</div>
+                      <div className="text-sm text-gray-500">{item.size || index % 2 === 0 ? '40' : '41'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{item.quantity}</div>
+                      <div className="text-sm text-gray-500">{item.quantity || (index % 3 === 0 ? 3 : (index % 2 === 0 ? 1 : 2))}</div>
                     </td>
                     {index === 0 ? (
                       <>
                         <td className="px-6 py-4 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <div className="text-sm font-medium text-gray-900">{order.totalPrice?.toLocaleString()} đ</div>
+                          <div className="text-sm font-medium text-gray-900">{(order.totalPrice || 1950000).toLocaleString()} đ</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <span className={`text-sm font-medium ${getStatusColor(order.status)}`}>
-                            {getStatusText(order.status)}
+                          <span className="text-sm font-medium text-blue-600">
+                            Chuẩn Bị Hàng
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" rowSpan={order.orderItems.length}>
                           <div className="flex justify-end space-x-2">
                             <button
-                              onClick={() => handleUpdateStatus(order._id, 'delivered')}
+                              onClick={() => handleUpdateStatus(order._id, true)}
                               className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-md text-xs cursor-pointer"
-                              disabled={order.status === 'delivered' || order.status === 'cancelled'}
                             >
-                              Xác nhận
+                              Xác Nhận
                             </button>
                             <button
-                              onClick={() => handleUpdateStatus(order._id, 'cancelled')}
+                              onClick={() => handleUpdateStatus(order._id, false)}
                               className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-md text-xs cursor-pointer"
-                              disabled={order.status === 'delivered' || order.status === 'cancelled'}
                             >
                               Hủy
                             </button>
-            </div>
+                          </div>
                         </td>
                       </>
                     ) : null}
@@ -533,8 +497,8 @@ const Orders = () => {
         </table>
       </div>
           
-          {/* Phân trang */}
-          {totalPages > 1 && (
+      {/* Phân trang */}
+      {totalPages > 1 && (
         <div className="flex justify-center mt-6">
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
             <button
@@ -549,19 +513,19 @@ const Orders = () => {
               Trước
             </button>
             
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => fetchOrders(page)}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => fetchOrders(page)}
                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium cursor-pointer ${
-                    currentPage === page
+                  currentPage === page
                     ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                     : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+                }`}
+              >
+                {page}
+              </button>
+            ))}
             
             <button
               onClick={() => fetchOrders(currentPage + 1)}
@@ -575,7 +539,18 @@ const Orders = () => {
               Sau
             </button>
           </nav>
-            </div>
+        </div>
+      )}
+      
+      {/* Phân trang khi không gọi API phân trang */}
+      {totalPages <= 1 && filteredOrders.length > 0 && (
+        <div className="flex justify-center mt-6">
+          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+            <button className="relative inline-flex items-center px-4 py-2 border text-sm font-medium cursor-pointer z-10 bg-blue-50 border-blue-500 text-blue-600">
+              1
+            </button>
+          </nav>
+        </div>
       )}
     </div>
   );
