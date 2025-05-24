@@ -34,7 +34,7 @@ const Navbar = () => {
   };
   
   const handleAdminDashboard = () => {
-    navigate('/admin');
+    navigate('/admin/products');
   };
 
   return (
