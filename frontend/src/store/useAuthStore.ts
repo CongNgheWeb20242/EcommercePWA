@@ -1,24 +1,74 @@
 import { create } from "zustand";
-import { axiosInstance } from "../config/axios.ts";
 import { User } from "../types/User.ts";
+import { login, register } from "@/services/auth/authService.ts";
+import { LoginCredentials, RegisterData } from "@/types/Auth.ts";
+import { createJSONStorage, persist } from "zustand/middleware";
 
-// Định nghĩa kiểu dữ liệu cho Zustand
 type AuthState = {
+  //State
   user: User | null;
-  fetchUser: () => Promise<void>;
+  error: string | null;
+  loading: boolean;
+
+  //Actions
+  setLoading: (loading: boolean) => void;
+  setUser: (user: User) => void;
+  setError: (error: string | null) => void;
+  signUp: (registerData: RegisterData) => Promise<Boolean>;
+  logIn: (loginCredentials: LoginCredentials) => Promise<Boolean>;
+  logOut: () => void;
 };
 
-// Zustand Store
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  error: null,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      error: null,
+      loading: false,
+      setUser: (user: User) => set({ user }),
+      setError: (error: string | null) => set({ error }),
+      setLoading: (loading: boolean) => set({ loading }),
 
-  fetchUser: async () => {
-    try {
-      const res = await axiosInstance.get("/user");
-      set({ user: res.data });
-    } catch (error) {
-        console.error(error)
+      logIn: async (loginCredentials: LoginCredentials) => {
+        set({ loading: true, error: null });
+
+        const result = await login(loginCredentials);
+
+        if (result.user) {
+          set({ user: result.user, loading: false });
+          return true;
+        } else {
+          set({ error: result.error, loading: false });
+          return false;
+        }
+      },
+
+      signUp: async (registerData: RegisterData) => {
+        set({ loading: true, error: null });
+
+        const result = await register(registerData);
+
+        if (result.user) {
+          set({ user: result.user, loading: false });
+          return true;
+        } else {
+          set({ error: result.error, loading: false });
+          return false;
+        }
+      },
+
+      logOut: () => {
+        set({ user: null });
+        localStorage.removeItem("token");
+      },
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      // Chỉ persist những field cần thiết
+      partialize: (state) => ({
+        user: state.user,
+      }),
     }
-  },
-}));
+  )
+);

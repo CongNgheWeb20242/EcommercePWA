@@ -1,13 +1,13 @@
 import axios from 'axios';
 
-const BASE_URL = "http://localhost:3000/api/";
+const BASE_URL = "https://ecommercepwa-be.onrender.com/api/";
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000
+  timeout: 20000
 });
 
 apiClient.interceptors.request.use(
