@@ -3,14 +3,13 @@ import google_icon from '../../assets/common/google_icon.png';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { register } from '@/services/auth/authService';
-import axios from 'axios';
-import { useUserStore } from '@/store/userStore';
+import { googleLoginUrl } from '@/services/auth/authService';
+import { useAuthStore } from '@/store/useAuthStore';
 
 
 const SignUpForm = () => {
   const navigate = useNavigate();
-  const setUser = useUserStore((state) => state.setUser);
+  const { signUp, error, setError, loading } = useAuthStore();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,8 +20,6 @@ const SignUpForm = () => {
 
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setconfirmPasswordVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
@@ -35,6 +32,10 @@ const SignUpForm = () => {
   const handleSigninClick = () => {
     navigate("/user/login");
   };
+
+  const handleGoogleSignIn = () => {
+    window.location.href = googleLoginUrl();
+  }
 
   const handleInputChange = (id: string, value: string) => {
     setFormData({
@@ -60,42 +61,15 @@ const SignUpForm = () => {
       return;
     }
 
-    setLoading(true);
-    setError('');
+    const userData = {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+    };
 
-    try {
+    const success = await signUp(userData);
 
-      const userData = {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-      };
-
-      const user = await register(userData);
-
-      if (user) {
-        setUser(user);
-        await new Promise(resolve => setTimeout(resolve, 1000)); //wait 1 sec
-        navigate('/user/login');
-      } else {
-        alert('Đăng ký thất bại!');
-      }
-
-    } catch (error) {
-      console.error('Registration error:', error);
-
-      if (axios.isAxiosError(error)) {
-        if (error.response?.data?.message) {
-          setError(error.response.data.message);
-        } else {
-          setError('Registration failed. Please try again later.');
-        }
-      } else {
-        setError('Registration failed. Please try again later.');
-      }
-    } finally {
-      setLoading(false);
-    }
+    if (success) navigate('/home');
   };
 
   return (
@@ -192,7 +166,8 @@ const SignUpForm = () => {
         </button>
 
         {/* Continue with Google */}
-        <button className="w-full bg-gray-100 flex items-center justify-center py-2 rounded-md font-medium hover:bg-gray-200 transition mb-4">
+        <button className="w-full bg-gray-100 flex items-center justify-center py-2 rounded-md font-medium hover:bg-gray-200 transition mb-4"
+          onClick={handleGoogleSignIn}>
           <img src={google_icon} alt="Google Logo" className="w-5 h-5 mr-2" />
           Continue with Google
         </button>

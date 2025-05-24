@@ -213,7 +213,7 @@ export const useCartStore = create<CartState>()(
         }),
         {
             name: 'cart-storage', // Tên trong localStorage
-            version: 1, // Phiên bản, hữu ích khi cấu trúc state thay đổi
+            version: 1, // Phiên bản
         }
     )
 );

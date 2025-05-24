@@ -1,23 +1,43 @@
 import authApiClient from './authApi';
 import { LoginCredentials, RegisterData } from '../../types/Auth';
 import { User } from '@/types/User';
+import axios from 'axios';
 
-export const login = async (credentials: LoginCredentials): Promise<User | null> => {
+
+export const login = async (credentials: LoginCredentials): Promise<{ user?: User; error?: string }> => {
   try {
     const response = await authApiClient.post('/user/login', credentials);
-    return response.data;
+
+    localStorage.setItem('token', response.data.token);
+    return { user: response.data };
+
   } catch (error) {
-    console.error('Login failed:', error);
-    return null;
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data?.message || 'Unknown error';
+      return { error: errorMessage };
+    }
+    return { error: 'Network error' };
   }
 };
 
-export const register = async (userData: RegisterData): Promise<User | null> => {
+export const register = async (userData: RegisterData): Promise<{ user?: User; error?: string }> => {
   try {
     const response = await authApiClient.post('/user/signup', userData);
-    return response.data;
+
+    localStorage.setItem('token', response.data.token);
+
+    return { user: response.data };
   } catch (error) {
-    console.error('Register failed:', error);
-    return null;
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data?.message || 'Unknown error';
+
+      return { error: errorMessage };
+
+    }
+    return { error: 'Network error' };
   }
+};
+
+export const googleLoginUrl = (): string => {
+  return `${authApiClient.defaults.baseURL}user/google`;
 };
