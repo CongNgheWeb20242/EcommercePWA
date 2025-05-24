@@ -162,7 +162,9 @@ const Revenue = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Quản lý Doanh Thu</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Quản lý Doanh Thu</h1>
+      </div>
       
       {loading && (
         <div className="p-4 mb-6 bg-blue-100 text-blue-700 rounded-md">

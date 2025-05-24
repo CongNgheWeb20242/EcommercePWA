@@ -50,6 +50,8 @@ interface User {
   isAdmin: boolean;
   createdAt: string;
   updatedAt: string;
+  phone?: string;
+  address?: string;
 }
 
 const Users = () => {
@@ -79,6 +81,9 @@ const Users = () => {
     message: '',
     onConfirm: () => {},
   });
+
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Gọi API để lấy dữ liệu người dùng
   const fetchUsers = async (page = currentPage) => {
@@ -272,6 +277,18 @@ const Users = () => {
       : <FontAwesomeIcon icon={faSortDown} className="ml-1 text-blue-500" />;
   };
 
+  // Thêm hàm xem chi tiết user
+  const handleViewUserDetail = async (userId: string) => {
+    try {
+      const response = await axiosInstance.get(`/user/${userId}`);
+      setSelectedUser(response.data);
+      setShowDetailModal(true);
+    } catch (err) {
+      console.error('Error fetching user details:', err);
+      toast.error('Không thể tải thông tin chi tiết người dùng');
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
@@ -394,13 +411,20 @@ const Users = () => {
                   </td>
                   <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
                     <button
+                      onClick={() => handleViewUserDetail(user._id)}
+                      className="px-3 py-1 text-blue-600 hover:text-blue-800 mr-2 cursor-pointer"
+                      title="Xem chi tiết"
+                    >
+                      Chi tiết
+                    </button>
+                    <button
                       onClick={() => handleDeleteUser(user._id)}
                       disabled={user.isAdmin || loading}
                       className={`px-3 py-1 rounded-md text-xs text-white 
                         ${user.isAdmin ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 cursor-pointer'}`}
                       title={user.isAdmin ? 'Không thể xóa tài khoản Admin' : 'Xóa người dùng'}
                     >
-                      Xóa Người Dùng
+                      Xóa
                     </button>
                   </td>
                 </tr>
@@ -452,6 +476,70 @@ const Users = () => {
               Sau
             </button>
           </nav>
+        </div>
+      )}
+
+      {/* Modal xem chi tiết user */}
+      {showDetailModal && selectedUser && (
+        <div className="fixed inset-0 z-50 overflow-auto backdrop-blur-sm bg-white/30 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl m-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Thông tin chi tiết người dùng</h3>
+              <button 
+                onClick={() => setShowDetailModal(false)}
+                className="text-gray-500 hover:text-gray-700 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Họ tên</label>
+                  <p className="text-base">{selectedUser.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Email</label>
+                  <p className="text-base">{selectedUser.email}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Số điện thoại</label>
+                  <p className="text-base">{selectedUser.phone || 'Chưa cập nhật'}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Địa chỉ</label>
+                  <p className="text-base">{selectedUser.address || 'Chưa cập nhật'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Vai trò</label>
+                  <p className="text-base">
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      selectedUser.isAdmin ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedUser.isAdmin ? 'Quản Trị Viên' : 'Người dùng'}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">Ngày tạo tài khoản</label>
+                  <p className="text-base">{new Date(selectedUser.createdAt).toLocaleDateString('vi-VN')}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
