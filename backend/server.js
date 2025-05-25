@@ -46,24 +46,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-/* Do đã deploy tách biệt fe - be nên không cần: host riêng 
-
-// Serve frontend in production
-// if (NODE_ENV === 'production') {
-//   app.use(express.static(path.join(__dirname, '/frontend/build')));
-//   app.get('*', (req, res) =>
-//     res.sendFile(path.join(__dirname, '/frontend/build/index.html'))
-//   );
-// }
-
-*/
-
 // CORS - Cho phép FE gọi API từ cả local + hosting
 app.use(
   cors({
     origin:
       process.env.NODE_ENV === 'production'
-        ? ['http://localhost:5173', 'https://your-fe-domain.com']
+        ? ['http://localhost:5173', 'https://loquacious-paletas-3e891d.netlify.app']
         : 'http://localhost:5173',
     credentials: true,
   })
