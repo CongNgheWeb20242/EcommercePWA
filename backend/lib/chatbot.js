@@ -62,7 +62,6 @@ async function askQuestion(question) {
     const greetings = [
       'hello',
       'hi',
-      'Bạn là ai',
       'xin chào',
       'chào',
       'chào bạn',
