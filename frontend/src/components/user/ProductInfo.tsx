@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { Product } from "@/types/Product";
-import { generateRandomRatingAndReviews, renderStars } from "@/helper/StarGenerate";
+import { renderStars } from "@/helper/StarGenerate";
 import useCartStore from "@/store/useCartStore";
 import sizeTableImg from '../../assets/common/size_table.jpg';
 import FlyImage from "./FlyImage";
-
-// TDOD: Xoá hàm này khi có dữ liệu thực
-const COLORS = [
-    "Đen", "Be", "Đỏ", "Xanh navy", "Trắng", "Be nhạt", "Hồng baby"
-];
-const SIZES = ["S", "M"];
 
 interface FlyImageState {
     src: string;
@@ -26,9 +20,6 @@ export default function ProductInfo({ product }: { product: Product }) {
     const [showSizeTable, setShowSizeTable] = useState(false);
 
     const [flyImage, setFlyImage] = useState<FlyImageState | null>(null);
-
-    // TODO: Xoá hàm này khi có dữ liệu thực
-    const { rating, numReviews } = generateRandomRatingAndReviews();
 
     const { cartIconRef, productImageRef } = useCartStore();
 
@@ -90,9 +81,9 @@ export default function ProductInfo({ product }: { product: Product }) {
             {/* Đánh giá & số lượng đánh giá */}
             <div className="flex items-center gap-4 mb-4">
                 <span className="flex items-center gap-1 text-yellow-500 font-bold text-xl">
-                    {rating} {renderStars(rating)}
+                    {product.averageRating} {renderStars(product.averageRating)}
                 </span>
-                <span className="text-gray-600 text-xl">{numReviews} Đánh Giá</span>
+                <span className="text-gray-600 text-xl">{product.reviews.length} Đánh Giá</span>
             </div>
 
             {/* Giá */}
@@ -118,7 +109,7 @@ export default function ProductInfo({ product }: { product: Product }) {
             <div className="mb-3">
                 <div className="font-semibold mb-1">Màu Sắc</div>
                 <div className="flex flex-wrap gap-2">
-                    {COLORS.map((color) => (
+                    {product.color.map((color) => (
                         <button
                             key={color}
                             onClick={() => setSelectedColor(color)}
@@ -134,7 +125,7 @@ export default function ProductInfo({ product }: { product: Product }) {
             <div className="mb-3">
                 <div className="font-semibold mb-1">Size</div>
                 <div className="flex gap-2">
-                    {SIZES.map((size) => (
+                    {product.size.map((size) => (
                         <button
                             key={size}
                             onClick={() => setSelectedSize(size)}

@@ -2,7 +2,7 @@ import React from "react";
 import { Product } from "@/types/Product";
 import { useNavigate } from "react-router-dom";
 import CustomImage from "../ui/image";
-import { generateRandomRatingAndReviews, renderStars } from "@/helper/StarGenerate";
+import { renderStars } from "@/helper/StarGenerate";
 
 interface CardProps {
     product: Product;
@@ -11,8 +11,6 @@ interface CardProps {
 
 const Card: React.FC<CardProps> = ({ product }) => {
     const navigate = useNavigate();
-
-    const { rating, numReviews } = generateRandomRatingAndReviews(); //TODO: Xoá hàm này khi có dữ liệu thực
 
     const handleCardClick = () => {
         navigate(`/user/product/${product._id}`);
@@ -42,13 +40,18 @@ const Card: React.FC<CardProps> = ({ product }) => {
                 {/* Đánh giá */}
                 <div className="flex items-center mt-2 mb-1">
                     {/* //TODO: Xoá hàm này khi có dữ liệu thực*/}
-                    {renderStars(rating)}
+                    {renderStars(product.averageRating)}
                     <span className="ml-2 text-sm text-gray-500">
-                        {rating} ({numReviews} đánh giá)
+                        {product.averageRating} ({product.reviews.length} đánh giá)
                     </span>
                 </div>
                 <p className="font-bold mt-2">
-                    {product.price.toLocaleString("vi-VN")} ₫
+                    <span className="text-red-600 font-bold text-md">
+                        {product.price.toLocaleString("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                        })}
+                    </span>
                 </p>
             </div>
         </div>

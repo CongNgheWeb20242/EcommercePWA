@@ -7,7 +7,7 @@ const NikeCollection = () => {
   return (
     <section className="bg-gray-800 py-12 text-white">
       <div className="container mx-auto text-center mb-8">
-        <h2 className="text-3xl font-bold uppercase">NIKESHOP Collection</h2>
+        <h2 className="text-3xl font-bold uppercase">EcommercePWA Collection</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-40 container mx-auto px-4">
         {/* Collection 1 */}
@@ -17,7 +17,7 @@ const NikeCollection = () => {
             alt="Nike Collection 1"
             className="rounded-lg shadow-lg w-full h-[300px] object-cover"
           />
-          <p className="mt-4 font-medium">NIKESHOP Collection 1</p>
+          <p className="mt-4 font-medium">EcommercePWA Collection 1</p>
         </div>
 
         {/* Collection 2 */}
@@ -27,7 +27,7 @@ const NikeCollection = () => {
             alt="Nike Collection 2"
             className="rounded-lg shadow-lg w-full h-[300px] object-cover"
           />
-          <p className="mt-4 font-medium">NIKESHOP Collection 2</p>
+          <p className="mt-4 font-medium">EcommercePWA Collection 2</p>
         </div>
 
         {/* Collection 3 */}
@@ -37,7 +37,7 @@ const NikeCollection = () => {
             alt="Nike Collection 3"
             className="rounded-lg shadow-lg w-full h-[300px] object-cover"
           />
-          <p className="mt-4 font-medium">NIKESHOP Collection 3</p>
+          <p className="mt-4 font-medium">EcommercePWA Collection 3</p>
         </div>
 
         {/* Collection 4 */}
@@ -47,7 +47,7 @@ const NikeCollection = () => {
             alt="Nike Collection 4"
             className="rounded-lg shadow-lg w-full h-[300px] object-cover"
           />
-          <p className="mt-4 font-medium">NIKESHOP Collection 4</p>
+          <p className="mt-4 font-medium">EcommercePWA Collection 4</p>
         </div>
       </div>
     </section>

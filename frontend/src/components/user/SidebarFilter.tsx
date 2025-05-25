@@ -5,22 +5,23 @@ import { getCategories } from "@/services/api/productService";
 import { Category } from "@/types/Category";
 
 const COLORS = [
-    { name: "Black", class: "bg-black" },
-    { name: "Blue", class: "bg-blue-500" },
-    { name: "Brown", class: "bg-yellow-900" },
-    { name: "Green", class: "bg-green-500" },
-    { name: "Grey", class: "bg-gray-400" },
-    { name: "Purple", class: "bg-purple-500" },
-    { name: "White", class: "bg-white border" },
-    { name: "Yellow", class: "bg-yellow-400" },
+    { name: "black", class: "bg-black" },
+    { name: "blue", class: "bg-blue-500" },
+    { name: "brown", class: "bg-yellow-900" },
+    { name: "green", class: "bg-green-500" },
+    { name: "grey", class: "bg-gray-400" },
+    { name: "purple", class: "bg-purple-500" },
+    { name: "white", class: "bg-white border" },
+    { name: "yellow", class: "bg-yellow-400" },
 ];
 
 interface SidebarFilterProps {
     show: boolean;
     onClose: () => void;
+    onSearchTextChange?: (text: string) => void;
 }
 
-export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
+export default function SidebarFilter({ show, onClose, onSearchTextChange }: SidebarFilterProps) {
     const { fetchProducts } = useProductStore();
 
     const [categories, setCategories] = useState<Category[]>([]);
@@ -30,8 +31,8 @@ export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
     const [priceMin, setPriceMin] = useState("");
     const [priceMax, setPriceMax] = useState("");
     const [rating, setRating] = useState("");
-    const [brand, setBrand] = useState<string[]>([]);
-    const [color, setColor] = useState<string[]>([]);
+    const [brand, setBrand] = useState("");
+    const [color, setColor] = useState("");
     const [inStock, setInStock] = useState(false);
 
     useEffect(() => {
@@ -42,25 +43,24 @@ export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
         fetchCategories();
     }, []);
 
-    // Xử lý chọn brand multi
+    // Xử lý chọn brand 
     const handleBrandChange = (b: string) => {
-        setBrand((prev) =>
-            prev.includes(b) ? prev.filter((v) => v !== b) : [...prev, b]
-        );
+        setBrand(b);
     };
 
-    // Xử lý chọn màu multi
+    // Xử lý chọn màu 
     const handleColorChange = (c: string) => {
-        setColor((prev) =>
-            prev.includes(c) ? prev.filter((v) => v !== c) : [...prev, c]
-        );
+        setColor(c);
     };
 
     // Khi submit filter
     const handleApplyFilter = () => {
+        onSearchTextChange?.(query);
         const params: SearchProductsParams = {
             query: query || undefined,
             category: category || undefined,
+            brand: brand || undefined,
+            color: color || undefined,
             price:
                 priceMin || priceMax
                     ? `${priceMin || 0}-${priceMax || 9999999}`
@@ -168,13 +168,23 @@ export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
                         {["Nike", "Adidas", "Puma", "Converse"].map((b) => (
                             <label key={b} className="flex items-center gap-2">
                                 <input
-                                    type="checkbox"
-                                    checked={brand.includes(b)}
+                                    type="radio"
+                                    name="brand"
+                                    checked={brand === b}
                                     onChange={() => handleBrandChange(b)}
                                 />
                                 {b}
                             </label>
                         ))}
+                        <label key={"nullBrand"} className="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="brand"
+                                checked={brand === ""}
+                                onChange={() => handleBrandChange("")}
+                            />
+                            {"Bỏ chọn"}
+                        </label>
                     </div>
                 </div>
                 {/* Màu sắc */}
@@ -185,11 +195,19 @@ export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
                             <span
                                 key={c.name}
                                 title={c.name}
-                                className={`w-6 h-6 rounded-full border cursor-pointer ${c.class} ${color.includes(c.name) ? "ring-2 ring-blue-500" : ""
+                                className={`w-6 h-6 rounded-full border cursor-pointer ${c.class} ${color === c.name ? "ring-2 ring-blue-500" : ""
                                     }`}
                                 onClick={() => handleColorChange(c.name)}
                             />
                         ))}
+
+                        <span
+                            key={"nullColor"}
+                            title={"nullColor"}
+                            className={`w-6 h-6 rounded-full border cursor-pointer ${color === "" ? "ring-2 ring-blue-500" : ""
+                                }`}
+                            onClick={() => handleColorChange("")}
+                        />
                     </div>
                 </div>
                 {/* Còn hàng */}

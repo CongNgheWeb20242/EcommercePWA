@@ -78,11 +78,6 @@ const ProductPage: React.FC = () => {
 
     return (
         <div className="bg-gray-100 px-[20%] py-[2%]">
-            {/* Breadcrumb */}
-            <div className="text-gray-400 mb-[2%]">
-                Trang Chủ / Giày Nam / Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy
-            </div>
-            {/* TODO:*/}
             <div className="bg-white rounded-lg p-10 pl-6 flex flex-col md:flex-row gap-8 h-[100%]">
                 {/* Left: Images */}
                 <ProductImages product={product} />
@@ -94,8 +89,8 @@ const ProductPage: React.FC = () => {
             <ShopInfo />
 
             <div className="flex flex-col md:flex-row gap-3 mt-3">
-                <ProductReviews />
-                <SuggestProductsSidebar categoryId={product.category._id} />
+                <ProductReviews product={product} />
+                <SuggestProductsSidebar categoryId={product.category._id} productId={product._id} />
             </div>
 
         </div>

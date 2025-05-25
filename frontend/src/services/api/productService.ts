@@ -14,6 +14,8 @@ export async function searchProducts(params: SearchProductsParams): Promise<Sear
     const query = new URLSearchParams();
     if (params.query) query.append("query", params.query);
     if (params.category) query.append("category", params.category);
+    if (params.color) query.append("color", params.color);
+    if (params.brand) query.append("brand", params.brand);
     if (params.price) query.append("price", params.price);
     if (params.rating !== undefined) query.append("rating", params.rating.toString());
     if (params.order) query.append("order", params.order);

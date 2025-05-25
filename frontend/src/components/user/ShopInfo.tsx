@@ -15,7 +15,7 @@ export default function ShopInfo() {
                     />
                 </div>
                 <div>
-                    <div className="font-semibold text-base">Kenco.clothing(Kho sỉ Sài gòn)</div>
+                    <div className="font-semibold text-base">EcommercePWA</div>
                     <div className="flex gap-2 mt-2">
                         <button className="bg-red-500 text-white text-xs px-3 py-1 rounded font-semibold flex items-center gap-1 hover:bg-red-600 transition">
                             <FontAwesomeIcon icon={faComments} className="text-sm" />

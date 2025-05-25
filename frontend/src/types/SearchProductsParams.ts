@@ -5,6 +5,8 @@ export interface SearchProductsParams {
     category?: string;
     price?: string;
     rating?: number;
+    brand?: string;
+    color?: string;
     order?: SortType;
     page?: number;
     pageSize?: number;

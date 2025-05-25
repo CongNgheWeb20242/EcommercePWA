@@ -6,6 +6,12 @@ import { faSliders, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import SidebarFilter from "@/components/user/SidebarFilter";
 import SortByDropdown from "../../components/user/SortByDropdown";
 
+const specialTitles = [
+    "Tất Cả Sản Phẩm",
+    "Thời Trang Nam",
+    "Thời Trang Nữ"
+];
+
 interface ProductsProps {
     searchText: string;
 }
@@ -13,15 +19,32 @@ interface ProductsProps {
 export default function Products({ searchText }: ProductsProps) {
     const [showFilters, setShowFilters] = useState(false);
     const loaderRef = useRef<HTMLDivElement | null>(null);
-
-    const { products, loading, error, fetchProducts, currentPage, setCurrentPage, pages } = useProductStore();
+    const [_searchText, setSearchText] = useState(searchText);
+    const { products, loading, error, fetchProducts, clearSearchParams, currentPage, setCurrentPage, pages } = useProductStore();
     const pageSize = 12;
 
-    // Reset khi searchText thay đổi
+    // Reset khi _searchText thay đổi
+    const queryMap: { [key: string]: string | undefined } = {
+        "Tất Cả Sản Phẩm": "",
+        "Thời trang Nam": "nam",
+        "Thời trang Nữ": "nữ"
+    };
+
     useEffect(() => {
+        clearSearchParams();
         setCurrentPage(1);
-        fetchProducts({ page: 1, pageSize });
-    }, [searchText]); //TDOD: 
+
+        const query = queryMap[_searchText] ?? _searchText;
+
+        setCurrentPage(1);
+        fetchProducts({
+            page: 1,
+            pageSize,
+            query
+        });
+    }, [searchText]);
+
+
 
     // Infinite scroll: gọi khi loaderRef xuất hiện trong viewport
     const loadMore = useCallback(async () => {
@@ -64,10 +87,17 @@ export default function Products({ searchText }: ProductsProps) {
                         : `0px 1fr`,
                 }}
             >
-                <SidebarFilter show={showFilters} onClose={() => setShowFilters(false)} />
+                <SidebarFilter show={showFilters} onClose={() => setShowFilters(false)} onSearchTextChange={(text: string) => { setSearchText(text) }} />
                 <main className="w-full transition-all duration-300">
                     <div className="flex sticky top-20 items-center justify-between mb-6 bg-white z-10 px-4 py-5">
-                        <h2 className="text-2xl font-semibold">{searchText}</h2>
+                        <h2 className="text-2xl font-semibold">
+                            {(!_searchText || _searchText.trim() === "")
+                                ? "Tất Cả Sản Phẩm"
+                                : (specialTitles.includes(_searchText)
+                                    ? _searchText
+                                    : `Kết quả cho: ${_searchText}`)}
+                        </h2>
+
                         <div className="flex items-center gap-4">
                             <button
                                 className="flex items-center gap-2 border px-3 py-1 rounded hover:bg-gray-100"

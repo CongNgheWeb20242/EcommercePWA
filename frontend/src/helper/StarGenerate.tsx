@@ -10,6 +10,9 @@ function generateRandomRatingAndReviews(): { rating: number; numReviews: number 
 
 // Hàm render sao (rating)
 const renderStars = (rating: number) => {
+    if (rating === 0) {
+        return [<span key={0}>⭐</span>];
+    }
     const fullStars = Math.floor(rating);
     const halfStar = rating - fullStars >= 0.5;
     const stars = [];
@@ -19,5 +22,6 @@ const renderStars = (rating: number) => {
     if (halfStar) stars.push(<span key="half">⭐️</span>);
     return stars;
 };
+
 
 export { generateRandomRatingAndReviews, renderStars };
