@@ -1,4 +1,5 @@
 import { Category } from "./Category";
+import { Review } from "./Review";
 
 export interface Product {
     _id: string;
@@ -8,6 +9,10 @@ export interface Product {
     brand: string;
     description: string;
     price: number;
+    size: string[];
+    color: string[];
+    averageRating: number;
+    reviews: Review[];
     countInStock: number;
     category: Category;
     isVisible: boolean;

@@ -16,6 +16,7 @@ interface ProductState {
     setCurrentPage: (page: number) => void;
     fetchProducts: (params?: SearchProductsParams) => Promise<void>;
     setSearchParams: (params: SearchProductsParams) => void;
+    clearSearchParams: () => void;
 }
 
 
@@ -52,4 +53,17 @@ export const useProductStore = create<ProductState>((set, get) => ({
         }
     },
     setSearchParams: (params) => set({ searchParams: { ...get().searchParams, ...params } }),
+
+    clearSearchParams: () => set({
+        searchParams: {
+            query: undefined,
+            category: undefined,
+            price: undefined,
+            rating: undefined,
+            order: undefined,
+            page: 1,
+            pageSize: 12,
+            append: false
+        }
+    })
 }));

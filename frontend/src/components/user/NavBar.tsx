@@ -50,7 +50,7 @@ const Navbar = () => {
     <nav className="flex fixed items-center justify-between w-full px-4 md:px-8 lg:px-40 py-4 bg-white shadow-lg shadow-black/20 z-50">
       {/* Logo */}
       <button className="text-lg text-black" onClick={handleHomelick}>
-        <div className="text-xl font-bold">NIKESHOP</div>
+        <div className="text-xl font-bold">EcommercePWA</div>
       </button>
 
       {/* Desktop Menu - Hidden on mobile */}
@@ -60,9 +60,16 @@ const Navbar = () => {
             Tất Cả Sản Phẩm
           </Link>
         </li>
-        <li><a href="#" className="hover:text-gray-600">Giày Nam</a></li>
-        <li><a href="#" className="hover:text-gray-600">Giày Nữ</a></li>
-        <li><a href="#" className="hover:text-gray-600">Giày Trẻ Em</a></li>
+        <li>
+          <Link to="/user/products/men" className="hover:text-gray-600">
+            Thời Trang Nam
+          </Link>
+        </li>
+        <li>
+          <Link to="/user/products/women" className="hover:text-gray-600">
+            Thời Trang Nữ
+          </Link>
+        </li>
       </ul>
 
       {/* Desktop Search and Icons - Hidden on mobile */}
@@ -142,31 +149,22 @@ const Navbar = () => {
                 </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/user/products/men"
                   className="block py-2 hover:text-gray-600"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Giày Nam
-                </a>
+                  Thời Trang Nam
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/user/products/women"
                   className="block py-2 hover:text-gray-600"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Giày Nữ
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="block py-2 hover:text-gray-600"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Giày Trẻ Em
-                </a>
+                  Thời Trang Nữ
+                </Link>
               </li>
             </ul>
 

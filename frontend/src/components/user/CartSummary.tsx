@@ -2,6 +2,7 @@ import React from "react";
 import useCartStore from "@/store/useCartStore";
 import { useNavigate } from "react-router-dom";
 import useCheckoutStore from "@/store/useCheckOutStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const CartSummary: React.FC = () => {
     const navigate = useNavigate();
@@ -9,9 +10,10 @@ const CartSummary: React.FC = () => {
     const { clearCart, selectAll, deselectAll } = useCartStore();
     const total = useCartStore(state => state.totalPrice);
     const totalQuantity = useCartStore(state => state.totalItems);
+    const user = useAuthStore(state => state.user);
 
-    // Nếu totalQuantity là số lượng sản phẩm được chọn:
-    const isCheckoutDisabled = totalQuantity === 0;
+    // Disable nếu chưa đăng nhập hoặc không có sản phẩm
+    const isCheckoutDisabled = totalQuantity === 0 || !user;
 
     const handleNext = () => {
         if (isCheckoutDisabled) return;
@@ -28,7 +30,14 @@ const CartSummary: React.FC = () => {
                 <tbody>
                     <tr>
                         <td className="py-1">Tạm tính</td>
-                        <td className="py-1 text-right font-semibold">{total.toLocaleString("vi-VN")} đ</td>
+                        <td className="py-1 text-right font-semibold">
+                            <span className="text-red-600 font-bold text-md">
+                                {total.toLocaleString("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                })}
+                            </span>
+                        </td>
                     </tr>
                     <tr>
                         <td className="py-1">Phí Vận Chuyển</td>
@@ -36,7 +45,14 @@ const CartSummary: React.FC = () => {
                     </tr>
                     <tr>
                         <td className="py-1 font-semibold">Tổng Cộng</td>
-                        <td className="py-1 text-right font-bold text-red-600">{total.toLocaleString("vi-VN")} đ</td>
+                        <td className="py-1 text-right font-bold text-red-600">
+                            <span className="text-red-600 font-bold text-md">
+                                {total.toLocaleString("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                })}
+                            </span>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -47,6 +63,13 @@ const CartSummary: React.FC = () => {
                     }`}
                 onClick={handleNext}
                 disabled={isCheckoutDisabled}
+                title={
+                    !user
+                        ? "Bạn cần đăng nhập để thanh toán"
+                        : totalQuantity === 0
+                            ? "Không có sản phẩm nào để thanh toán"
+                            : ""
+                }
             >
                 Tiến hành thanh toán
             </button>
@@ -62,6 +85,11 @@ const CartSummary: React.FC = () => {
                 onClick={clearCart}>
                 Xóa giỏ hàng
             </button>
+            {!user && (
+                <div className="text-red-500 text-sm mt-2 text-center">
+                    Vui lòng đăng nhập để tiến hành thanh toán.
+                </div>
+            )}
         </div>
     );
 };

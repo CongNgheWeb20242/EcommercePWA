@@ -25,7 +25,12 @@ const SearchItem: React.FC<SearchItemProps> = ({ product, onClick }) => {
             <div className="flex-1 truncate">
                 <div className="font-medium text-sm truncate">{product.name}</div>
                 <div className="text-sm text-gray-600 font-semibold">
-                    {product.price.toLocaleString("vi-VN")} đ
+                    <span className="text-red-600 font-bold text-md">
+                        {product.price.toLocaleString("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                        })}
+                    </span>
                 </div>
             </div>
         </div>

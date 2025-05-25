@@ -4,5 +4,5 @@ export interface Review {
     userId: string;
     productId: string;
     comment: string;
-    createdAt: string;
+    createdAt?: string;
 }
