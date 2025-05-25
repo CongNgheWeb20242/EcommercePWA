@@ -269,83 +269,83 @@ const Orders = () => {
       </div>
 
       {/* Bảng đơn hàng */}
-      <div className="overflow-x-auto border rounded">
+      <div className="overflow-x-auto rounded-lg shadow border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-100 sticky top-0 z-10">
             <tr>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Người Dùng</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">SĐT</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Địa Chỉ</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tên Đơn Hàng</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Size</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">SL</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tổng Giá</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Trạng Thái</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Hành Động</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Người Dùng</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">SĐT</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap hidden md:table-cell max-w-[180px] truncate">Địa Chỉ</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap max-w-[220px] truncate">Tên Đơn Hàng</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Size</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">SL</th>
+              <th className="px-4 py-3 text-right font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Tổng Giá</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Trạng Thái</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Hành Động</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-3 py-2 text-center">
+                <td colSpan={9} className="px-3 py-4 text-center">
                   <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                   </div>
                 </td>
               </tr>
             ) : filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-2 text-center text-xs text-gray-500">
+                <td colSpan={9} className="px-3 py-4 text-center text-xs text-gray-500">
                   Không tìm thấy đơn hàng nào
                 </td>
               </tr>
             ) : (
-              filteredOrders.map((order) => (
-                order.orderItems.map((item, index) => (
-                  <tr key={`${order._id}_${index}`}>
+              filteredOrders.map((order) => ([
+                ...order.orderItems.map((item, index) => (
+                  <tr key={`${order._id}_${index}`} className="hover:bg-blue-50 transition-colors">
                     {index === 0 ? (
                       <>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                        <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
                           {order.userName || 'Trần Trọng Luân'}
                         </td>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                        <td className="px-4 py-3 whitespace-nowrap align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
                           {order.shippingAddress?.phone || order.userPhone || '0899804328'}
                         </td>
-                        <td className="px-2 py-2 whitespace-nowrap hidden md:table-cell" rowSpan={order.orderItems.length}>
-                          {order.shippingAddress?.address || 'ngõ 36 bắc ninh'}
+                        <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell align-middle max-w-[180px] truncate" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          <span title={order.shippingAddress?.address || 'ngõ 36 bắc ninh'}>
+                            {order.shippingAddress?.address || 'ngõ 36 bắc ninh'}
+                          </span>
                         </td>
                       </>
                     ) : null}
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      {item.name || 'Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy'}
+                    <td className="px-4 py-3 whitespace-nowrap max-w-[220px] truncate">
+                      <span title={item.name || 'Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy'}>
+                        {item.name || 'Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy'}
+                      </span>
                     </td>
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      {item.size || (index % 2 === 0 ? '40' : '41')}
-                    </td>
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      {item.quantity || (index % 3 === 0 ? 3 : (index % 2 === 0 ? 1 : 2))}
-                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">{item.size || (index % 2 === 0 ? '40' : '41')}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">{item.quantity || (index % 3 === 0 ? 3 : (index % 2 === 0 ? 1 : 2))}</td>
                     {index === 0 ? (
                       <>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                        <td className="px-4 py-3 whitespace-nowrap text-right font-semibold align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
                           {(order.totalPrice || 1950000).toLocaleString()} đ
                         </td>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <span className={`font-medium ${order.isDelivered ? 'text-green-600' : 'text-blue-600'}`}>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isDelivered ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                             {order.isDelivered ? 'Đã Giao' : 'Chuẩn Bị Hàng'}
                           </span>
                         </td>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <div className="flex flex-col sm:flex-row gap-1">
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          <div className="flex flex-col sm:flex-row gap-1 justify-center">
                             <button
                               onClick={() => handleUpdateStatus(order._id, true)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition"
                             >
                               Xác Nhận
                             </button>
                             <button
                               onClick={() => handleUpdateStatus(order._id, false)}
-                              className="bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition"
                             >
                               Hủy
                             </button>
@@ -354,9 +354,15 @@ const Orders = () => {
                       </>
                     ) : null}
                   </tr>
-                ))
-              ))
-            )}
+                )),
+                // Dòng phân cách đậm giữa các đơn hàng
+                <tr key={`divider_${order._id}`}> 
+                  <td colSpan={9} className="p-0">
+                    <div style={{ borderTop: '3px solid #d1d5db', margin: 0 }}></div>
+                  </td>
+                </tr>
+              ])
+            ))}
           </tbody>
         </table>
       </div>

@@ -24,6 +24,7 @@ interface Product {
   updatedAt: string;
   size?: string[];
   color?: string[];
+  sexual: string;
 }
 
 interface CategoryType {
@@ -93,8 +94,10 @@ type ProductFormState = {
   category: string;
   isVisible: boolean;
   image: string;
+  images: string[];
   size: string[];
   color: string[];
+  sexual: string;
 };
 
 const Products = () => {
@@ -150,9 +153,14 @@ const Products = () => {
     category: '',
     isVisible: true,
     image: '',
+    images: [],
     size: [],
     color: [],
+    sexual: 'unisex',
   });
+
+  // State cho preview ảnh phụ
+  const [imagesPreview, setImagesPreview] = useState<string[]>([]);
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -194,13 +202,11 @@ const Products = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
-        sortField: sortField,
-        sortOrder: sortDirection,
       });
-      
       if (searchTerm) params.append('query', searchTerm);
       if (selectedCategory) params.append('category', selectedCategory);
 
+      // Chỉ truyền đúng các tham số backend hỗ trợ
       const response = await axiosInstance.get<ApiResponse>(`/products/admin?${params.toString()}`);
       setProducts(response.data.products || []);
       setTotalPages(response.data.pages || 1);
@@ -208,7 +214,6 @@ const Products = () => {
       setError(null);
     } catch (err: unknown) {
       console.error("Error fetching products:", err);
-      
       // Hiển thị dữ liệu mẫu thay vì hiện thông báo lỗi
       loadSampleData();
     } finally {
@@ -234,6 +239,7 @@ const Products = () => {
         isVisible: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        sexual: 'unisex',
       },
       {
         _id: '2',
@@ -249,6 +255,7 @@ const Products = () => {
         isVisible: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        sexual: 'female',
       },
       {
         _id: '3',
@@ -264,6 +271,7 @@ const Products = () => {
         isVisible: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        sexual: 'unisex',
       },
       {
         _id: '4',
@@ -279,6 +287,7 @@ const Products = () => {
         isVisible: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        sexual: 'unisex',
       }
     ]);
     setTotalPages(1);
@@ -424,35 +433,36 @@ const Products = () => {
     }
   };
 
-  // Handle multiple images change with validation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // Thay đổi hàm handleMultipleImagesChange để thêm ảnh mới vào imagesPreview và formState.images, không reset toàn bộ
   const handleMultipleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      
-      // Validate each file
       const validFiles = files.filter(file => validateImage(file));
-      
-      if (validFiles.length !== files.length) {
-        // Some files were invalid - reset if necessary
-        if (validFiles.length === 0) {
-          e.target.value = '';
-          return;
-        }
-      }
-      
-      // Preview multiple images
-      const previews: string[] = [];
+      if (validFiles.length === 0) return;
+      let loaded = 0;
+      const newPreviews: string[] = [];
+      const newBase64Arr: string[] = [];
       validFiles.forEach(file => {
         const reader = new FileReader();
         reader.onloadend = () => {
-          if (reader.result) {
-            previews.push(reader.result as string);
+          const base64 = reader.result as string;
+          newPreviews.push(base64);
+          newBase64Arr.push(base64);
+          loaded++;
+          if (loaded === validFiles.length) {
+            setImagesPreview(prev => [...prev, ...newPreviews]);
+            setFormState(prev => ({ ...prev, images: [...prev.images, ...newBase64Arr] }));
           }
         };
         reader.readAsDataURL(file);
       });
     }
+  };
+
+  // Thêm hàm xóa ảnh phụ theo index
+  const handleRemovePreviewImage = (idx: number) => {
+    setImagesPreview(prev => prev.filter((_, i) => i !== idx));
+    setFormState(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }));
   };
 
   // Handle removing an existing image - không còn sử dụng vì ẩn tính năng nhiều ảnh
@@ -502,46 +512,40 @@ const Products = () => {
     if (type === 'checkbox' && e.target instanceof HTMLInputElement) {
       newValue = e.target.checked;
     }
-    setFormState(prev => ({
-      ...prev,
-      [name]: newValue
-    }));
+    // Xử lý riêng cho size, color
+    if (name === 'size' || name === 'color') {
+      setFormState(prev => ({ ...prev, [name]: value.split(',').map(s => s.trim()).filter(Boolean) }));
+    } else {
+      setFormState(prev => ({ ...prev, [name]: newValue }));
+    }
   };
 
-  // Thêm hàm upload ảnh lên server
+  // Thêm hàm chọn ảnh: chuyển file sang base64, lưu vào formState.image
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!validateImage(file)) return;
     setImageFile(file);
-    try {
-      // Nén ảnh trước khi upload
-      const compressedBase64 = await compressImage(file);
-      setImagePreview(compressedBase64);
-      // Gửi base64 lên backend (dạng JSON, không phải FormData)
-      const res = await axiosInstance.post('/upload', { image: compressedBase64 });
-      let url = '';
-      if (res.data && res.data.secure_url) url = res.data.secure_url;
-      else if (res.data && res.data.url) url = res.data.url;
-      if (url) {
-        setFormState(prev => ({ ...prev, image: url }));
-        setImagePreview(url);
-        toast.success('Upload ảnh thành công!');
-      } else {
-        toast.error('Không lấy được URL ảnh từ server!');
-      }
-    } catch (err) {
-      toast.error('Lỗi khi nén hoặc upload ảnh!');
-      console.error(err);
-    }
+
+    // Chuyển file sang base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setFormState(prev => ({ ...prev, image: base64 }));
+      setImagePreview(base64);
+      toast.success('Chọn ảnh thành công!');
+    };
+    reader.onerror = () => {
+      toast.error('Lỗi khi đọc file ảnh!');
+    };
+    reader.readAsDataURL(file);
   };
 
   // Xử lý submit form với xác nhận
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Nếu là thêm mới và chưa có ảnh thì cảnh báo
-    if (!editingProduct && (!formState.image || !formState.image.startsWith('http'))) {
-      toast.error('Bạn phải upload ảnh sản phẩm trước khi lưu!');
+    if (!editingProduct && (!formState.image || !formState.image.startsWith('data:'))) {
+      toast.error('Bạn phải chọn ảnh sản phẩm trước khi lưu!');
       return;
     }
     const productData = {
@@ -554,8 +558,10 @@ const Products = () => {
       category: formState.category,
       isVisible: formState.isVisible,
       image: formState.image,
+      images: formState.images,
       size: formState.size,
       color: formState.color,
+      sexual: formState.sexual,
     };
     const submitForm = async () => {
       try {
@@ -597,6 +603,7 @@ const Products = () => {
     setImageFile(null);
     setImagePreview(null);
     setExistingImages([]);
+    setImagesPreview([]);
     setFormState({
       name: '',
       slug: '',
@@ -607,8 +614,10 @@ const Products = () => {
       category: '',
       isVisible: true,
       image: '',
+      images: [],
       size: [],
       color: [],
+      sexual: 'unisex',
     });
   };
 
@@ -625,9 +634,12 @@ const Products = () => {
       category: '',
       isVisible: true,
       image: '',
+      images: [],
       size: [],
       color: [],
+      sexual: 'unisex',
     });
+    setImagesPreview([]);
     setShowModal(true);
   };
 
@@ -635,6 +647,7 @@ const Products = () => {
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setExistingImages(product.images || []);
+    setImagesPreview(product.images || []);
     setFormState({
       name: product.name,
       slug: typeof product.slug === 'string' ? product.slug : '',
@@ -645,10 +658,12 @@ const Products = () => {
       category: typeof product.category === 'object' ? product.category._id : product.category,
       isVisible: product.isVisible,
       image: product.image,
+      images: product.images || [],
       size: product.size || [],
       color: product.color || [],
+      sexual: product.sexual || 'unisex',
     });
-    setImagePreview(product.image); // luôn set lại preview đúng ảnh hiện tại
+    setImagePreview(product.image);
     setShowModal(true);
   };
 
@@ -1061,6 +1076,82 @@ const Products = () => {
                   <p className="text-xs text-gray-500 mt-1">Bạn phải chọn một danh mục để phân loại sản phẩm trên trang người dùng</p>
                 </div>
                 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Giới tính (sexual)*
+                  </label>
+                  <select
+                    name="sexual"
+                    required
+                    value={formState.sexual}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border rounded-md"
+                    aria-label="Giới tính sản phẩm"
+                  >
+                    <option value="unisex">Unisex</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Size (cách nhau dấu phẩy)
+                  </label>
+                  <input
+                    type="text"
+                    name="size"
+                    value={formState.size.join(', ')}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border rounded-md"
+                    aria-label="Size sản phẩm"
+                    placeholder="VD: XL, L, M"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Màu sắc (cách nhau dấu phẩy)
+                  </label>
+                  <input
+                    type="text"
+                    name="color"
+                    value={formState.color.join(', ')}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border rounded-md"
+                    aria-label="Màu sắc sản phẩm"
+                    placeholder="VD: Blue, Red, Black"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ảnh phụ (có thể chọn nhiều ảnh)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleMultipleImagesChange}
+                    title="Chọn ảnh phụ cho sản phẩm"
+                  />
+                  {imagesPreview.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {imagesPreview.map((img, idx) => (
+                        <div key={idx} className="relative group">
+                          <img src={img} alt={`Ảnh phụ ${idx+1}`} className="h-20 object-contain border rounded" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePreviewImage(idx)}
+                            className="absolute -top-2 -right-2 w-7 h-7 flex items-center justify-center rounded-full border-2 border-red-500 bg-white text-red-500 shadow-md transition-all duration-200 hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-400 z-10"
+                            title="Xóa ảnh này"
+                          >
+                            <FontAwesomeIcon icon={faTimes} size="sm" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Hình ảnh chính {!editingProduct && '*'}
@@ -1074,6 +1165,7 @@ const Products = () => {
                       type="file"
                       accept="image/*"
                       onChange={handleImageFileChange}
+                      placeholder="Chọn ảnh sản phẩm chính"
                     />
                   </div>
                   {imagePreview && (
