@@ -1,21 +1,26 @@
 import { CartItem } from '@/types/CartItem';
 import { Product } from '@/types/Product';
+import React from 'react';
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 interface CartState {
     // State
+    cartIconRef: React.RefObject<HTMLButtonElement | null>;
+    productImageRef: React.RefObject<HTMLDivElement | null>;
     items: CartItem[];
     totalItems: number;
     totalPrice: number;
     shippingFee: number;
 
     // Actions
-    addItem: (product: Product, size: number, quantity?: number) => void;
+    setCartIconRef: (ref: React.RefObject<HTMLButtonElement | null>) => void;
+    setproductImageRef: (ref: React.RefObject<HTMLDivElement | null>) => void;
+    addItem: (product: Product, size: string, quantity?: number) => void;
     removeItem: (productId: string) => void;
     increaseQuantity: (productId: string) => void;
     decreaseQuantity: (productId: string) => void;
-    updateSize: (productId: string, size: number) => void;
+    updateSize: (productId: string, size: string) => void;
     selectItem: (productId: string, select: Boolean) => void;
     selectAll: () => void;
     deselectAll: () => void;
@@ -25,10 +30,20 @@ interface CartState {
 export const useCartStore = create<CartState>()(
     persist(
         (set, get) => ({
+            cartIconRef: React.createRef<HTMLButtonElement>(),
+            productImageRef: React.createRef<HTMLDivElement>(),
             items: [],
             totalItems: 0,
             totalPrice: 0,
             shippingFee: 0,
+
+            setCartIconRef: (ref) => {
+                set({ cartIconRef: ref });
+            },
+
+            setproductImageRef: (ref) => {
+                set({ productImageRef: ref });
+            },
 
             // Thêm sản phẩm vào giỏ hàng
             addItem: (product, size, quantity = 1) => {
@@ -214,6 +229,12 @@ export const useCartStore = create<CartState>()(
         {
             name: 'cart-storage', // Tên trong localStorage
             version: 1, // Phiên bản
+            partialize: (state) => ({
+                items: state.items,
+                totalItems: state.totalItems,
+                totalPrice: state.totalPrice,
+                shippingFee: state.shippingFee,
+            }),
         }
     )
 );

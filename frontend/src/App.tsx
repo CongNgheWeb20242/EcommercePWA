@@ -39,6 +39,7 @@ const App = () => {
       <Route path="/home" element={<UserLayout><HomePage /></UserLayout>} />
       <Route path="/user/register" element={<UserLayout><SignUp /></UserLayout>} />
       <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
+      {/* //TODO : sửa search text */}
       <Route path="/user/products" element={<UserLayout><Products searchText={'Tất cả sản phẩm'} /></UserLayout>} />
       <Route path="/user/product/:id" element={<UserLayout><Product /></UserLayout>} />
       <Route path="/user/cart" element={<UserLayout><Cart /></UserLayout>} />
