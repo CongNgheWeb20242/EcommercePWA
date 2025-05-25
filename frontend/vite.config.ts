@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000', // Đổi port này theo port backend
+        target: 'http://localhost:3000', // Đảm bảo backend chạy ở cổng 3000
         changeOrigin: true,
       }
     }

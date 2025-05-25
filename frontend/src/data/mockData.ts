@@ -50,6 +50,51 @@ export const mockProducts = [
       description: 'iPad mạnh mẽ với chip M2',
       createdAt: '2023-02-20T11:45:00.000Z',
     },
+    {
+      id: '1',
+      name: 'iPhone 15 Pro Max',
+      description: 'iPhone 15 Pro Max 256GB - Chính hãng VN/A',
+      price: 32990000,
+      category: 'Điện thoại',
+      stock: 50,
+      images: [
+        'https://example.com/iphone1.jpg',
+        'https://example.com/iphone2.jpg',
+      ],
+      status: 'active',
+      createdAt: '2024-01-15',
+      updatedAt: '2024-01-15',
+    },
+    {
+      id: '2',
+      name: 'MacBook Pro M3',
+      description: 'MacBook Pro 14 inch M3 16GB 512GB',
+      price: 42990000,
+      category: 'Laptop',
+      stock: 30,
+      images: [
+        'https://example.com/macbook1.jpg',
+        'https://example.com/macbook2.jpg',
+      ],
+      status: 'active',
+      createdAt: '2024-01-10',
+      updatedAt: '2024-01-10',
+    },
+    {
+      id: '3',
+      name: 'iPad Pro 12.9',
+      description: 'iPad Pro 12.9 inch M2 256GB',
+      price: 28990000,
+      category: 'Máy tính bảng',
+      stock: 25,
+      images: [
+        'https://example.com/ipad1.jpg',
+        'https://example.com/ipad2.jpg',
+      ],
+      status: 'active',
+      createdAt: '2024-01-05',
+      updatedAt: '2024-01-05',
+    }
   ];
   
   // Dữ liệu giả cho đơn hàng
@@ -143,6 +188,57 @@ export const mockProducts = [
         country: 'Việt Nam'
       },
       paymentMethod: 'COD'
+    },
+    {
+      id: '1',
+      customerName: 'Nguyễn Văn A',
+      customerEmail: 'nguyenvana@example.com',
+      customerPhone: '0123456789',
+      shippingAddress: '123 Đường ABC, Quận 1, TP.HCM',
+      items: [
+        {
+          productId: '1',
+          name: 'iPhone 15 Pro Max',
+          price: 32990000,
+          quantity: 1,
+          total: 32990000
+        }
+      ],
+      totalAmount: 32990000,
+      status: 'processing',
+      paymentMethod: 'bank_transfer',
+      paymentStatus: 'paid',
+      createdAt: '2024-01-15T10:00:00Z',
+      updatedAt: '2024-01-15T10:00:00Z'
+    },
+    {
+      id: '2',
+      customerName: 'Trần Thị B',
+      customerEmail: 'tranthib@example.com',
+      customerPhone: '0987654321',
+      shippingAddress: '456 Đường XYZ, Quận 2, TP.HCM',
+      items: [
+        {
+          productId: '2',
+          name: 'MacBook Pro M3',
+          price: 42990000,
+          quantity: 1,
+          total: 42990000
+        },
+        {
+          productId: '3',
+          name: 'iPad Pro 12.9',
+          price: 28990000,
+          quantity: 1,
+          total: 28990000
+        }
+      ],
+      totalAmount: 71980000,
+      status: 'pending',
+      paymentMethod: 'credit_card',
+      paymentStatus: 'pending',
+      createdAt: '2024-01-16T14:30:00Z',
+      updatedAt: '2024-01-16T14:30:00Z'
     }
   ];
   
@@ -259,3 +355,13 @@ export const mockRevenueData = {
       revenuePerCustomer: 267.6
     }
   };
+
+// Danh mục sản phẩm
+export const mockCategories = [
+  'Điện thoại',
+  'Laptop',
+  'Máy tính bảng',
+  'Phụ kiện',
+  'Âm thanh',
+  'Khác'
+];

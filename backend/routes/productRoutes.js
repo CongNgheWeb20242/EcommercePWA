@@ -11,7 +11,7 @@ productRouter.get('/', productController.getProducts);
 productRouter.post('/create', protectedRoute, isAdmin, productController.createProduct);
 
 productRouter.put('/:id/update', protectedRoute, isAdmin, productController.updateProduct);
-// productRouter.delete('/delete/:id', protectedRoute, isAdmin, productController.deleteProduct);
+productRouter.delete('/delete/:id', protectedRoute, isAdmin, productController.deleteProduct);
 productRouter.post('/:id/reviews', protectedRoute, productController.addReview);
 productRouter.get('/admin', protectedRoute, isAdmin, productController.getAdminProducts);
 productRouter.get('/search', productController.searchProducts);

@@ -1,6 +1,10 @@
+<<<<<<< HEAD
+POST http://localhost:3000/api/payment/create_payment_url
+=======
 # Test API BE - localhost
 
 POST http://localhost:3000/api/user/login
+>>>>>>> origin/dev
 Content-Type: application/json
 
 {

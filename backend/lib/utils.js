@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import User from '../models/userModel.js'; // Make sure this path is correct
 
 export const baseUrl = () => {
   if (process.env.NODE_ENV === 'production') {
@@ -17,13 +18,19 @@ export const generateToken = (userId, res) => {
 
 export const isAuth = (req, res, next) => {
   const authorization = req.headers.authorization;
+  console.log('authorization', authorization);
   if (authorization) {
     const token = authorization.slice(7, authorization.length); // Bearer XXXXXX
-    jwt.verify(token, process.env.JWT_SECRET, (err, decode) => {
+    jwt.verify(token, process.env.JWT_SECRET, async (err, decode) => {
+      console.log('decode', decode);
       if (err) {
         res.status(401).send({ message: 'Invalid Token' });
       } else {
-        req.user = decode;
+        const user = await User.findById(decode.userId);
+        if (!user) {
+          return res.status(401).send({ message: 'User Not Found' });
+        }
+        req.user = user;
         next();
       }
     });

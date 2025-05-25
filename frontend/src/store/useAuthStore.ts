@@ -2,13 +2,13 @@ import { create } from "zustand";
 import { axiosInstance } from "../config/axios.ts";
 import { User } from "../types/User.ts";
 
-// Định nghĩa kiểu dữ liệu cho Zustand
+
 type AuthState = {
   user: User | null;
   fetchUser: () => Promise<void>;
 };
 
-// Zustand Store
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   error: null,

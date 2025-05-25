@@ -63,7 +63,13 @@ const SignInForm = () => {
       if (user) {
         setUser(user);
         await new Promise(resolve => setTimeout(resolve, 1000)); //wait 1 sec
-        navigate('/home');
+        
+        // Điều hướng dựa trên vai trò
+        if (user.isAdmin) {
+          navigate('/admin/products');
+        } else {
+          navigate('/home');
+        }
       } else {
         alert('Đăng nhập thất bại!');
       }
@@ -129,7 +135,11 @@ const SignInForm = () => {
               onChange={(e) => handleInputChange('password', e.target.value)}
               required
             />
-            <button className="text-gray-500 hover:text-gray-700 ml-2" onClick={togglePasswordVisibility}>
+            <button 
+              className="text-gray-500 hover:text-gray-700 ml-2" 
+              onClick={togglePasswordVisibility}
+              aria-label={passwordVisible ? "Hide password" : "Show password"}
+            >
               <FontAwesomeIcon icon={passwordVisible ? faEyeSlash : faEye} />
             </button>
           </div>

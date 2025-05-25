@@ -2,7 +2,6 @@ import User from '../models/userModel.js';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../lib/utils.js';
 import cloudinary from '../lib/cloudinary.js';
-import { sendResetPasswordEmail } from '../lib/resend.js';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
 
@@ -197,15 +196,23 @@ export const forgetPassword = async (req, res) => {
     : 'https://yourdomain.com';
 
   const resetUrl = `${FE_BASE_URL}/api/user/reset-password/${token}`;
-  console.log('Reset password URL', resetUrl);
-
+  
+  // Tạm thời comment lại phần gửi email
+  /*
   try {
     await sendResetPasswordEmail(user.email, resetUrl);
-    res.json({ message: 'Đường dẫn đặt lại mật khẩu đã được gửi qua email.' });
-  } catch (err) {
-    console.error('Lỗi gửi email:', err);
-    res.status(500).json({ message: 'Không thể gửi email đặt lại mật khẩu.' });
+    res.status(200).json({ message: 'Reset password link sent to your email' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error sending reset password email' });
   }
+  */
+  
+  // Tạm thời trả về link reset password
+  res.status(200).json({ 
+    message: 'Reset password link generated',
+    resetUrl: resetUrl 
+  });
 };
 
 // Reset password thực sự
