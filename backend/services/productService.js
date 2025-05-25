@@ -181,21 +181,24 @@ export const getAdminProducts = async (page, pageSize) => {
   return {
     products,
     countProducts,
-    page,
+    page: parseInt(page, 10),
     pages: Math.ceil(countProducts / pageSize),
   };
 };
 
 export const searchProducts = async (queryParams, user = null) => {
-  const {
+  let {
     pageSize = 3,
-    page = 1,
+    page = parseInt(1,10),
     category = '',
     price = '',
     rating = '',
     order = '',
     query = '',
   } = queryParams;
+  
+  page = parseInt(page, 10);
+  pageSize = parseInt(pageSize, 10);
 
   const queryFilter =
     query && query !== 'all' ? { name: { $regex: query, $options: 'i' } } : {};
@@ -248,8 +251,8 @@ export const searchProducts = async (queryParams, user = null) => {
   return {
     products,
     countProducts,
-    page,
-    pages: Math.ceil(countProducts / pageSize),
+    page: parseInt(page, 10),
+    pages: Math.ceil(countProducts / parseInt(pageSize, 10)),
   };
 };
 
