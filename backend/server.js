@@ -14,6 +14,7 @@ import { devLogger } from './middlewares/morganLogger.js';
 import { connectDB } from './lib/db.js';
 import './lib/passport.js';
 import { baseUrl } from './lib/utils.js';
+import { askQuestion } from "./lib/chatbot.js"
 
 // Routes
 import productRouter from './routes/productRoutes.js';
@@ -75,6 +76,26 @@ app.use('/api/user', userRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/orders', orderReportRoutes);
+
+app.post('/api/ai/ask', async (req, res) => {
+  console.log('Received AI request:', req.body);
+  const { question } = req.body;
+  
+  if (!question) {
+    console.error('No question provided in request');
+    return res.status(400).json({ error: 'Question is required' });
+  }
+
+  try {
+    console.log('Processing question:', question);
+    const answer = await askQuestion(question);
+    console.log('Got answer from AI:', answer);
+    res.json({ answer });
+  } catch (error) {
+    console.error('Error in /api/ai/ask:', error);
+    res.status(500).json({ error: 'Lỗi AI' });
+  }
+});
 
 app.use('/', (req, res) => {
   res.send(
