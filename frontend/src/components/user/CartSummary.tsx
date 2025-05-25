@@ -3,7 +3,6 @@ import useCartStore from "@/store/useCartStore";
 import { useNavigate } from "react-router-dom";
 import useCheckoutStore from "@/store/useCheckOutStore";
 
-
 const CartSummary: React.FC = () => {
     const navigate = useNavigate();
     const { goToNextStep } = useCheckoutStore();
@@ -11,7 +10,11 @@ const CartSummary: React.FC = () => {
     const total = useCartStore(state => state.totalPrice);
     const totalQuantity = useCartStore(state => state.totalItems);
 
+    // Nếu totalQuantity là số lượng sản phẩm được chọn:
+    const isCheckoutDisabled = totalQuantity === 0;
+
     const handleNext = () => {
+        if (isCheckoutDisabled) return;
         navigate('/user/checkout');
         goToNextStep();
     };
@@ -37,28 +40,26 @@ const CartSummary: React.FC = () => {
                     </tr>
                 </tbody>
             </table>
-            <button className="w-full bg-red-600 text-white py-3 rounded font-semibold mb-3 hover:bg-red-700 transition"
-                onClick={() => {
-                    handleNext();
-                }}>
+            <button
+                className={`w-full py-3 rounded font-semibold mb-3 transition ${isCheckoutDisabled
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-red-600 text-white hover:bg-red-700"
+                    }`}
+                onClick={handleNext}
+                disabled={isCheckoutDisabled}
+            >
                 Tiến hành thanh toán
             </button>
             <button className="w-full border border-gray-400 text-gray-700 py-3 rounded font-semibold hover:bg-gray-100 transition"
-                onClick={() => {
-                    selectAll();
-                }}>
-                Chọn tât cả
+                onClick={selectAll}>
+                Chọn tất cả
             </button>
             <button className="w-full border border-gray-400 text-gray-700 py-3 rounded font-semibold hover:bg-gray-100 transition"
-                onClick={() => {
-                    deselectAll();
-                }}>
-                Bỏ chọn tât cả
+                onClick={deselectAll}>
+                Bỏ chọn tất cả
             </button>
             <button className="w-full border border-gray-400 text-gray-700 py-3 rounded font-semibold hover:bg-gray-100 transition"
-                onClick={() => {
-                    clearCart();
-                }}>
+                onClick={clearCart}>
                 Xóa giỏ hàng
             </button>
         </div>

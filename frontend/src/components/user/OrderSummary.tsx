@@ -2,7 +2,7 @@ import { useCartStore } from "@/store/useCartStore";
 import OrderedProductList from "./OrderedProductList";
 
 export default function OrderSummary() {
-    const { items, totalItems, totalPrice } = useCartStore();
+    const { totalItems, totalPrice } = useCartStore();
 
     return (
         <div className="w-full max-w-xs bg-blue-50 p-6 rounded border">
