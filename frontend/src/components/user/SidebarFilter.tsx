@@ -1,6 +1,8 @@
-import React, { useState } from "react";
-import { SearchProductsParams } from "@/services/api/productService";
+import { useEffect, useState } from "react";
 import { useProductStore } from "@/store/useProductStore";
+import { SearchProductsParams } from "@/types/SearchProductsParams";
+import { getCategories } from "@/services/api/productService";
+import { Category } from "@/types/Category";
 
 const COLORS = [
     { name: "Black", class: "bg-black" },
@@ -19,10 +21,10 @@ interface SidebarFilterProps {
 }
 
 export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
-    // Lấy hàm fetchProducts từ store
     const { fetchProducts } = useProductStore();
 
-    // State tạm cho filter (có thể chuyển sang Zustand/global nếu muốn đồng bộ nhiều nơi)
+    const [categories, setCategories] = useState<Category[]>([]);
+
     const [query, setQuery] = useState("");
     const [category, setCategory] = useState("");
     const [priceMin, setPriceMin] = useState("");
@@ -31,6 +33,14 @@ export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
     const [brand, setBrand] = useState<string[]>([]);
     const [color, setColor] = useState<string[]>([]);
     const [inStock, setInStock] = useState(false);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            const data = await getCategories();
+            if (data) setCategories(data);
+        };
+        fetchCategories();
+    }, []);
 
     // Xử lý chọn brand multi
     const handleBrandChange = (b: string) => {
@@ -57,7 +67,6 @@ export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
                     : undefined,
             rating: rating ? Number(rating) : undefined,
             page: 1,
-            pageSize: 12,
         };
         fetchProducts(params);
     };
@@ -68,7 +77,7 @@ export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
         <aside
             className={`
                 h-screen bg-white border-r overflow-y-auto
-                sticky top-0
+                sticky top-20
                 transition-all duration-300
             `}
             style={{
@@ -109,10 +118,12 @@ export default function SidebarFilter({ show, onClose }: SidebarFilterProps) {
                         onChange={(e) => setCategory(e.target.value)}
                     >
                         <option value="">Tất cả</option>
-                        <option value="men">Giày Nam</option>
-                        <option value="women">Giày Nữ</option>
-                        <option value="kids">Trẻ em</option>
-                        {/* Nên lấy danh mục động từ API */}
+                        {categories.length > 0 && categories.map((cat) => (
+                            <option key={cat._id} value={cat._id}>
+                                {cat.name}
+                            </option>
+                        ))}
+                        {/*  */}
                     </select>
                 </div>
                 {/* Giá */}

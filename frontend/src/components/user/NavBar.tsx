@@ -3,12 +3,23 @@ import { faShoppingCart, faBars, faTimes } from '@fortawesome/free-solid-svg-ico
 import { Link, useNavigate } from "react-router-dom";
 import LiveSearchBar from './LiveSearchBar';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import React from 'react';
+import useCartStore from '@/store/useCartStore';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, logOut } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const cartIconRef = React.useRef<HTMLButtonElement>(null);
+  const setCartIconRef = useCartStore((state) => state.setCartIconRef);
+
+  useEffect(() => {
+    if (cartIconRef.current) {
+      setCartIconRef(cartIconRef);
+    }
+  }, []);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -57,7 +68,7 @@ const Navbar = () => {
       {/* Desktop Search and Icons - Hidden on mobile */}
       <div className="hidden md:flex items-center space-x-6 lg:space-x-10">
         <LiveSearchBar />
-        <button className="text-lg text-black" onClick={handleCartClick}>
+        <button className="text-lg text-black" ref={cartIconRef} onClick={handleCartClick}>
           <FontAwesomeIcon icon={faShoppingCart} />
         </button>
       </div>

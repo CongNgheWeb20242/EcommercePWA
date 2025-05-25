@@ -15,7 +15,7 @@ const UserLayout = ({ children }: UserLayoutProps) => {
       <Navbar />
 
       {/* Content */}
-      <main className="flex-1 min-h-[500px] mt-[80px] overflow-y-auto ">
+      <main className="flex-1 min-h-[500px] mt-[80px]">
         {children}
       </main>
 
