@@ -90,6 +90,7 @@ const Orders = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [redirectToHome, setRedirectToHome] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
   
   // State cho hộp thoại xác nhận
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -177,13 +178,16 @@ const Orders = () => {
 
   // Lọc đơn hàng theo từ khóa tìm kiếm
   const filteredOrders = orders.filter(order => {
-    const searchTermLower = searchTerm.toLowerCase();
-    const orderIdMatch = order.order_id?.toLowerCase().includes(searchTermLower) || false;
-    const userNameMatch = order.userName?.toLowerCase().includes(searchTermLower) || false;
-    const phoneMatch = order.shippingAddress?.phone?.includes(searchTerm) || 
-                      order.userPhone?.includes(searchTerm) || false;
-    
-    return orderIdMatch || userNameMatch || phoneMatch;
+    if (!searchTerm) return true;
+    const normalizePhone = (str: string = '') => str.replace(/\D/g, '');
+    const normalizeText = (str: string = '') => str.toLowerCase();
+    const searchPhone = normalizePhone(searchTerm);
+    const searchText = normalizeText(searchTerm);
+    const phone1 = normalizePhone(order.shippingAddress?.phone);
+    const phone2 = normalizePhone(order.userPhone);
+    const name = normalizeText(order.userName || '');
+    // Tìm theo tên (không phân biệt hoa thường) hoặc số điện thoại (chỉ số)
+    return name.includes(searchText) || phone1.includes(searchPhone) || phone2.includes(searchPhone);
   });
 
   // Hiển thị hộp thoại xác nhận
@@ -251,7 +255,7 @@ const Orders = () => {
   return (
     <div className="container mx-auto p-3">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Quản Trị Admin</h1>
+        <h1 className="text-xl font-bold">Quản lý đơn hàng</h1>
       </div>
 
       {/* Bộ lọc và tìm kiếm */}
@@ -259,7 +263,7 @@ const Orders = () => {
         <div className="relative w-64">
           <input
             type="text"
-            placeholder="Tìm kiếm..."
+            placeholder="Tìm kiếm theo tên hoặc SĐT..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full border rounded-md p-1.5 pl-8 text-sm"
@@ -300,9 +304,16 @@ const Orders = () => {
                 </td>
               </tr>
             ) : (
-              filteredOrders.map((order) => ([
+              filteredOrders.flatMap((order) => [
                 ...order.orderItems.map((item, index) => (
-                  <tr key={`${order._id}_${index}`} className="hover:bg-blue-50 transition-colors">
+                  <tr
+                    key={`${order._id}_${index}`}
+                    onMouseEnter={() => setHoveredOrderId(order._id)}
+                    onMouseLeave={() => setHoveredOrderId(null)}
+                    className={
+                      (hoveredOrderId === order._id ? 'bg-blue-50 ' : '') + 'transition-colors'
+                    }
+                  >
                     {index === 0 ? (
                       <>
                         <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
@@ -362,7 +373,7 @@ const Orders = () => {
                   </td>
                 </tr>
               ])
-            ))}
+            )}
           </tbody>
         </table>
       </div>
