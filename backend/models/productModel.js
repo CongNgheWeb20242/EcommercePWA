@@ -15,7 +15,7 @@ const productSchema = new mongoose.Schema(
 
     size: [{ type: String }],
     color: [{ type: String }],
-
+    sexual: { type: String, enum: ['male', 'female', 'unisex'], default: 'unisex' },
     // relations
     category: {
       type: mongoose.Schema.Types.ObjectId,
