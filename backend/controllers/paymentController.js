@@ -248,7 +248,7 @@ export const vnpayReturn = async (req, res) => {
             ? `<p class="order-id">Mã đơn hàng: <strong>${orderId}</strong></p>`
             : ''
         }
-        <a class="btn" href="https://ecommercepwa-be.onrender.com">Quay lại trang chủ</a>
+        <a class="btn" href="http://localhost:5173/">Quay lại trang chủ</a>
       </div>
     </body>
     </html>
