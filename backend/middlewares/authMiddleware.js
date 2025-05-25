@@ -10,6 +10,14 @@ export const isAdmin = async (req, res, next) => {
   next();
 }
 
+// Cho phép admin hoặc chính user đó truy cập
+export const isAdminOrSelf = (req, res, next) => {
+  if (req.user.isAdmin || req.user._id.toString() === req.params.id) {
+    return next();
+  }
+  return res.status(403).json({ message: "Forbidden" });
+};
+
 // protectedRoute là middleware để bảo vệ các route cần xác thực người dùng
 export const protectedRoute = async (req, res, next) => {
   try {

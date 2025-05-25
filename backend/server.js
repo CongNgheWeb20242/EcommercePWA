@@ -8,6 +8,14 @@ import YAML from 'yamljs';
 import passport from 'passport';
 import { fileURLToPath } from 'url';
 import orderReportRoutes from './routes/orderReportRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
+
+// Import http and Socket.IO Server
+import http from 'http';
+import { Server } from 'socket.io';
+
+// Import ChatMessage model
+import ChatMessage from './models/chatMessageModel.js';
 
 // Custom middlewares & config
 import { devLogger } from './middlewares/morganLogger.js';
@@ -33,6 +41,21 @@ const __dirname = path.dirname(__filename);
 await connectDB();
 
 const app = express();
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.IO server
+const io = new Server(server, {
+  cors: {
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? ['http://localhost:5173', 'https://your-fe-domain.com'] // Nhớ cập nhật domain frontend của bạn
+        : 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
 
 // Swagger API Docs
 const swaggerDocument = YAML.load(path.join(__dirname, 'docs', 'swagger.yaml'));
@@ -75,6 +98,7 @@ app.use('/api/user', userRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/orders', orderReportRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.use('/', (req, res) => {
   res.send(
@@ -82,7 +106,58 @@ app.use('/', (req, res) => {
   );
 });
 
-app.listen(PORT, () => {
+// Socket.IO connection handler
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  // Lắng nghe sự kiện 'joinRoom' để user tham gia vào phòng chat riêng với admin
+  // conversationId có thể là userId của user
+  socket.on('joinRoom', (conversationId) => {
+    socket.join(conversationId);
+    console.log(`User ${socket.id} joined room ${conversationId}`);
+  });
+
+  // Lắng nghe sự kiện 'disconnect'
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+
+  // Ví dụ: Lắng nghe một sự kiện tên là 'chatMessage' từ client
+  socket.on('chatMessage', async (data) => {
+    console.log('Message from client ' + socket.id + ':', data);
+    try {
+      // Giả sử client gửi object data có dạng: 
+      // { conversationId: 'someUserId', sender: { id: 'userId', name: 'UserName', role: 'user' }, message: 'Hello' }
+      // Hoặc { conversationId: 'someUserId', sender: { name: 'Admin', role: 'admin' }, message: 'Hi user' }
+      
+      const newMessage = new ChatMessage({
+        conversationId: data.conversationId,
+        sender: {
+          id: data.sender.id, // Sẽ là undefined nếu admin gửi và admin không có id user
+          name: data.sender.name, 
+          role: data.sender.role,
+        },
+        message: data.message,
+      });
+
+      const savedMessage = await newMessage.save();
+      console.log('Message saved to DB:', savedMessage);
+
+      // Gửi tin nhắn đã lưu (với _id và timestamps) tới phòng chat cụ thể
+      // Hoặc có thể io.emit nếu muốn gửi global, nhưng gửi vào room sẽ hiệu quả hơn
+      io.to(savedMessage.conversationId).emit('newChatMessage', savedMessage);
+
+    } catch (error) {
+      console.error('Error saving chat message:', error);
+      // Có thể gửi thông báo lỗi về cho client nếu cần
+      socket.emit('chatMessageError', { message: 'Could not save message', error: error.message });
+    }
+  });
+
+  // Các xử lý sự kiện khác của Socket.IO sẽ ở đây
+});
+
+server.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   console.log(`API Docs: ${baseUrl()}/api-docs`);
 });
