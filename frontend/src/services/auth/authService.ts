@@ -3,13 +3,28 @@ import { LoginCredentials, RegisterData } from '../../types/Auth';
 import { User } from '@/types/User';
 import axios from 'axios';
 
+interface LoginResponse {
+  _id: string;
+  name: string;
+  token: string;
+  email: string;
+  profilePic: string;
+}
+
 
 export const login = async (credentials: LoginCredentials): Promise<{ user?: User; error?: string }> => {
   try {
-    const response = await authApiClient.post('/user/login', credentials);
+    const response = await authApiClient.post<LoginResponse>('/user/login', credentials);
 
     localStorage.setItem('token', response.data.token);
-    return { user: response.data };
+    const user: User = {
+      id: response.data._id,
+      name: response.data.name,
+      email: response.data.email,
+      profilePic: response.data.profilePic,
+      isAdmin: false, //TODO
+    }
+    return { user: user };
 
   } catch (error) {
     if (axios.isAxiosError(error)) {

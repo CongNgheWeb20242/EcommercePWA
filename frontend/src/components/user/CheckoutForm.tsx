@@ -15,7 +15,7 @@ export default function CheckoutForm() {
     const [province, setProvince] = useState("");
     const [district, setDistrict] = useState("");
     const [ward, setWard] = useState("");
-    const [payment, setPayment] = useState<PaymentMethod>("cash");
+    const [payment, setPayment] = useState<PaymentMethod>("cod");
 
     const handleAddressChange = (addr: { province: string; district: string; ward: string }) => {
         setProvince(addr.province);
@@ -46,7 +46,8 @@ export default function CheckoutForm() {
             district,
             ward,
         });
-        // TODO
+
+        goToNextStep()
     };
 
     return (
@@ -99,8 +100,8 @@ export default function CheckoutForm() {
                         <input
                             type="radio"
                             name="payment"
-                            checked={payment === "cash"}
-                            onChange={() => handlePaymentChange("cash")}
+                            checked={payment === "cod"}
+                            onChange={() => handlePaymentChange("cod")}
                             className="accent-blue-600"
                         />
                         Thanh Toán Khi Nhận Hàng
@@ -109,17 +110,14 @@ export default function CheckoutForm() {
                         <input
                             type="radio"
                             name="payment"
-                            checked={payment === "momo"}
-                            onChange={() => handlePaymentChange("momo")}
+                            checked={payment === "vnpay"}
+                            onChange={() => handlePaymentChange("vnpay")}
                             className="accent-blue-600"
                         />
-                        Thanh Toán Qua Momo
+                        Thanh Toán Qua VNPay
                     </label>
                 </div>
-                <button type="submit" className="w-full bg-red-600 text-white py-3 rounded font-semibold mt-4 hover:bg-red-700 transition"
-                    onClick={() => {
-                        goToNextStep();
-                    }}>
+                <button type="submit" className="w-full bg-red-600 text-white py-3 rounded font-semibold mt-4 hover:bg-red-700 transition">
                     Hoàn Tất Đơn Hàng
                 </button>
             </form>

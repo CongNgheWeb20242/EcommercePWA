@@ -6,12 +6,12 @@ import { useEffect } from "react";
 
 
 const CartPage = () => {
-    const { setStep } = useCheckoutStore();
+    const { clearAll } = useCheckoutStore();
 
     const items = useCartStore(state => state.items);
 
     useEffect(() => {
-        setStep(1);
+        clearAll();
     }, []);
 
     return (
