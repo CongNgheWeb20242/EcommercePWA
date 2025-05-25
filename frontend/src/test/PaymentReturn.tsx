@@ -13,7 +13,7 @@ const PaymentReturn = () => {
         const query = new URLSearchParams(location.search);
         
         // Gọi API để xác nhận thanh toán
-        const response = await fetch('/api/payment/vnpay_return?' + query.toString());
+        const response = await fetch('https://ecommercepwa-be.onrender.com/api/payment/vnpay_return?' + query.toString());
         const data = await response.json();
         
         if (data.code === '00') {

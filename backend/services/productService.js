@@ -175,6 +175,7 @@ export const addReview = async (productId, reviewData) => {
 
 export const getAdminProducts = async (page, pageSize) => {
   const products = await Product.find()
+    .sort({ createdAt: -1 })
     .skip(pageSize * (page - 1))
     .limit(pageSize);
   const countProducts = await Product.countDocuments();

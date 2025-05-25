@@ -22,6 +22,8 @@ interface Product {
   isVisible: boolean;
   createdAt: string;
   updatedAt: string;
+  size?: string[];
+  color?: string[];
 }
 
 interface CategoryType {
@@ -81,6 +83,20 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, o
   );
 };
 
+type ProductFormState = {
+  name: string;
+  slug: string;
+  description: string;
+  price: string;
+  countInStock: string;
+  brand: string;
+  category: string;
+  isVisible: boolean;
+  image: string;
+  size: string[];
+  color: string[];
+};
+
 const Products = () => {
   // State for products data
   const [products, setProducts] = useState<Product[]>([]);
@@ -123,19 +139,8 @@ const Products = () => {
     onConfirm: () => {},
   });
 
-  // Thêm state cho form sản phẩm
-  const [formState, setFormState] = useState<{
-    name: string;
-    slug: string;
-    description: string;
-    price: string;
-    countInStock: string;
-    brand: string;
-    category: string;
-    isVisible: boolean;
-    image: string;
-    images: string[];
-  }>({
+  // Cập nhật state formState
+  const [formState, setFormState] = useState<ProductFormState>({
     name: '',
     slug: '',
     description: '',
@@ -145,7 +150,8 @@ const Products = () => {
     category: '',
     isVisible: true,
     image: '',
-    images: [],
+    size: [],
+    color: [],
   });
 
   // Fetch categories
@@ -195,12 +201,11 @@ const Products = () => {
       if (searchTerm) params.append('query', searchTerm);
       if (selectedCategory) params.append('category', selectedCategory);
 
-      // Thử gọi API và xử lý kết quả
       const response = await axiosInstance.get<ApiResponse>(`/products/admin?${params.toString()}`);
       setProducts(response.data.products || []);
       setTotalPages(response.data.pages || 1);
-      setCurrentPage(response.data.page || 1);
-      setError(null); // Xóa thông báo lỗi nếu thành công
+      setCurrentPage(page);
+      setError(null);
     } catch (err: unknown) {
       console.error("Error fetching products:", err);
       
@@ -482,20 +487,12 @@ const Products = () => {
     // Hiển thị hộp thoại xác nhận trước khi thực hiện hành động
     setConfirmDialog({
       isOpen: true,
-      title: product.isVisible ? 'Ẩn sản phẩm' : 'Hiện sản phẩm',
+      title: product.isVisible ? 'Ẩn sản phẩm' : 'Hiển thị sản phẩm',
       message: product.isVisible 
         ? `Bạn có chắc chắn muốn ẩn sản phẩm "${product.name}" không?` 
         : `Bạn có chắc chắn muốn hiển thị sản phẩm "${product.name}" không?`,
       onConfirm: confirmAction
     });
-  };
-
-  // Generate slug from name
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-');
   };
 
   // Xử lý thay đổi input trong form
@@ -509,34 +506,72 @@ const Products = () => {
       ...prev,
       [name]: newValue
     }));
-    if (name === 'name') {
-      setFormState(prev => ({ ...prev, slug: generateSlug(value) }));
-    }
-    if (name === 'image') {
-      setImagePreview(value);
+  };
+
+  // Thêm hàm upload ảnh lên server
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!validateImage(file)) return;
+    setImageFile(file);
+    try {
+      // Nén ảnh trước khi upload
+      const compressedBase64 = await compressImage(file);
+      setImagePreview(compressedBase64);
+      // Gửi base64 lên backend (dạng JSON, không phải FormData)
+      const res = await axiosInstance.post('/upload', { image: compressedBase64 });
+      let url = '';
+      if (res.data && res.data.secure_url) url = res.data.secure_url;
+      else if (res.data && res.data.url) url = res.data.url;
+      if (url) {
+        setFormState(prev => ({ ...prev, image: url }));
+        setImagePreview(url);
+        toast.success('Upload ảnh thành công!');
+      } else {
+        toast.error('Không lấy được URL ảnh từ server!');
+      }
+    } catch (err) {
+      toast.error('Lỗi khi nén hoặc upload ảnh!');
+      console.error(err);
     }
   };
 
   // Xử lý submit form với xác nhận
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Nếu là thêm mới và chưa có ảnh thì cảnh báo
+    if (!editingProduct && (!formState.image || !formState.image.startsWith('http'))) {
+      toast.error('Bạn phải upload ảnh sản phẩm trước khi lưu!');
+      return;
+    }
     const productData = {
-      ...formState,
-      price: formState.price === '' ? 0 : Number(formState.price),
-      countInStock: formState.countInStock === '' ? 0 : Number(formState.countInStock),
+      name: formState.name,
+      slug: formState.slug,
+      description: formState.description,
+      price: Number(formState.price),
+      countInStock: Number(formState.countInStock),
+      brand: formState.brand,
+      category: formState.category,
+      isVisible: formState.isVisible,
+      image: formState.image,
+      size: formState.size,
+      color: formState.color,
     };
     const submitForm = async () => {
       try {
         if (editingProduct) {
           await axiosInstance.put(`/products/${editingProduct._id}/update`, productData);
           toast.success('Sản phẩm đã được cập nhật thành công');
+          setShowModal(false);
+          resetForm();
+          await fetchProducts(1);
         } else {
           await axiosInstance.post('/products/create', productData);
           toast.success('Sản phẩm đã được thêm thành công');
+          setShowModal(false);
+          resetForm();
+          await fetchProducts(1);
         }
-        setShowModal(false);
-        resetForm();
-        fetchProducts(1); // Gọi lại API để cập nhật bảng
       } catch (err) {
         console.error('Error saving product:', err);
         toast.error('Lỗi khi lưu sản phẩm');
@@ -572,7 +607,8 @@ const Products = () => {
       category: '',
       isVisible: true,
       image: '',
-      images: [],
+      size: [],
+      color: [],
     });
   };
 
@@ -589,7 +625,8 @@ const Products = () => {
       category: '',
       isVisible: true,
       image: '',
-      images: [],
+      size: [],
+      color: [],
     });
     setShowModal(true);
   };
@@ -597,7 +634,6 @@ const Products = () => {
   // Khi mở modal chỉnh sửa sản phẩm
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
-    setImagePreview(product.image);
     setExistingImages(product.images || []);
     setFormState({
       name: product.name,
@@ -609,8 +645,10 @@ const Products = () => {
       category: typeof product.category === 'object' ? product.category._id : product.category,
       isVisible: product.isVisible,
       image: product.image,
-      images: product.images || [],
+      size: product.size || [],
+      color: product.color || [],
     });
+    setImagePreview(product.image); // luôn set lại preview đúng ảnh hiện tại
     setShowModal(true);
   };
 
@@ -784,42 +822,83 @@ const Products = () => {
       </div>
 
       {/* Pagination */}
-          {totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="flex justify-center mt-6">
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
             <button
-              onClick={() => fetchProducts(currentPage - 1)}
+              onClick={() => {
+                if (currentPage > 1) {
+                  fetchProducts(currentPage - 1);
+                }
+              }}
               disabled={currentPage === 1}
               className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
                 currentPage === 1 
                   ? 'text-gray-300 cursor-not-allowed' 
-                  : 'text-gray-500 hover:bg-gray-50'
+                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
               }`}
             >
               Trước
             </button>
-            
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => fetchProducts(page)}
-                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                    currentPage === page
-                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-            
+            {/* Phân trang thông minh */}
+            {(() => {
+              const pageButtons: React.ReactNode[] = [];
+              const maxPageButtons = 7; // Số nút trang tối đa hiển thị
+              let pages: (number | string)[] = [];
+
+              if (totalPages <= maxPageButtons) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+              } else {
+                if (currentPage <= 4) {
+                  // Đầu danh sách
+                  pages = [1, 2, 3, 4, 5, 'end-ellipsis', totalPages];
+                } else if (currentPage >= totalPages - 3) {
+                  // Cuối danh sách
+                  pages = [1, 'start-ellipsis'];
+                  for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+                } else {
+                  // Ở giữa
+                  pages = [1, 'start-ellipsis', currentPage - 1, currentPage, currentPage + 1, 'end-ellipsis', totalPages];
+                }
+              }
+
+              pages.forEach((page, idx) => {
+                if (typeof page === 'string') {
+                  pageButtons.push(
+                    <span key={page + idx} className="px-2 py-2 text-gray-400 select-none">...</span>
+                  );
+                } else {
+                  const isCurrent = currentPage === page;
+                  pageButtons.push(
+                    <button
+                      key={page}
+                      onClick={() => !isCurrent && fetchProducts(page)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        isCurrent
+                          ? 'z-10 bg-blue-800 border-blue-800 text-white font-extrabold shadow-lg ring-2 ring-blue-900 text-lg'
+                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                      disabled={isCurrent}
+                      style={isCurrent ? { pointerEvents: 'none' } : {}}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+              });
+              return pageButtons;
+            })()}
             <button
-              onClick={() => fetchProducts(currentPage + 1)}
+              onClick={() => {
+                if (currentPage < totalPages) {
+                  fetchProducts(currentPage + 1);
+                }
+              }}
               disabled={currentPage === totalPages}
               className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
                 currentPage === totalPages 
                   ? 'text-gray-300 cursor-not-allowed' 
-                  : 'text-gray-500 hover:bg-gray-50'
+                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
               }`}
             >
               Sau
@@ -967,6 +1046,7 @@ const Products = () => {
                     aria-label="Danh mục sản phẩm"
                   >
                     <option value="" disabled>Chọn danh mục</option>
+                    {/* TRẢ LẠI HIỂN THỊ DANH MỤC NHƯ CŨ, KHÔNG PHÂN NHÓM */}
                     {Array.isArray(categories) && categories.length > 0 ? (
                       categories.map((category) => (
                         <option key={category._id} value={category._id}>
@@ -974,11 +1054,8 @@ const Products = () => {
                         </option>
                       ))
                     ) : (
-                      <>
-                        <option value="682dafa0b610839036b63530">Giày nam</option>
-                        <option value="682dafa0b610839036b63531">Giày nữ</option>
-                        <option value="682dafa0b610839036b63532">Giày trẻ em</option>
-                      </>
+                      // Hiển thị khi categories rỗng (ví dụ: đang tải)
+                      <option value="" disabled>Đang tải danh mục...</option>
                     )}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">Bạn phải chọn một danh mục để phân loại sản phẩm trên trang người dùng</p>
@@ -988,25 +1065,17 @@ const Products = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Hình ảnh chính {!editingProduct && '*'}
                   </label>
-                  
-                  <div className="mb-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      URL Ảnh (Bắt buộc)
+                  <div className="mb-2 flex flex-col gap-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="image-upload">
+                      Chọn ảnh từ máy tính:
                     </label>
                     <input
-                      type="text"
-                      name="imageUrl"
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full p-2 border rounded-md"
-                      aria-label="URL hình ảnh sản phẩm"
-                      required={!editingProduct}
-                      value={formState.image}
-                      onChange={handleFormChange}
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileChange}
                     />
-                    <p className="text-xs text-green-600 font-semibold mt-1">Nhập URL ảnh từ internet</p>
-                    <p className="text-xs text-gray-500 mt-1">Gợi ý: Tìm ảnh sản phẩm trên Google, nhấp chuột phải vào ảnh và chọn "Sao chép địa chỉ hình ảnh"</p>
                   </div>
-                  
                   {imagePreview && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-700 mb-1">Xem trước ảnh:</p>
