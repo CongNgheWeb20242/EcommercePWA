@@ -1190,6 +1190,20 @@ paths:
             type: number
             format: float
             example: 4.0
+        - name: brand
+          in: query
+          description: Filter by brand (case-insensitive, partial match)
+          required: false
+          schema:
+            type: string
+            example: "Nike"
+        - name: color
+          in: query
+          description: Filter by color (CSS color value or name)
+          required: false
+          schema:
+            type: string
+            example: "red"
         - name: order
           in: query
           description: Sort order (featured, lowest, highest, toprated, newest)

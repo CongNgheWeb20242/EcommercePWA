@@ -189,12 +189,14 @@ export const getAdminProducts = async (page, pageSize) => {
 export const searchProducts = async (queryParams, user = null) => {
   let {
     pageSize = 3,
-    page = parseInt(1,10),
+    page = 1,
     category = '',
     price = '',
     rating = '',
     order = '',
     query = '',
+    brand = '',
+    color = '', 
   } = queryParams;
   
   page = parseInt(page, 10);
@@ -213,6 +215,14 @@ export const searchProducts = async (queryParams, user = null) => {
             $lte: Number(price.split('-')[1]),
           },
         }
+      : {};
+  const brandFilter =
+    brand && brand !== 'all'
+      ? { brand: { $regex: brand, $options: 'i' } }
+      : {};
+  const colorFilter =
+    color && color !== 'all'
+      ? { color: { $in: [color] } }
       : {};
   const visibilityFilter = !user || !user.isAdmin ? { isVisible: true } : {};
   const sortOrder =
@@ -234,6 +244,8 @@ export const searchProducts = async (queryParams, user = null) => {
     ...priceFilter,
     ...ratingFilter,
     ...visibilityFilter,
+    ...brandFilter,
+    ...colorFilter,
   })
     .populate('category')
     .populate('reviews')
@@ -246,6 +258,8 @@ export const searchProducts = async (queryParams, user = null) => {
     ...categoryFilter,
     ...priceFilter,
     ...ratingFilter,
+    ...brandFilter,
+    ...colorFilter,
     ...visibilityFilter,
   });
   return {

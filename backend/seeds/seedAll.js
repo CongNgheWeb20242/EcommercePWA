@@ -57,7 +57,7 @@ async function seedProducts(categories, n = 1000) {
   for (let i = 0; i < n; i++) {
     const category = faker.helpers.arrayElement(categories);
     const sizes = faker.helpers.arrayElements(['S', 'M', 'L', 'XL', 'XXL'], faker.number.int({ min: 1, max: 4 }));
-    const colors = faker.helpers.arrayElements(['Red', 'Blue', 'Black', 'White', 'Green', 'Yellow'], faker.number.int({ min: 1, max: 4 }));
+    const colors = faker.helpers.arrayElements(['red', 'blue', 'black', 'white', 'green', 'yellow'], faker.number.int({ min: 1, max: 4 }));
     products.push({
       name: faker.commerce.productName() + '-' + i,
       slug: faker.helpers.slugify(faker.commerce.productName() + '-' + i).toLowerCase(),
@@ -69,7 +69,7 @@ async function seedProducts(categories, n = 1000) {
       ],
       brand: faker.company.name(),
       description: faker.commerce.productDescription(),
-      price: faker.commerce.price({ min: 10, max: 2000, dec: 2 }),
+      price: faker.commerce.price({ min: 90000, max: 999999, dec: 2 }),
       countInStock: faker.number.int({ min: 0, max: 100 }),
       isVisible: faker.datatype.boolean(),
       size: sizes,
