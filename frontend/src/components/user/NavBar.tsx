@@ -47,7 +47,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="flex fixed items-center justify-between w-full px-4 md:px-8 lg:px-60 py-4 bg-white shadow-lg shadow-black/20 z-50">
+    <nav className="flex fixed items-center justify-between w-full px-4 md:px-8 lg:px-40 py-4 bg-white shadow-lg shadow-black/20 z-50">
       {/* Logo */}
       <button className="text-lg text-black" onClick={handleHomelick}>
         <div className="text-xl font-bold">NIKESHOP</div>

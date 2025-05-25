@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Product } from "@/types/Product";
 import { useNavigate } from "react-router-dom";
 import CustomImage from "../ui/image";
@@ -12,9 +12,6 @@ interface CardProps {
 const Card: React.FC<CardProps> = ({ product }) => {
     const navigate = useNavigate();
 
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [imageError, setImageError] = useState(false);
-    // Ví dụ sử dụng:
     const { rating, numReviews } = generateRandomRatingAndReviews(); //TODO: Xoá hàm này khi có dữ liệu thực
 
     const handleCardClick = () => {
@@ -29,10 +26,10 @@ const Card: React.FC<CardProps> = ({ product }) => {
                     src={product._id} //TODO
                     alt={product.name}
                     className={'w-full h-full object-cover'}
-                    onLoad={() => setImageLoaded(true)}
+                    onLoad={() => { }}
                     onError={() => {
-                        setImageLoaded(true);
-                        setImageError(true);
+                        { };
+                        { };
                     }}
                 />
             </div>

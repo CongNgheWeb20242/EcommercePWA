@@ -1,7 +1,7 @@
 import { renderStars } from "@/helper/StarGenerate";
 import { Review } from "@/types/Review";
 import CustomImage from "../ui/image";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getUser } from "@/services/api/userService";
 import { User } from "@/types/User";
 

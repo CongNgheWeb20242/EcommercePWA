@@ -4,7 +4,6 @@ import { generateRandomRatingAndReviews, renderStars } from "@/helper/StarGenera
 import useCartStore from "@/store/useCartStore";
 import sizeTableImg from '../../assets/common/size_table.jpg';
 import FlyImage from "./FlyImage";
-import React from "react";
 
 // TDOD: Xoá hàm này khi có dữ liệu thực
 const COLORS = [

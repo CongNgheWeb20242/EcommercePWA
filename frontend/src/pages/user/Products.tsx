@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Card from "../../components/user/ProductCard";
 import { useProductStore } from "@/store/useProductStore";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown, faSliders, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faSliders, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import SidebarFilter from "@/components/user/SidebarFilter";
 import SortByDropdown from "../../components/user/SortByDropdown";
 

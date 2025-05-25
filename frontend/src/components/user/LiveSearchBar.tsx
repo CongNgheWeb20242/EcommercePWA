@@ -1,5 +1,5 @@
 import { useProductSearchStore } from "@/store/useProductSearchStore";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SearchItem from "./SearchItem";
 import { useNavigate } from "react-router-dom";
 import { Product } from "@/types/Product";
