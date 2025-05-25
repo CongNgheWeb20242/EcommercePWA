@@ -13,6 +13,24 @@ export default function LiveSearchBar() {
     const { products, loading, fetchProducts } = useProductSearchStore();
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Đóng dropdown khi click ra ngoài
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target as Node)
+            ) {
+                handleClearSearch();
+            }
+        };
+        if (showResults) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showResults]);
+
     useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         if (!query) {
@@ -21,7 +39,7 @@ export default function LiveSearchBar() {
         }
 
         debounceRef.current = setTimeout(() => {
-            fetchProducts({ query: query, page: 1, pageSize: 5 });
+            fetchProducts({ query: query, page: 1, pageSize: 10 });
             setShowResults(true);
         }, 300);
 
@@ -39,14 +57,13 @@ export default function LiveSearchBar() {
         setQuery("");
     };
 
-
     return (
-        <div className="relative w-80">
+        <div className="relative w-80" ref={dropdownRef}>
             {/* Ô tìm kiếm */}
             <div className="flex items-center border rounded px-2 py-1 bg-white">
                 <input
                     type="text"
-                    placeholder="giày"
+                    placeholder="Tìm kiếm sản phẩm..."
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     className="flex-1 outline-none border-none bg-transparent px-1 py-2"
