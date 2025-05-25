@@ -173,17 +173,84 @@ export const vnpayIPN = async (req, res) => {
 // Cái này sẽ sửa đổi sau, FE thiết kế một giao diện hiển thị
 export const vnpayReturn = async (req, res) => {
   let verify;
+  let status = 'fail';
+  let message = 'Dữ liệu không hợp lệ';
+  let orderId = '';
+
   try {
-    verify = vnpay.verifyReturnUrl(req.query); // Xác minh chữ ký
+    verify = vnpay.verifyReturnUrl(req.query);
+
     if (!verify.isVerified) {
-      return res.send('Xác thực tính toàn vẹn dữ liệu thất bại');
-    }
-    if (!verify.isSuccess) {
-      return res.send('Đơn hàng thanh toán thất bại');
+      message = 'Xác thực chữ ký không hợp lệ';
+    } else if (!verify.isSuccess) {
+      message = 'Thanh toán thất bại';
+      orderId = verify.vnp_TxnRef;
+    } else {
+      status = 'success';
+      message = 'Thanh toán thành công!';
+      orderId = verify.vnp_TxnRef;
     }
   } catch (error) {
-    return res.send('Dữ liệu không hợp lệ');
+    message = 'Đã xảy ra lỗi khi xử lý dữ liệu thanh toán';
   }
 
-  return res.send('Thanh toán thành công!');
+  // Trả về HTML với kết quả
+  return res.send(`
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Kết quả thanh toán</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          text-align: center;
+          padding: 50px;
+          background-color: ${status === 'success' ? '#e6ffed' : '#ffe6e6'};
+        }
+        .container {
+          max-width: 500px;
+          margin: auto;
+          background-color: white;
+          border-radius: 10px;
+          box-shadow: 0 0 15px rgba(0,0,0,0.1);
+          padding: 30px;
+        }
+        h1 {
+          color: ${status === 'success' ? '#2e7d32' : '#d32f2f'};
+        }
+        p {
+          font-size: 18px;
+          color: #333;
+        }
+        .order-id {
+          margin-top: 10px;
+          font-size: 16px;
+          color: #555;
+        }
+        .btn {
+          display: inline-block;
+          margin-top: 20px;
+          padding: 10px 20px;
+          background-color: ${status === 'success' ? '#2e7d32' : '#d32f2f'};
+          color: white;
+          text-decoration: none;
+          border-radius: 5px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>${message}</h1>
+        ${
+          orderId
+            ? `<p class="order-id">Mã đơn hàng: <strong>${orderId}</strong></p>`
+            : ''
+        }
+        <a class="btn" href="https://ecommercepwa-be.onrender.com">Quay lại trang chủ</a>
+      </div>
+    </body>
+    </html>
+  `);
 };

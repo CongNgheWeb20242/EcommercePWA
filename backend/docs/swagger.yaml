@@ -1429,52 +1429,64 @@ paths:
                     example: 'Unknown Error'
   /payment/vnpay_return:
     get:
-      summary: Kết quả thanh toán trả về từ VNPay (FE sẽ phải thiết kế thêm UI để xử lý phần này)
-      description: VNPay redirect người dùng đến endpoint này (Endpoint của Frontend) sau khi thanh toán (thành công hoặc thất bại).
+      summary: Kết quả thanh toán trả về từ VNPay
+      description: |
+        VNPay sẽ redirect người dùng đến endpoint này **trên BE** (`https://ecommercepwa-be.onrender.com/payment/vnpay_return`) 
+        sau khi thanh toán. Backend sẽ hiển thị một trang HTML thể hiện kết quả thanh toán trực tiếp.
+        
+        Trang sẽ hiển thị "Thanh toán thành công" hoặc "Thanh toán thất bại" tùy theo kết quả xác minh chữ ký và trạng thái giao dịch.
       tags:
         - Payment
-      security:
-        - bearerAuth: []
       parameters:
         - in: query
           name: vnp_TxnRef
           schema:
             type: string
           required: true
-          description: Mã đơn hàng
+          description: Mã đơn hàng từ hệ thống
         - in: query
           name: vnp_Amount
           schema:
             type: number
           required: true
-          description: Số tiền giao dịch
+          description: Số tiền giao dịch (tính bằng VNĐ x 100)
         - in: query
           name: vnp_ResponseCode
           schema:
             type: string
           required: true
-          description: Mã phản hồi của VNPay
+          description: Mã phản hồi từ VNPay (ví dụ: "00" là thành công)
         - in: query
           name: vnp_SecureHash
           schema:
             type: string
           required: true
-          description: Chữ ký bảo mật từ VNPay
+          description: Chữ ký bảo mật để xác minh tính toàn vẹn dữ liệu
       responses:
         '200':
-          description: Thông báo kết quả cho người dùng
+          description: HTML kết quả thanh toán được hiển thị cho người dùng
           content:
             text/html:
               schema:
                 type: string
-                example: 'Thanh toán thành công!'
+                example: |
+                  <!DOCTYPE html>
+                  <html>
+                    <head><title>Kết quả thanh toán</title></head>
+                    <body><h1>Thanh toán thành công!</h1></body>
+                  </html>
         '400':
-          description: Lỗi xác thực dữ liệu từ VNPay
+          description: Xác minh chữ ký thất bại hoặc lỗi dữ liệu
           content:
             text/html:
               schema:
                 type: string
-                example: 'Xác thực tính toàn vẹn dữ liệu thất bại'
+                example: |
+                  <!DOCTYPE html>
+                  <html>
+                    <head><title>Lỗi thanh toán</title></head>
+                    <body><h1>Xác thực tính toàn vẹn dữ liệu thất bại</h1></body>
+                  </html>
 
   /user/google:
     get:

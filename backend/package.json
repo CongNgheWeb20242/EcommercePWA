@@ -16,6 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^1.0.1",
     "@faker-js/faker": "^9.8.0",
     "backend": "file:",
     "bcryptjs": "^2.4.3",
@@ -48,7 +49,6 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
-    "nodemon": "^2.0.15",
-    "patch-package": "^8.0.0"
+    "nodemon": "^2.0.15"
   }
 }
