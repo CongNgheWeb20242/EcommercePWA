@@ -10,13 +10,14 @@ export const googleCallback = (req, res, next) => {
   passport.authenticate('google', { session: false }, (err, user, info) => {
     console.log('Google Auth callback:', { err, user, info });
     if (err || !user) {
-      return res.status(401).json({ message: "Google login failed" })
+      return res.status(401).json({ message: 'Google login failed' });
     }
     const token = generateToken(user._id, res);
 
-    res.redirect(`https://ecommercepwa-be.onrender.com/oauth-success?token=${token}`);
-  })(req, res, next)
-}
+    // 🔁 Redirect về FE localhost sau khi login
+    res.redirect(`http://localhost:5173/oauth-success?token=${token}`);
+  })(req, res, next);
+};
 
 // GET user by id
 export const getUser = async (req, res) => {
@@ -196,7 +197,7 @@ export const forgetPassword = async (req, res) => {
     : 'https://yourdomain.com';
 
   const resetUrl = `${FE_BASE_URL}/api/user/reset-password/${token}`;
-  
+
   // Tạm thời comment lại phần gửi email
   /*
   try {
@@ -207,11 +208,11 @@ export const forgetPassword = async (req, res) => {
     res.status(500).json({ message: 'Error sending reset password email' });
   }
   */
-  
+
   // Tạm thời trả về link reset password
-  res.status(200).json({ 
+  res.status(200).json({
     message: 'Reset password link generated',
-    resetUrl: resetUrl 
+    resetUrl: resetUrl,
   });
 };
 

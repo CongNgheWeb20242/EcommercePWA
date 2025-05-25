@@ -1498,7 +1498,7 @@ paths:
         Hệ thống sẽ xác minh thông tin người dùng, tạo tài khoản nếu chưa có,
         sinh JWT token và chuyển hướng người dùng về frontend với token trong query string. FE lấy token từ URL và lưu trữ (như accessToken).
 
-        Ví dụ: `https://ecommercepwa-be.onrender.com/oauth-success?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODJkOTU2ZTRlZTkxZTJiOWEyN2ExOWIiLCJpYXQiOjE3NDc4MTc4MzgsImV4cCI6MTc0NzkwNDIzOH0.lkT0k9rBPMQFhTBYBD1Vz68y5FEO67EJSzqserRW23w`
+        Ví dụ: `http://localhost:5173/oauth-success?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODJkOTU2ZTRlZTkxZTJiOWEyN2ExOWIiLCJpYXQiOjE3NDc4MTc4MzgsImV4cCI6MTc0NzkwNDIzOH0.lkT0k9rBPMQFhTBYBD1Vz68y5FEO67EJSzqserRW23w`
       tags:
         - Authentication (SSO)
       responses:
