@@ -13,6 +13,7 @@ import { Toaster } from 'react-hot-toast';
 import HomePage from './pages/user/HomePage';
 import SignUp from './pages/user/SignUp';
 import SignIn from './pages/user/SignIn';
+import ProfilePage from './pages/user/ProfilePage';
 import UserProducts from './pages/user/Products';
 import Product from './pages/user/Product';
 import Cart from './pages/user/Cart';
@@ -47,14 +48,21 @@ const App = () => {
             <AdminLayout title="Doanh thu"><Revenue /></AdminLayout>
           </AdminProtectedRoute>
         } />
-        
+
         {/* Public User Routes - Không yêu cầu đăng nhập */}
+        <Route path="/" element={<UserLayout><HomePage /></UserLayout>} />
         <Route path="/home" element={<UserLayout><HomePage /></UserLayout>} />
         <Route path="/user/register" element={<UserLayout><SignUp /></UserLayout>} />
         <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
-        <Route path="/user/products" element={<UserLayout><UserProducts searchText={'Tất cả sản phẩm'} /></UserLayout>} />
+        <Route path="/user/profile" element={<UserLayout><ProfilePage /></UserLayout>} />
+
+        <Route path="/user/products" element={<UserLayout><UserProducts key={'Tất Cả Sản Phẩm'} searchText={'Tất Cả Sản Phẩm'} /></UserLayout>} />
+        <Route path="/user/products/men" element={<UserLayout><UserProducts key={'Thời Trang Nam'} searchText={'Thời Trang Nam'} /></UserLayout>} />
+        <Route path="/user/products/women" element={<UserLayout><UserProducts key={'Thời Trang Nữ'} searchText={'Thời Trang Nữ'} /></UserLayout>} />
         <Route path="/user/product/:id" element={<UserLayout><Product /></UserLayout>} />
-        
+        <Route path="/user/cart" element={<UserLayout><Cart /></UserLayout>} />
+        <Route path="/user/checkout" element={<UserLayout><CheckOut /></UserLayout>} />
+
         {/* Protected User Routes - Yêu cầu đăng nhập */}
         <Route path="/user/cart" element={
           <UserProtectedRoute>
@@ -66,7 +74,7 @@ const App = () => {
             <UserLayout><CheckOut /></UserLayout>
           </UserProtectedRoute>
         } />
-        
+
         {/* Payment Routes */}
         <Route path="/payment/vnpay_return" element={<PaymentReturn />} />
 

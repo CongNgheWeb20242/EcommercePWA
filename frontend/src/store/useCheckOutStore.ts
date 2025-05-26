@@ -1,30 +1,34 @@
+import { createPaymentURL } from '@/services/api/paymentServices';
 import { CustomerInfo } from '@/types/CustomerInfo';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useAuthStore } from './useAuthStore';
+import useCartStore from './useCartStore';
+import { deliverOrder } from '@/services/api/orderService';
 
 export type OrderStatus = 'cart' | 'information' | 'payment' | 'shipping' | 'complete';
 
 interface CheckoutState {
     currentStep: number; // 1: Cart, 2: Information, 3: Payment, 4: Shipping, 5: Complete
-    orderStatus: OrderStatus;
     customerInfo: CustomerInfo;
     paymentStatus: 'pending' | 'completed' | 'failed';
     shippingStatus: 'pending' | 'processing' | 'shipped' | 'delivered';
-    orderCode?: string;
-    paymentId?: string;
+    orderId?: string;
+    paymentURL?: string;
 
     // Actions
     setStep: (step: number) => void;
     goToNextStep: () => void;
     goToPreviousStep: () => void;
-    setOrderStatus: (status: OrderStatus) => void;
+    getOrderStatus: () => OrderStatus;
     updateCustomerInfo: (info: Partial<CustomerInfo>) => void;
     setPaymentStatus: (status: 'pending' | 'completed' | 'failed') => void;
     setShippingStatus: (status: 'pending' | 'processing' | 'shipped' | 'delivered') => void;
-    setOrderCode: (code: string) => void;
-    setPaymentId: (id: string) => void;
+    setorderId: (id: string) => void;
     resetCheckout: () => void;
     needsPaymentStep: () => boolean;
+    setPaymentURL?: (url: string) => void;
+    clearAll: () => void;
 }
 
 // Giá trị mặc định cho store
@@ -40,7 +44,7 @@ const initialState = {
         ward: '',
         address: '',
         notes: '',
-        paymentMethod: 'cash' as const,
+        paymentMethod: 'cod' as const,
     },
     paymentStatus: 'pending' as const,
     shippingStatus: 'pending' as const,
@@ -53,27 +57,76 @@ export const useCheckoutStore = create<CheckoutState>()(
 
             setStep: (step) => set({ currentStep: step }),
 
+            setPaymentURL: (url) => set({ paymentURL: url }),
+
             goToNextStep: () => {
                 const { currentStep, needsPaymentStep } = get();
                 const maxSteps = needsPaymentStep() ? 5 : 4;
 
                 if (currentStep < maxSteps) {
-                    const nextStep = currentStep + 1;
+                    var nextStep = currentStep + 1;
 
-                    // Cập nhật trạng thái đơn hàng theo bước
-                    let orderStatus: OrderStatus = 'cart';
                     switch (nextStep) {
-                        case 2: orderStatus = 'information'; break;
-                        case 3: orderStatus = needsPaymentStep() ? 'payment' : 'shipping'; break;
-                        case 4: orderStatus = needsPaymentStep() ? 'shipping' : 'complete'; break;
-                        case 5: orderStatus = 'complete'; break;
+                        case 3:
+                            if (!needsPaymentStep())
+                                nextStep = 4;
+                            else {
+                                const createPayment = async () => {
+                                    const user = useAuthStore.getState().user; // Lấy state trực tiếp
+                                    const selectCartItem = useCartStore.getState().items.filter(item => item.selected === true);
+
+                                    await createPaymentURL({
+                                        fullName: get().customerInfo.fullName,
+                                        phone: get().customerInfo.phone,
+                                        email: get().customerInfo.email,
+                                        address: get().customerInfo.address,
+                                        detailedAddress: `${get().customerInfo.ward}, ${get().customerInfo.district}, ${get().customerInfo.province}`,
+                                        note: get().customerInfo.notes || '',
+                                        paymentMethod: get().customerInfo.paymentMethod,
+                                        shippingFee: 0, //TODO: Cần tính toán phí vận chuyển
+                                        taxRate: 0, //TODO: Cần tính toán thuế
+                                        user: user!.id,
+                                        products: selectCartItem.map(item => ({
+                                            id: item._id,
+                                            price: item.price,
+                                            quantity: item.quantity,
+                                        })),
+                                    }).then(response => {
+                                        if (response && response.success) {
+                                            set({
+                                                paymentURL: response.paymentUrl,
+                                                orderId: response.order._id,
+                                            });
+                                        }
+                                    })
+                                }
+                                createPayment();
+                            }
+                            break;
+
+                        case 5:
+                            deliverOrder(get().orderId!);
+                            break;
+
                     }
 
                     set({
                         currentStep: nextStep,
-                        orderStatus: orderStatus
                     });
                 }
+            },
+
+            getOrderStatus: () => {
+                const { currentStep, needsPaymentStep } = get();
+                let orderStatus: OrderStatus = 'cart';
+                switch (currentStep) {
+                    case 1: orderStatus = 'cart'; break;
+                    case 2: orderStatus = 'information'; break;
+                    case 3: orderStatus = needsPaymentStep() ? 'payment' : 'shipping'; break;
+                    case 4: orderStatus = needsPaymentStep() ? 'shipping' : 'complete'; break;
+                    case 5: orderStatus = 'complete'; break;
+                }
+                return orderStatus;
             },
 
             goToPreviousStep: () => {
@@ -81,24 +134,11 @@ export const useCheckoutStore = create<CheckoutState>()(
                 if (currentStep > 1) {
                     const prevStep = currentStep - 1;
 
-                    // Cập nhật trạng thái đơn hàng theo bước
-                    let orderStatus: OrderStatus = 'cart';
-                    switch (prevStep) {
-                        case 1: orderStatus = 'cart'; break;
-                        case 2: orderStatus = 'information'; break;
-                        case 3: orderStatus = get().needsPaymentStep() ? 'payment' : 'shipping'; break;
-                        case 4: orderStatus = 'shipping'; break;
-                    }
-
                     set({
                         currentStep: prevStep,
-                        orderStatus: orderStatus
                     });
                 }
             },
-
-            // Cập nhật trạng thái đơn hàng
-            setOrderStatus: (status) => set({ orderStatus: status }),
 
             // Cập nhật thông tin khách hàng
             updateCustomerInfo: (info) => set((state) => ({
@@ -111,11 +151,8 @@ export const useCheckoutStore = create<CheckoutState>()(
             // Cập nhật trạng thái giao hàng
             setShippingStatus: (status) => set({ shippingStatus: status }),
 
-            // Đặt mã đơn hàng
-            setOrderCode: (code) => set({ orderCode: code }),
-
             // Đặt mã thanh toán
-            setPaymentId: (id) => set({ paymentId: id }),
+            setorderId: (id) => set({ orderId: id }),
 
             // Đặt lại toàn bộ quá trình
             resetCheckout: () => set({ ...initialState }),
@@ -123,9 +160,29 @@ export const useCheckoutStore = create<CheckoutState>()(
             // Kiểm tra xem có cần bước thanh toán hay không (nếu COD thì không cần)
             needsPaymentStep: () => {
                 const { customerInfo } = get();
-                return customerInfo.paymentMethod !== 'cash';
-            }
+                return customerInfo.paymentMethod !== 'cod';
+            },
+
+            clearAll: () => set({
+                currentStep: 1,
+                orderId: undefined,
+                paymentURL: undefined,
+                customerInfo: {
+                    fullName: '',
+                    phone: '',
+                    email: '',
+                    province: '',
+                    district: '',
+                    ward: '',
+                    address: '',
+                    notes: '',
+                    paymentMethod: 'cod' as const,
+                },
+                paymentStatus: 'pending',
+                shippingStatus: 'pending',
+            }),
         }),
+
         {
             name: 'checkout-store',
             version: 1,

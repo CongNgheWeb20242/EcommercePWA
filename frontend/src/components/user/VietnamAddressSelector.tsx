@@ -38,7 +38,7 @@ const VietnamAddressSelector: React.FC<VietnamAddressSelectorProps> = ({
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [selectedWard, setSelectedWard] = useState<string>('');
   const [selectedProvinceIndex, setSelectedProvinceIndex] = useState<number>(-1);
-  const [selectedDistrictIndex, setSelectedDistrictIndex] = useState<number>(-1);
+  const [_selectedDistrictIndex, setSelectedDistrictIndex] = useState<number>(-1);
 
   // Khởi tạo danh sách tỉnh/thành khi component mount
   useEffect(() => {

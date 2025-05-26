@@ -1,27 +1,21 @@
 import { Product } from '@/types/Product';
 import apiClient from './api';
-
-export interface SearchProductsParams {
-    query?: string;
-    category?: string;
-    price?: string; // dạng "min-max"
-    rating?: number;
-    order?: "featured" | "lowest" | "highest" | "toprated" | "newest";
-    page?: number;
-    pageSize?: number;
-}
+import { SearchProductsParams } from '@/types/SearchProductsParams';
+import { Category } from '@/types/Category';
 
 export interface SearchProductsResponse {
     products: Product[];
-    total: number;
+    countProducts: number;
     page: number;
-    pageSize: number;
+    pages: number;
 }
 
 export async function searchProducts(params: SearchProductsParams): Promise<SearchProductsResponse | null> {
     const query = new URLSearchParams();
     if (params.query) query.append("query", params.query);
     if (params.category) query.append("category", params.category);
+    if (params.color) query.append("color", params.color);
+    if (params.brand) query.append("brand", params.brand);
     if (params.price) query.append("price", params.price);
     if (params.rating !== undefined) query.append("rating", params.rating.toString());
     if (params.order) query.append("order", params.order);
@@ -44,6 +38,20 @@ export async function getProductById(id: string): Promise<Product | null> {
         return response.data;
     } catch (error) {
         console.error('Fetch product by id failed:', error);
+        return null;
+    }
+}
+
+interface CategoriesResponse {
+    categories: Category[];
+}
+
+export async function getCategories(): Promise<Category[] | null> {
+    try {
+        const response = await apiClient.get<CategoriesResponse>('/products/categories');
+        return response.data.categories;
+    } catch (error) {
+        console.error('Fetch categories failed:', error);
         return null;
     }
 }

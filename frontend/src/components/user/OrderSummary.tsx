@@ -2,7 +2,7 @@ import { useCartStore } from "@/store/useCartStore";
 import OrderedProductList from "./OrderedProductList";
 
 export default function OrderSummary() {
-    const { items, totalItems, totalPrice } = useCartStore();
+    const { totalItems, totalPrice } = useCartStore();
 
     return (
         <div className="w-full max-w-xs bg-blue-50 p-6 rounded border">
@@ -14,7 +14,12 @@ export default function OrderSummary() {
                     <tr>
                         <td className="py-1 font-semibold border border-blue-100">Tạm tính</td>
                         <td className="py-1 text-right font-semibold border border-blue-100">
-                            {totalPrice.toLocaleString("vi-VN")}đ
+                            <span className="text-red-600 font-bold text-md">
+                                {totalPrice.toLocaleString("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                })}
+                            </span>
                         </td>
                     </tr>
                     <tr>
@@ -26,7 +31,12 @@ export default function OrderSummary() {
                     <tr>
                         <td className="py-1 font-semibold border border-blue-100">Tổng Cộng</td>
                         <td className="py-1 text-right font-bold text-red-600 border border-blue-100">
-                            {totalPrice.toLocaleString("vi-VN")}đ
+                            <span className="text-red-600 font-bold text-md">
+                                {totalPrice.toLocaleString("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                })}
+                            </span>
                         </td>
                     </tr>
                 </tbody>

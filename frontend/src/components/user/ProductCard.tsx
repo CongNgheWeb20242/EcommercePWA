@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import { Product } from "@/types/Product";
 import { useNavigate } from "react-router-dom";
 import CustomImage from "../ui/image";
+import { renderStars } from "@/helper/StarGenerate";
 
 interface CardProps {
     product: Product;
@@ -10,9 +11,6 @@ interface CardProps {
 
 const Card: React.FC<CardProps> = ({ product }) => {
     const navigate = useNavigate();
-
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [imageError, setImageError] = useState(false);
 
     const handleCardClick = () => {
         navigate(`/user/product/${product._id}`);
@@ -26,10 +24,10 @@ const Card: React.FC<CardProps> = ({ product }) => {
                     src={product._id} //TODO
                     alt={product.name}
                     className={'w-full h-full object-cover'}
-                    onLoad={() => setImageLoaded(true)}
+                    onLoad={() => { }}
                     onError={() => {
-                        setImageLoaded(true);
-                        setImageError(true);
+                        { };
+                        { };
                     }}
                 />
             </div>
@@ -39,7 +37,22 @@ const Card: React.FC<CardProps> = ({ product }) => {
                 </span>
                 <h3 className="font-semibold mt-1">{product.name}</h3>
                 <p className="text-gray-500 text-sm">{product.description}</p>
-                <p className="font-bold mt-2">{product.price}</p>
+                {/* Đánh giá */}
+                <div className="flex items-center mt-2 mb-1">
+                    {/* //TODO: Xoá hàm này khi có dữ liệu thực*/}
+                    {renderStars(product.averageRating)}
+                    <span className="ml-2 text-sm text-gray-500">
+                        {product.averageRating} ({product.reviews.length} đánh giá)
+                    </span>
+                </div>
+                <p className="font-bold mt-2">
+                    <span className="text-red-600 font-bold text-md">
+                        {product.price.toLocaleString("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                        })}
+                    </span>
+                </p>
             </div>
         </div>
     );

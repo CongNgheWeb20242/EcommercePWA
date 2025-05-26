@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import VietnamAddressSelector from "./VietnamAddressSelector";
 import useCheckoutStore from "@/store/useCheckOutStore";
 import { PaymentMethod } from "@/types/PaymentMethod";
+import VnPayLogo from "@/assets/common/vnpay.png";
+import { useAuthStore } from "@/store/useAuthStore";
+
 
 export default function CheckoutForm() {
     const updateCustomerInfo = useCheckoutStore(state => state.updateCustomerInfo);
@@ -15,7 +18,11 @@ export default function CheckoutForm() {
     const [province, setProvince] = useState("");
     const [district, setDistrict] = useState("");
     const [ward, setWard] = useState("");
-    const [payment, setPayment] = useState<PaymentMethod>("cash");
+    const [payment, setPayment] = useState<PaymentMethod>("cod");
+
+    const user = useAuthStore(state => state.user);
+
+    const isSubmitDisabled = !user;
 
     const handleAddressChange = (addr: { province: string; district: string; ward: string }) => {
         setProvince(addr.province);
@@ -35,6 +42,7 @@ export default function CheckoutForm() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!user) return;
         updateCustomerInfo({
             fullName,
             phone,
@@ -46,7 +54,8 @@ export default function CheckoutForm() {
             district,
             ward,
         });
-        // TODO
+
+        goToNextStep()
     };
 
     return (
@@ -93,35 +102,67 @@ export default function CheckoutForm() {
                     onChange={e => setNotes(e.target.value)}
                 />
 
-                <div className="font-semibold mb-2 mt-6 text-center text-base">PHƯƠNG THỨC THANH TOÁN</div>
-                <div className="flex flex-col gap-2 mb-6 items-start">
-                    <label className="flex items-center gap-2">
+                <div className="flex flex-col md:flex-row gap-6 mb-6 md:justify-between">
+                    {/* Nút COD */}
+                    <label
+                        className={`flex cursor-pointer items-center gap-4 border rounded p-4 px-10 transition
+      ${payment === "cod" ? "border-red-600 bg-red-50" : "border-gray-300 hover:border-red-400"}`}
+                    >
                         <input
                             type="radio"
                             name="payment"
-                            checked={payment === "cash"}
-                            onChange={() => handlePaymentChange("cash")}
-                            className="accent-blue-600"
+                            value="cod"
+                            checked={payment === "cod"}
+                            onChange={() => handlePaymentChange("cod")}
+                            className="hidden"
                         />
-                        Thanh Toán Khi Nhận Hàng
+                        <div className="text-red-600 text-2xl">💵</div>
+                        <div className="flex flex-col">
+                            <span className="font-semibold text-gray-900">Thanh Toán Khi Nhận Hàng</span>
+                            <span className="text-gray-500 text-sm">Thanh toán trực tiếp khi nhận hàng</span>
+                        </div>
                     </label>
-                    <label className="flex items-center gap-2">
+
+                    {/* Nút VNPay */}
+                    <label
+                        className={`flex cursor-pointer items-center gap-4 border rounded p-4 px-10 transition
+      ${payment === "vnpay" ? "border-green-600 bg-green-50" : "border-gray-300 hover:border-green-400"}`}
+                    >
                         <input
                             type="radio"
                             name="payment"
-                            checked={payment === "momo"}
-                            onChange={() => handlePaymentChange("momo")}
-                            className="accent-blue-600"
+                            value="vnpay"
+                            checked={payment === "vnpay"}
+                            onChange={() => handlePaymentChange("vnpay")}
+                            className="hidden"
                         />
-                        Thanh Toán Qua Momo
+                        <img
+                            src={VnPayLogo}
+                            alt="VNPay"
+                            className="h-8 w-auto"
+                        />
+                        <div className="flex flex-col">
+                            <span className="font-semibold text-gray-900">Thanh Toán Qua VNPay</span>
+                            <span className="text-gray-500 text-sm">Thanh toán trực tuyến qua VNPay</span>
+                        </div>
                     </label>
                 </div>
-                <button type="submit" className="w-full bg-red-600 text-white py-3 rounded font-semibold mt-4 hover:bg-red-700 transition"
-                    onClick={() => {
-                        goToNextStep();
-                    }}>
+
+
+                <button
+                    type="submit"
+                    className={`w-full bg-red-600 text-white py-3 rounded font-semibold mt-4 hover:bg-red-700 transition
+                        ${isSubmitDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    disabled={isSubmitDisabled}
+                    title={!user ? "Vui lòng đăng nhập để hoàn tất đơn hàng" : ""}
+                >
                     Hoàn Tất Đơn Hàng
                 </button>
+                {!user && (
+                    <div className="text-red-500 text-sm mt-2 text-center">
+                        Vui lòng đăng nhập để hoàn tất đơn hàng.
+                    </div>
+                )}
             </form>
         </div>
     );

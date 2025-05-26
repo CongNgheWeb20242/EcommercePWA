@@ -3,22 +3,21 @@ import google_icon from '../../assets/common/google_icon.png';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { login } from '@/services/auth/authService';
+import { useAuthStore } from '@/store/useAuthStore';
+import { googleLoginUrl, login } from '@/services/auth/authService';
 import axios from 'axios';
 import { useUserStore } from '@/store/userStore';
 
 const SignInForm = () => {
   const navigate = useNavigate();
-  const setUser = useUserStore((state) => state.setUser);
-
+  const { setUser } = useUserStore();
+  const { logIn, error, setError, loading, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
 
   const handleInputChange = (id: string, value: string) => {
@@ -48,11 +47,13 @@ const SignInForm = () => {
       return;
     }
 
-    setLoading(true);
-    setError('');
+    const userData1 = {
+      email: formData.email,
+      password: formData.password,
+    };
 
+    const success = await logIn(userData1);
     try {
-
       const userData = {
         email: formData.email,
         password: formData.password,
@@ -60,14 +61,16 @@ const SignInForm = () => {
 
       const user = await login(userData);
 
-      if (user) {
-        setUser(user);
+      if (user.user) {
+        console.log('Login successful:', user.user);
+        setUser(user.user);
         await new Promise(resolve => setTimeout(resolve, 1000)); //wait 1 sec
-        
+
         // Điều hướng dựa trên vai trò
-        if (user.isAdmin) {
+        if (user.user.isAdmin) {
+          console.log('Admin user detected, navigating to admin dashboard');
           navigate('/admin/products');
-        } else {
+        } else if (success) {
           navigate('/home');
         }
       } else {
@@ -90,6 +93,10 @@ const SignInForm = () => {
       setLoading(false);
     }
   };
+
+  const handleGoogleSignIn = () => {
+    window.location.href = googleLoginUrl();
+  }
 
   return (
     <div className="flex h-[700px] items-center justify-center bg-gray-100">
@@ -135,8 +142,8 @@ const SignInForm = () => {
               onChange={(e) => handleInputChange('password', e.target.value)}
               required
             />
-            <button 
-              className="text-gray-500 hover:text-gray-700 ml-2" 
+            <button
+              className="text-gray-500 hover:text-gray-700 ml-2"
               onClick={togglePasswordVisibility}
               aria-label={passwordVisible ? "Hide password" : "Show password"}
             >
@@ -159,7 +166,8 @@ const SignInForm = () => {
         </button>
 
         {/* Continue with Google */}
-        <button className="w-full bg-gray-100 flex items-center justify-center py-2 rounded-md font-medium hover:bg-gray-200 transition mb-4">
+        <button className="w-full bg-gray-100 flex items-center justify-center py-2 rounded-md font-medium hover:bg-gray-200 transition mb-4"
+          onClick={handleGoogleSignIn}>
           <img src={google_icon} alt="Google Logo" className="w-5 h-5 mr-2" />
           Continue with Google
         </button>

@@ -1,10 +1,10 @@
-import { searchProducts, SearchProductsParams } from "@/services/api/productService";
+import { searchProducts } from "@/services/api/productService";
 import { Product } from "@/types/Product";
+import { SearchProductsParams } from "@/types/SearchProductsParams";
 import { create } from "zustand";
 
 interface SearchState {
     products: Product[];
-    total: number;
     loading: boolean;
     error: string | null;
     searchParams: SearchProductsParams;
@@ -15,12 +15,11 @@ interface SearchState {
 
 export const useProductSearchStore = create<SearchState>((set, get) => ({
     products: [],
-    total: 0,
     loading: false,
     error: null,
     searchParams: {
         page: 1,
-        pageSize: 3,
+        pageSize: 10,
     },
     fetchProducts: async (params) => {
         set({ loading: true, error: null });
@@ -30,7 +29,6 @@ export const useProductSearchStore = create<SearchState>((set, get) => ({
             if (data === null) throw new Error("Failed to fetch products");
             set({
                 products: data.products,
-                total: data.total,
                 loading: false,
                 searchParams: mergedParams,
             });
