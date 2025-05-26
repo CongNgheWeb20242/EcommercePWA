@@ -192,7 +192,8 @@ export const searchProducts = async (queryParams, user = null) => {
     page = 1,
     category = '',
     price = '',
-    rating = '',
+    ratingFrom = '',
+    ratingTo = '',
     order = '',
     query = '',
     brand = '',
@@ -205,8 +206,14 @@ export const searchProducts = async (queryParams, user = null) => {
   const queryFilter =
     query && query !== 'all' ? { name: { $regex: query, $options: 'i' } } : {};
   const categoryFilter = category && category !== 'all' ? { category } : {};
-  const ratingFilter =
-    rating && rating !== 'all' ? { rating: { $gte: Number(rating) } } : {};
+  let ratingFilter = {};
+  if (ratingFrom !== '' && ratingTo !== '') {
+    ratingFilter = { averageRating: { $gte: Number(ratingFrom), $lte: Number(ratingTo) } };
+  } else if (ratingFrom !== '') {
+    ratingFilter = { averageRating: { $gte: Number(ratingFrom) } };
+  } else if (ratingTo !== '') {
+    ratingFilter = { averageRating: { $lte: Number(ratingTo) } };
+  }
   const priceFilter =
     price && price !== 'all'
       ? {

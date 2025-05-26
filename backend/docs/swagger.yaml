@@ -1182,14 +1182,22 @@ paths:
           schema:
             type: string
             example: "0-1000"
-        - name: rating
+        - name: ratingFrom
           in: query
-          description: Filter by minimum rating
+          description: Filter by minimum average rating
           required: false
           schema:
             type: number
             format: float
-            example: 4.0
+            example: 3.5
+        - name: ratingTo
+          in: query
+          description: Filter by maximum average rating
+          required: false
+          schema:
+            type: number
+            format: float
+            example: 5
         - name: brand
           in: query
           description: Filter by brand (case-insensitive, partial match)
