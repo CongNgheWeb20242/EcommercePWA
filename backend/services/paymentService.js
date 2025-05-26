@@ -14,7 +14,6 @@ export const createOrder = async (orderData) => {
     shippingFee = 20000,
     products,
     user, // ObjectId của người dùng - cần được truyền từ controller
-    taxRate = 0.05, // Mặc định 5%
   } = orderData;
 
   // Calculate prices
@@ -22,8 +21,7 @@ export const createOrder = async (orderData) => {
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  const taxPrice = itemsPrice * taxRate;
-  const totalPrice = itemsPrice + shippingFee + taxPrice;
+  const totalPrice = itemsPrice + shippingFee;
 
   // Transform shipping address
   const shippingAddress = {
@@ -48,7 +46,6 @@ export const createOrder = async (orderData) => {
     paymentMethod,
     itemsPrice,
     shippingPrice: shippingFee,
-    taxPrice,
     totalPrice,
     paymentResult: {
       status: paymentMethod === 'cod' ? 'unpaid' : 'pending',
