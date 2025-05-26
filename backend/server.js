@@ -49,10 +49,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // CORS - Cho phép FE gọi API từ cả local + hosting
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === 'production'
-        ? ['http://localhost:5173', 'https://loquacious-paletas-3e891d.netlify.app']
-        : 'http://localhost:5173',
+    origin: true,
     credentials: true,
   })
 );
