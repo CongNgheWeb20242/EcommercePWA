@@ -178,16 +178,29 @@ const Orders = () => {
 
   // Lọc đơn hàng theo từ khóa tìm kiếm
   const filteredOrders = orders.filter(order => {
-    if (!searchTerm) return true;
-    const normalizePhone = (str: string = '') => str.replace(/\D/g, '');
-    const normalizeText = (str: string = '') => str.toLowerCase();
-    const searchPhone = normalizePhone(searchTerm);
-    const searchText = normalizeText(searchTerm);
-    const phone1 = normalizePhone(order.shippingAddress?.phone);
-    const phone2 = normalizePhone(order.userPhone);
-    const name = normalizeText(order.userName || '');
-    // Tìm theo tên (không phân biệt hoa thường) hoặc số điện thoại (chỉ số)
-    return name.includes(searchText) || phone1.includes(searchPhone) || phone2.includes(searchPhone);
+    if (!searchTerm.trim()) return true; // Giữ nguyên: nếu ô tìm kiếm rỗng, hiện tất cả
+
+    const normalizeText = (str: string = '') => (str || '').toLowerCase().trim();
+    const normalizePhone = (str: string = '') => (str || '').replace(/\D/g, '');
+
+    const lcSearchTermText = normalizeText(searchTerm); // Chuỗi tìm kiếm đã chuẩn hóa cho tên
+    const searchDigits = normalizePhone(searchTerm); // Các chữ số từ chuỗi tìm kiếm cho SĐT
+
+    // 1. Tìm kiếm theo Tên Người Dùng
+    const nameMatch = normalizeText(order.userName).includes(lcSearchTermText);
+
+    // 2. Tìm kiếm theo Số Điện Thoại (chỉ khi searchDigits không rỗng)
+    let phoneMatch = false;
+    if (searchDigits) { // Chỉ tìm SĐT nếu có nhập số
+      const shippingPhone = normalizePhone(order.shippingAddress?.phone);
+      const userModelPhone = normalizePhone(order.userPhone); // SĐT từ User model (hiện tại backend không gửi, nên sẽ là chuỗi rỗng)
+      
+      if (shippingPhone.includes(searchDigits) || userModelPhone.includes(searchDigits)) {
+        phoneMatch = true;
+      }
+    }
+
+    return nameMatch || phoneMatch;
   });
 
   // Hiển thị hộp thoại xác nhận
@@ -207,49 +220,52 @@ const Orders = () => {
       return;
     }
 
+    // Tìm đối tượng order từ orderId
+    const order = orders.find(o => o._id === orderId);
+    if (!order) {
+      toast.error('Không tìm thấy đơn hàng!');
+      return;
+    }
+
+    // Chỉ xử lý logic cho isDelivered = true (Xác nhận)
+    // và chỉ khi đơn hàng chưa được giao (để tránh gọi confirmAction không cần thiết nếu nút bị click dù đã disabled)
+    if (!isDelivered && !order.isDelivered) { 
+      return; 
+    }
+
     const confirmAction = async () => {
       try {
-      if (isDelivered) {
-          await axiosInstance.put(`/orders/${orderId}/deliver`, {}, {
-            headers: {
-              'Authorization': `Bearer ${currentUser.token}`,
-            }
-          });
+        // Logic cho isDelivered === true (Xác nhận đơn hàng)
+        await axiosInstance.put(`/orders/${orderId}/deliver`, {}, {
+          headers: {
+            'Authorization': `Bearer ${currentUser.token}`,
+          }
+        });
           
-        setOrders(orders.map(order => 
-          order._id === orderId ? { 
-            ...order, 
+        setOrders(currentOrders => currentOrders.map(o => 
+          o._id === orderId ? { 
+            ...o, 
             isDelivered: true,
             deliveredAt: new Date().toISOString()
-          } : order
+          } : o
         ));
           
-          toast.success('Đã xác nhận đơn hàng thành công');
-      } else {
-          // Giả lập API hủy đơn hàng (vì backend không có API này)
-          toast.success('Đã hủy đơn hàng thành công');
-        setOrders(orders.filter(order => order._id !== orderId));
-      }
-    } catch (err) {
-        toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
-      console.error('Error updating order status:', err);
+        toast.success('Đã xác nhận đơn hàng thành công');
+
+      } catch (err) {
+          toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
+        console.error('Error updating order status:', err);
       }
       setConfirmDialog({ ...confirmDialog, isOpen: false });
     };
 
-    if (isDelivered) {
-      showConfirmDialog(
-        'Xác nhận đơn hàng',
-        'Bạn có chắc chắn muốn xác nhận đơn hàng này không?',
-        confirmAction
-      );
-    } else {
-      showConfirmDialog(
-        'Hủy đơn hàng',
-        'Bạn có chắc chắn muốn hủy đơn hàng này không?',
-        confirmAction
-      );
-    }
+    // Luôn hiển thị hộp thoại xác nhận cho hành động "Xác Nhận"
+    showConfirmDialog(
+      order.isDelivered ? 'Thông Báo' : 'Xác nhận đơn hàng',
+      order.isDelivered ? 'Đơn hàng này đã được xác nhận giao.' : 'Bạn có chắc chắn muốn xác nhận đơn hàng này không?',
+      // Nếu đã giao, hành động confirm chỉ là đóng dialog. Nếu chưa, thì thực hiện confirmAction.
+      order.isDelivered ? () => setConfirmDialog({ ...confirmDialog, isOpen: false }) : confirmAction 
+    );
   };
 
   return (
@@ -350,15 +366,12 @@ const Orders = () => {
                           <div className="flex flex-col sm:flex-row gap-1 justify-center">
                             <button
                               onClick={() => handleUpdateStatus(order._id, true)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition"
+                              className={`bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition ${
+                                order.isDelivered ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                              }`}
+                              disabled={order.isDelivered} // Vô hiệu hóa nếu đã giao
                             >
-                              Xác Nhận
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStatus(order._id, false)}
-                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition"
-                            >
-                              Hủy
+                              {order.isDelivered ? 'Đã Xác Nhận' : 'Xác Nhận'}
                             </button>
                           </div>
                         </td>

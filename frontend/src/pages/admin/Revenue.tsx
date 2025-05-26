@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUserStore } from '../../store/userStore';
 import { Navigate } from 'react-router-dom';
 import { axiosInstance } from '../../config/axios';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 // Dữ liệu mẫu cứng để hiển thị khi API lỗi hoặc không có dữ liệu
 const DEFAULT_DATA = {
@@ -17,12 +17,6 @@ const DEFAULT_DATA = {
     { _id: '2023-12-06', orders: 15, sales: 4200000 },
     { _id: '2023-12-07', orders: 9, sales: 2700000 }
   ],
-  productCategories: [
-    { _id: 'Giày Nam', count: 25 },
-    { _id: 'Giày Nữ', count: 18 },
-    { _id: 'Giày Trẻ Em', count: 12 },
-    { _id: 'Phụ Kiện', count: 8 }
-  ]
 };
 
 // Card thống kê đơn giản
@@ -37,17 +31,6 @@ const StatCard = ({ title, value }: StatCardProps) => (
     <p className="text-2xl font-bold">{value}</p>
   </div>
 );
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6666', '#00BFFF'];
-
-// Map _id sang tên danh mục (có thể mở rộng nếu có thêm danh mục mới)
-const CATEGORY_NAME_MAP: Record<string, string> = {
-  '682dafa0b610839036b63530': 'Giày nam',
-  '682dafa0b610839036b63531': 'Giày nữ',
-  '682dafa0b610839036b63532': 'Giày trẻ em',
-  '682ece5b0a1aff696cb13820': 'Giày nam',
-  '682ece5b0a1aff696cb13821': 'Giày nữ',
-};
 
 const Revenue = () => {
   const { user: currentUser } = useUserStore();
@@ -77,8 +60,7 @@ const Revenue = () => {
         if (response.data && 
             response.data.users && 
             response.data.orders && 
-            response.data.dailyOrders &&
-            response.data.productCategories) {
+            response.data.dailyOrders) {
           setData(response.data);
           setUsingMockData(false);
         } else {
@@ -153,12 +135,6 @@ const Revenue = () => {
   } else if (viewMode === 'quarter') {
     dailyChartData = groupByQuarter(data.dailyOrders || []);
   }
-
-  // Chuẩn hóa dữ liệu cho biểu đồ
-  const categoryChartData = (data.productCategories || []).map(item => ({
-    name: CATEGORY_NAME_MAP[item._id] || item._id,
-    value: item.count,
-  }));
 
   return (
     <div className="p-6">
@@ -248,32 +224,6 @@ const Revenue = () => {
         </div>
       </div>
 
-      {/* Biểu đồ tròn phân bố danh mục sản phẩm */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <h2 className="text-lg font-medium mb-4">Phân bố sản phẩm theo danh mục</h2>
-        <div className="h-80 flex items-center justify-center">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={categoryChartData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label
-              >
-                {categoryChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value: number) => value.toLocaleString()} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      
       {/* Bảng doanh thu gần đây */}
       <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
         <h2 className="text-lg font-medium mb-4">Doanh thu gần đây</h2>

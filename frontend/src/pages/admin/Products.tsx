@@ -202,6 +202,7 @@ const Products = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
+      
       });
       if (searchTerm) params.append('query', searchTerm);
       if (selectedCategory) params.append('category', selectedCategory);
@@ -514,7 +515,23 @@ const Products = () => {
     }
     // Xử lý riêng cho size, color
     if (name === 'size' || name === 'color') {
-      setFormState(prev => ({ ...prev, [name]: value.split(',').map(s => s.trim()).filter(Boolean) }));
+      const currentInputValue = e.target.value;
+      // Log để debug (bạn có thể xóa sau này)
+      console.log(`--- Debug cho: ${name} ---`);
+      console.log("Giá trị nhập thô:", currentInputValue);
+      let charCodesLog = "";
+      for (let i = 0; i < currentInputValue.length; i++) {
+        charCodesLog += `Ký tự: '${currentInputValue[i]}', Mã: ${currentInputValue.charCodeAt(i)};  `;
+      }
+      console.log("Mã ký tự:", charCodesLog.trim());
+      // --- Hết phần log ---
+
+      const parts = currentInputValue.split(',');
+      setFormState(prev => ({
+        ...prev,
+        // Chỉ trim, không filter(Boolean) ở đây để giữ trải nghiệm nhập liệu
+        [name]: parts.map(s => s.trim())
+      }));
     } else {
       setFormState(prev => ({ ...prev, [name]: newValue }));
     }
@@ -548,6 +565,7 @@ const Products = () => {
       toast.error('Bạn phải chọn ảnh sản phẩm trước khi lưu!');
       return;
     }
+    // Tạo productData với size và color đã được lọc sạch
     const productData = {
       name: formState.name,
       slug: formState.slug,
@@ -559,38 +577,43 @@ const Products = () => {
       isVisible: formState.isVisible,
       image: formState.image,
       images: formState.images,
-      size: formState.size,
-      color: formState.color,
+      size: formState.size.map(s => s.trim()).filter(s => s !== ''), // Lọc chuỗi rỗng sau khi trim
+      color: formState.color.map(c => c.trim()).filter(c => c !== ''), // Lọc chuỗi rỗng sau khi trim
       sexual: formState.sexual,
     };
-    const submitForm = async () => {
+
+    const submitFormLogic = async () => {
       try {
         if (editingProduct) {
           await axiosInstance.put(`/products/${editingProduct._id}/update`, productData);
           toast.success('Sản phẩm đã được cập nhật thành công');
           setShowModal(false);
           resetForm();
-          await fetchProducts(1);
+          await fetchProducts(currentPage); // Giữ nguyên khi chỉnh sửa
         } else {
           await axiosInstance.post('/products/create', productData);
           toast.success('Sản phẩm đã được thêm thành công');
           setShowModal(false);
           resetForm();
-          await fetchProducts(1);
+          // Đảm bảo tải trang 1 và cập nhật state currentPage
+          setCurrentPage(1); // Đặt lại currentPage một cách tường minh
+          await fetchProducts(1); 
         }
       } catch (err) {
         console.error('Error saving product:', err);
-        toast.error('Lỗi khi lưu sản phẩm');
+        const apiError = err as ApiError;
+        toast.error(apiError.response?.data?.message || 'Lỗi khi lưu sản phẩm');
       }
       setConfirmDialog({ ...confirmDialog, isOpen: false });
     };
+
     setConfirmDialog({
       isOpen: true,
       title: editingProduct ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới',
       message: editingProduct
         ? `Bạn có chắc chắn muốn cập nhật sản phẩm "${formState.name}" không?`
         : `Bạn có chắc chắn muốn thêm sản phẩm "${formState.name}" mới không?`,
-      onConfirm: submitForm
+      onConfirm: submitFormLogic // Đổi tên hàm bên trong để tránh lỗi redeclare
     });
   };
 
