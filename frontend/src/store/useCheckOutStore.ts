@@ -85,7 +85,7 @@ export const useCheckoutStore = create<CheckoutState>()(
                                         paymentMethod: get().customerInfo.paymentMethod,
                                         shippingFee: 0, //TODO: Cần tính toán phí vận chuyển
                                         taxRate: 0, //TODO: Cần tính toán thuế
-                                        user: user!.id,
+                                        user: user!._id,
                                         products: selectCartItem.map(item => ({
                                             id: item._id,
                                             price: item.price,

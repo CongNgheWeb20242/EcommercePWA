@@ -54,11 +54,10 @@ const ProfilePage: React.FC = () => {
         );
     }
     const fetchOrders = async (isReload: Boolean) => {
-        if (!user?.id) return;
-
+        if (!user?._id) return;
+        console.log(user)
         setLoading(true);
         const orders = await getUserOrder();
-
         if (orders && !isReload)
             orders.forEach((order: Order) => addToOrderHistory(order));
 
@@ -75,7 +74,7 @@ const ProfilePage: React.FC = () => {
     useEffect(() => {
 
         fetchOrders(false);
-    }, [user?.id, setLoading, addToOrderHistory]);
+    }, [user?._id, setLoading, addToOrderHistory]);
 
     const getStatusColor = (status: string) => {
         switch (status) {

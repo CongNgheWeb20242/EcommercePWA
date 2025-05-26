@@ -5,4 +5,6 @@ export interface User {
   profilePic: string;
   isAdmin: boolean;
   token?: string;
+  phone?: string;
+  address?: string;
 }

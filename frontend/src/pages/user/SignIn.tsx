@@ -35,6 +35,10 @@ const SignInForm = () => {
     navigate("/user/register");
   };
 
+  const handleForgetPasswordClick = () => {
+    navigate("/user/forgetpassword");
+  };
+
   const handleSignIn = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
@@ -150,9 +154,10 @@ const SignInForm = () => {
               <FontAwesomeIcon icon={passwordVisible ? faEyeSlash : faEye} />
             </button>
           </div>
-          <a href="#" className="text-sm text-blue-500 hover:underline mt-1 block text-right">
+          <button className="text-sm text-blue-500 hover:underline mt-1 block text-right"
+            onClick={handleForgetPasswordClick}>
             Forgot password?
-          </a>
+          </button>
         </div>
 
         {/* Create Account Button */}
