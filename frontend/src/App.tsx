@@ -7,6 +7,7 @@ import Orders from './pages/admin/Orders';
 import Users from './pages/admin/Users';
 import PaymentReturn from './test/PaymentReturn';
 import './App.css';
+import { Toaster } from 'react-hot-toast';
 
 // User pages
 import HomePage from './pages/user/HomePage';
@@ -23,54 +24,57 @@ import UserProtectedRoute from './components/UserProtectedRoute';
 
 const App = () => {
   return (
-    <Routes>
-      {/* Admin Routes - Được bảo vệ bởi AdminProtectedRoute */}
-      <Route path="/admin/products" element={
-        <AdminProtectedRoute>
-          <AdminLayout title="Sản phẩm"><Products /></AdminLayout>
-        </AdminProtectedRoute>
-      } />
-      <Route path="/admin/orders" element={
-        <AdminProtectedRoute>
-          <AdminLayout title="Đơn hàng"><Orders /></AdminLayout>
-        </AdminProtectedRoute>
-      } />
-      <Route path="/admin/users" element={
-        <AdminProtectedRoute>
-          <AdminLayout title="Người dùng"><Users /></AdminLayout>
-        </AdminProtectedRoute>
-      } />
-      <Route path="/admin/revenue" element={
-        <AdminProtectedRoute>
-          <AdminLayout title="Doanh thu"><Revenue /></AdminLayout>
-        </AdminProtectedRoute>
-      } />
-      
-      {/* Public User Routes - Không yêu cầu đăng nhập */}
-      <Route path="/home" element={<UserLayout><HomePage /></UserLayout>} />
-      <Route path="/user/register" element={<UserLayout><SignUp /></UserLayout>} />
-      <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
-      <Route path="/user/products" element={<UserLayout><UserProducts searchText={'Tất cả sản phẩm'} /></UserLayout>} />
-      <Route path="/user/product/:id" element={<UserLayout><Product /></UserLayout>} />
-      
-      {/* Protected User Routes - Yêu cầu đăng nhập */}
-      <Route path="/user/cart" element={
-        <UserProtectedRoute>
-          <UserLayout><Cart /></UserLayout>
-        </UserProtectedRoute>
-      } />
-      <Route path="/user/checkout" element={
-        <UserProtectedRoute>
-          <UserLayout><CheckOut /></UserLayout>
-        </UserProtectedRoute>
-      } />
-      
-      {/* Payment Routes */}
-      <Route path="/payment/vnpay_return" element={<PaymentReturn />} />
+    <>
+      <Routes>
+        {/* Admin Routes - Được bảo vệ bởi AdminProtectedRoute */}
+        <Route path="/admin/products" element={
+          <AdminProtectedRoute>
+            <AdminLayout title="Sản phẩm"><Products /></AdminLayout>
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/orders" element={
+          <AdminProtectedRoute>
+            <AdminLayout title="Đơn hàng"><Orders /></AdminLayout>
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/users" element={
+          <AdminProtectedRoute>
+            <AdminLayout title="Người dùng"><Users /></AdminLayout>
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/revenue" element={
+          <AdminProtectedRoute>
+            <AdminLayout title="Doanh thu"><Revenue /></AdminLayout>
+          </AdminProtectedRoute>
+        } />
+        
+        {/* Public User Routes - Không yêu cầu đăng nhập */}
+        <Route path="/home" element={<UserLayout><HomePage /></UserLayout>} />
+        <Route path="/user/register" element={<UserLayout><SignUp /></UserLayout>} />
+        <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
+        <Route path="/user/products" element={<UserLayout><UserProducts searchText={'Tất cả sản phẩm'} /></UserLayout>} />
+        <Route path="/user/product/:id" element={<UserLayout><Product /></UserLayout>} />
+        
+        {/* Protected User Routes - Yêu cầu đăng nhập */}
+        <Route path="/user/cart" element={
+          <UserProtectedRoute>
+            <UserLayout><Cart /></UserLayout>
+          </UserProtectedRoute>
+        } />
+        <Route path="/user/checkout" element={
+          <UserProtectedRoute>
+            <UserLayout><CheckOut /></UserLayout>
+          </UserProtectedRoute>
+        } />
+        
+        {/* Payment Routes */}
+        <Route path="/payment/vnpay_return" element={<PaymentReturn />} />
 
-      {/* Redirect trang chủ về home */}
-      <Route path="/" element={<Navigate to="/home" replace />} />
-    </Routes>
+        {/* Redirect trang chủ về home */}
+        <Route path="/" element={<Navigate to="/home" replace />} />
+      </Routes>
+      <Toaster />
+    </>
   );
 };
 
