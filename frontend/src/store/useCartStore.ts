@@ -50,7 +50,7 @@ export const useCartStore = create<CartState>()(
                 const { items } = get();
                 // Kiểm tra sản phẩm đã có trong giỏ hàng chưa (cùng ID và cùng size)
                 const existingItemIndex = items.findIndex(
-                    item => item._id === product._id && item.size === size
+                    item => item._id === product._id && item.selectSize === size
                 );
 
                 let updatedItems: CartItem[];
@@ -69,7 +69,7 @@ export const useCartStore = create<CartState>()(
                         ...items,
                         {
                             ...product,
-                            size,
+                            selectSize: size,
                             quantity,
                             selected: false
                         }
@@ -156,7 +156,7 @@ export const useCartStore = create<CartState>()(
                 const { items } = get();
                 const updatedItems = items.map(item => {
                     if (item._id === productId) {
-                        return { ...item, size: newSize };
+                        return { ...item, selectSize: newSize };
                     }
                     return item;
                 });

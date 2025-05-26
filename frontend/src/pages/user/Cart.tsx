@@ -24,7 +24,7 @@ const CartPage = () => {
                         {items.length === 0 ? (
                             <div className="text-gray-500 text-center py-8">Giỏ hàng trống</div>
                         ) : (
-                            items.map(item => <CartItem key={item._id + "_" + item.size} item={item} />)
+                            items.map(item => <CartItem key={item._id + "_" + item.selectSize} item={item} />)
                         )}
                     </div>
                 </div>

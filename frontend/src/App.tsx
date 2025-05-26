@@ -7,6 +7,7 @@ import Revenue from './pages/admin/Revenue';
 import HomePage from './pages/user/HomePage';
 import SignUp from './pages/user/SignUp';
 import SignIn from './pages/user/SignIn';
+import ProfilePage from './pages/user/ProfilePage';
 import Products from './pages/user/Products';
 import Product from './pages/user/Product';
 import Cart from './pages/user/Cart';
@@ -39,7 +40,8 @@ const App = () => {
       <Route path="/home" element={<UserLayout><HomePage /></UserLayout>} />
       <Route path="/user/register" element={<UserLayout><SignUp /></UserLayout>} />
       <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
-      {/* //TODO : sửa search text */}
+      <Route path="/user/profile" element={<UserLayout><ProfilePage /></UserLayout>} />
+
       <Route path="/user/products" element={<UserLayout><Products key={'Tất Cả Sản Phẩm'} searchText={'Tất Cả Sản Phẩm'} /></UserLayout>} />
       <Route path="/user/products/men" element={<UserLayout><Products key={'Thời Trang Nam'} searchText={'Thời Trang Nam'} /></UserLayout>} />
       <Route path="/user/products/women" element={<UserLayout><Products key={'Thời Trang Nữ'} searchText={'Thời Trang Nữ'} /></UserLayout>} />

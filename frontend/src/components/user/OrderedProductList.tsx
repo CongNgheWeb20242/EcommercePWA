@@ -18,7 +18,7 @@ export default function OrderedProductList() {
                         />
                         <div className="text-xs">
                             <div className="font-semibold truncate w-36">{item.name}</div>
-                            <div>Size: {item.size}</div>
+                            <div>Size: {item.selectSize}</div>
                             <div>SL: {item.quantity} x {item.price.toLocaleString("vi-VN", {
                                 style: "currency",
                                 currency: "VND",

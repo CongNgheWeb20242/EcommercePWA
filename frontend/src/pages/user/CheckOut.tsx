@@ -3,7 +3,8 @@ import CartPage from "./Cart";
 import OrderInfo from "./OrderInfo";
 import Payment from "./Payment";
 import CheckoutProgressBar from "@/components/user/CheckoutProcessBar";
-import ShippingPage from "../../components/user/ShippingPage";
+import ShippingPage from "../../components/user/Shipping";
+import Complete from "@/components/user/Complete";
 
 const CheckoutPage = () => {
     const { currentStep } = useCheckoutStore();
@@ -15,7 +16,7 @@ const CheckoutPage = () => {
             case 2: return <OrderInfo />;
             case 3: return <Payment />
             case 4: return <ShippingPage />;
-            //   case 5: return <CompleteStep />;
+            case 5: return <Complete />;
             default: return null;
         }
     };

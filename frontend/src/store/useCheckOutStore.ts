@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useAuthStore } from './useAuthStore';
 import useCartStore from './useCartStore';
+import { deliverOrder } from '@/services/api/orderService';
 
 export type OrderStatus = 'cart' | 'information' | 'payment' | 'shipping' | 'complete';
 
@@ -94,7 +95,7 @@ export const useCheckoutStore = create<CheckoutState>()(
                                         if (response && response.success) {
                                             set({
                                                 paymentURL: response.paymentUrl,
-                                                orderId: response.order.order_id,
+                                                orderId: response.order._id,
                                             });
                                         }
                                     })
@@ -102,6 +103,11 @@ export const useCheckoutStore = create<CheckoutState>()(
                                 createPayment();
                             }
                             break;
+
+                        case 5:
+                            deliverOrder(get().orderId!);
+                            break;
+
                     }
 
                     set({
