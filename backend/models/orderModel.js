@@ -41,7 +41,7 @@ const orderSchema = new mongoose.Schema(
       update_time: String,
       amount: Number,
       bankCode: String, // Mã ngân hàng (VNPay)
-      payType: String, // Loại thanh toán (MoMo: `captureWallet`, `payWithATM`)
+      payType: String,
     },
     itemsPrice: { type: Number, required: true }, // // Tổng giá trị sản phẩm trong đơn
     shippingPrice: { type: Number, required: true },
