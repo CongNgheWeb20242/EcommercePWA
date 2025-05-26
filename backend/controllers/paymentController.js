@@ -138,15 +138,15 @@ export const vnpayIPN = async (req, res) => {
       return res.json(IpnOrderNotFound);
     }
 
-    if (verify.vnp_Amount !== foundOrder.totalPrice) {
-      console.log(
-        'Số tiền không khớp. Gửi:',
-        verify.vnp_Amount,
-        ' DB:',
-        foundOrder.totalPrice
-      );
-      return res.json(IpnInvalidAmount);
-    }
+    // if (verify.vnp_Amount !== foundOrder.totalPrice) {
+    //   console.log(
+    //     'Số tiền không khớp. Gửi:',
+    //     verify.vnp_Amount,
+    //     ' DB:',
+    //     foundOrder.totalPrice
+    //   );
+    //   return res.json(IpnInvalidAmount);
+    // }
 
     if (foundOrder.status === 'completed') {
       console.log('Đơn hàng đã được xác nhận từ trước');
