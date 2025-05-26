@@ -300,14 +300,16 @@ const Orders = () => {
               <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Size</th>
               <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">SL</th>
               <th className="px-4 py-3 text-right font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Tổng Giá</th>
-              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Trạng Thái</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Trạng Thái TT</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Ngày TT</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Trạng Thái GH</th>
               <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Hành Động</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-3 py-4 text-center">
+                <td colSpan={11} className="px-3 py-4 text-center">
                   <div className="flex justify-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                   </div>
@@ -315,7 +317,7 @@ const Orders = () => {
               </tr>
             ) : filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-4 text-center text-xs text-gray-500">
+                <td colSpan={11} className="px-3 py-4 text-center text-xs text-gray-500">
                   Không tìm thấy đơn hàng nào
                 </td>
               </tr>
@@ -333,7 +335,7 @@ const Orders = () => {
                     {index === 0 ? (
                       <>
                         <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
-                          {order.userName || 'Trần Trọng Luân'}
+                          {order.shippingAddress?.fullName || 'Trần Trọng Luân'}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
                           {order.shippingAddress?.phone || order.userPhone || '0899804328'}
@@ -356,6 +358,14 @@ const Orders = () => {
                       <>
                         <td className="px-4 py-3 whitespace-nowrap text-right font-semibold align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
                           {(order.totalPrice || 1950000).toLocaleString()} đ
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {order.isPaid ? 'Đã Thanh Toán' : 'Chưa Thanh Toán'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          {order.paidAt ? new Date(order.paidAt).toLocaleDateString('vi-VN') : 'N/A'}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isDelivered ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -381,7 +391,7 @@ const Orders = () => {
                 )),
                 // Dòng phân cách đậm giữa các đơn hàng
                 <tr key={`divider_${order._id}`}> 
-                  <td colSpan={9} className="p-0">
+                  <td colSpan={11} className="p-0">
                     <div style={{ borderTop: '3px solid #d1d5db', margin: 0 }}></div>
                   </td>
                 </tr>
