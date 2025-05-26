@@ -103,6 +103,7 @@ export const createPaymentUrl = async (req, res) => {
 // Đoạn này xử lý với backend
 export const vnpayIPN = async (req, res) => {
   try {
+    console.log(req.query);
     console.log('Nhận IPN từ VNPay:', req.query);
 
     const verify = vnpay.verifyIpnCall(req.query);

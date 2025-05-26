@@ -20,7 +20,7 @@ async function seedUsers(n = 1000) {
     address: 'Admin Address',
     profilePic: '',
     isAdmin: true,
-  });
+  }); 
 
   for (let i = 1; i < n; i++) {
     users.push({
