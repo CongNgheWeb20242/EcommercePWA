@@ -1,7 +1,9 @@
 import mongoose from 'mongoose';
 
+// Sửa lại schema Order
 const orderSchema = new mongoose.Schema(
   { // Danh sách sản phẩm trong đơn hàng
+    order_id: { type: String, required: true },
     orderItems: [
       {
         product: {
@@ -21,6 +23,7 @@ const orderSchema = new mongoose.Schema(
       // Mã bưu điện
       postalCode: String,
       country: { type: String, required: true },
+      // API Maps
       location: {
         lat: Number,
         lng: Number,
@@ -38,7 +41,7 @@ const orderSchema = new mongoose.Schema(
       update_time: String,
       amount: Number,
       bankCode: String, // Mã ngân hàng (VNPay)
-      payType: String, // Loại thanh toán (MoMo: `captureWallet`, `payWithATM`)
+      payType: String,
     },
     itemsPrice: { type: Number, required: true }, // // Tổng giá trị sản phẩm trong đơn
     shippingPrice: { type: Number, required: true },

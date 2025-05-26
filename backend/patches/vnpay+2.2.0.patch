@@ -1,0 +1,14 @@
+diff --git a/node_modules/vnpay/dist/index.js b/node_modules/vnpay/dist/index.js
+index 7f1d369..7ea5b69 100644
+--- a/node_modules/vnpay/dist/index.js
++++ b/node_modules/vnpay/dist/index.js
+@@ -1,7 +1,7 @@
+ import J from "crypto";
+ import C from "dayjs";
+-import me from "dayjs/plugin/timezone";
+-import fe from "dayjs/plugin/utc";
++import me from "dayjs/plugin/timezone.js";
++import fe from "dayjs/plugin/utc.js";
+ import * as X from "fs";
+ var m = "WRONG_CHECKSUM_KEY",
+ 	M = new Map([

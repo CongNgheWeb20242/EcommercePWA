@@ -1,4 +1,10 @@
 export interface User {
-    name: string;
-    email: string;
-  }
+  _id: string;
+  name: string;
+  email: string;
+  profilePic: string;
+  isAdmin: boolean;
+  token?: string;
+  phone?: string;
+  address?: string;
+}

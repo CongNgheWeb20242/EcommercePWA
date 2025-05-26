@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "# Lessons",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "build": "cd backend && npm install  && cd ../frontend && npm install && npm run build",
     "start": "node backend/server.js",
@@ -19,6 +20,8 @@
   },
   "homepage": "https://github.com/basir/mern-amazona#readme",
   "dependencies": {
-    "amazona": "file:"
+    "amazona": "file:",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   }
 }

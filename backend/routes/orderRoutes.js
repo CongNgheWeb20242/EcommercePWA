@@ -3,7 +3,9 @@ import expressAsyncHandler from 'express-async-handler';
 import Order from '../models/orderModel.js';
 import User from '../models/userModel.js';
 import Product from '../models/productModel.js';
-import { isAuth, isAdmin, mailgun, payOrderEmailTemplate } from '../lib/utils.js';
+import { isAuth } from '../lib/utils.js';
+import { isAdmin } from '../middlewares/authMiddleware.js';
+import { v4 as uuidv4 } from 'uuid'; // Nếu muốn dùng uuid
 
 const orderRouter = express.Router();
 
@@ -12,7 +14,7 @@ orderRouter.get(
   isAuth,
   isAdmin,
   expressAsyncHandler(async (req, res) => {
-    const orders = await Order.find().populate('user', 'name');
+    const orders = await Order.find().populate('user', 'name email phone');
     res.send(orders);
   })
 );
@@ -22,6 +24,7 @@ orderRouter.post(
   isAuth,
   expressAsyncHandler(async (req, res) => {
     const newOrder = new Order({
+      order_id: uuidv4(),
       orderItems: req.body.orderItems.map((x) => ({ ...x, product: x._id })),
       shippingAddress: req.body.shippingAddress,
       paymentMethod: req.body.paymentMethod,
@@ -119,62 +122,92 @@ orderRouter.put(
   })
 );
 
-orderRouter.put(
-  '/:id/pay',
-  isAuth,
-  expressAsyncHandler(async (req, res) => {
-    const order = await Order.findById(req.params.id).populate(
-      'user',
-      'email name'
-    );
-    if (order) {
-      order.isPaid = true;
-      order.paidAt = Date.now();
-      order.paymentResult = {
-        id: req.body.id,
-        status: req.body.status,
-        update_time: req.body.update_time,
-        email_address: req.body.email_address,
-      };
+// orderRouter.put(
+//   '/:id/pay',
+//   isAuth,
+//   expressAsyncHandler(async (req, res) => {
+//     const order = await Order.findById(req.params.id).populate(
+//       'user',
+//       'email name'
+//     );
+//     if (order) {
+//       order.isPaid = true;
+//       order.paidAt = Date.now();
+//       order.paymentResult = {
+//         id: req.body.id,
+//         status: req.body.status,
+//         update_time: req.body.update_time,
+//         email_address: req.body.email_address,
+//       };
 
-      const updatedOrder = await order.save();
-      mailgun()
-        .messages()
-        .send(
-          {
-            from: 'Amazona <amazona@mg.yourdomain.com>',
-            to: `${order.user.name} <${order.user.email}>`,
-            subject: `New order ${order._id}`,
-            html: payOrderEmailTemplate(order),
-          },
-          (error, body) => {
-            if (error) {
-              console.log(error);
-            } else {
-              console.log(body);
-            }
-          }
-        );
+//       const updatedOrder = await order.save();
+//       mailgun()
+//         .messages()
+//         .send(
+//           {
+//             from: 'Amazona <amazona@mg.yourdomain.com>',
+//             to: `${order.user.name} <${order.user.email}>`,
+//             subject: `New order ${order._id}`,
+//             html: payOrderEmailTemplate(order),
+//           },
+//           (error, body) => {
+//             if (error) {
+//               console.log(error);
+//             } else {
+//               console.log(body);
+//             }
+//           }
+//         );
 
-      res.send({ message: 'Order Paid', order: updatedOrder });
-    } else {
-      res.status(404).send({ message: 'Order Not Found' });
-    }
-  })
-);
+//       res.send({ message: 'Order Paid', order: updatedOrder });
+//     } else {
+//       res.status(404).send({ message: 'Order Not Found' });
+//     }
+//   })
+// );
 
-orderRouter.delete(
-  '/:id',
+// orderRouter.delete(
+//   '/:id',
+//   isAuth,
+//   isAdmin,
+//   expressAsyncHandler(async (req, res) => {
+//     const order = await Order.findById(req.params.id);
+//     if (order) {
+//       await order.remove();
+//       res.send({ message: 'Order Deleted' });
+//     } else {
+//       res.status(404).send({ message: 'Order Not Found' });
+//     }
+//   })
+// );
+
+orderRouter.get(
+  '/search',
   isAuth,
   isAdmin,
   expressAsyncHandler(async (req, res) => {
-    const order = await Order.findById(req.params.id);
-    if (order) {
-      await order.remove();
-      res.send({ message: 'Order Deleted' });
-    } else {
-      res.status(404).send({ message: 'Order Not Found' });
+    const { email, phone, name } = req.query;
+
+    // Build user filter
+    let userFilter = {};
+    if (email) userFilter.email = email;
+    if (phone) userFilter.phone = phone;
+    if (name) userFilter.name = { $regex: name, $options: 'i' };
+
+    // Find matching users
+    let userIds = [];
+    if (Object.keys(userFilter).length > 0) {
+      const users = await User.find(userFilter).select('_id');
+      userIds = users.map(u => u._id);
     }
+
+    // Find orders by user
+    const orderFilter = userIds.length > 0 ? { user: { $in: userIds } } : {};
+    const orders = await Order.find(orderFilter)
+      .populate('user', 'name email phone')
+      .populate('orderItems.product');
+
+    res.json(orders);
   })
 );
 
