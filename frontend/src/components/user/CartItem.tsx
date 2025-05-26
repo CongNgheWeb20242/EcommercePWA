@@ -43,7 +43,7 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
             onClick={() => increaseQuantity(item._id)}
           >+</button>
         </div>
-        <div className="text-gray-700">Size: <span className="font-semibold">{item.size}</span></div>
+        <div className="text-gray-700">Size: <span className="font-semibold">{item.selectSize}</span></div>
         <div className="text-red-600 font-bold text-lg mt-2">
           <span className="text-red-600 font-bold text-md">
             {(item.price * item.quantity).toLocaleString("vi-VN", {

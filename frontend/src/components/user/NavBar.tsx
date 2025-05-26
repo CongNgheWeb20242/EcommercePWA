@@ -33,6 +33,10 @@ const Navbar = () => {
     navigate('/user/cart');;
   };
 
+  const handleProfileClick = () => {
+    navigate('/user/profile');
+  };
+
   const handleLoginClick = () => {
     navigate('/user/login');
   };
@@ -85,7 +89,8 @@ const Navbar = () => {
         {user ? (
           <>
             <li className="flex items-center space-x-2">
-              <span className="w-8 h-8 flex items-center justify-center bg-blue-500 rounded-full text-white font-bold uppercase">
+              <span className="w-8 h-8 flex items-center justify-center bg-blue-500 rounded-full text-white font-bold uppercase"
+                onClick={handleProfileClick}>
                 {user.name.charAt(0)}
               </span>
               <span>{user.name}</span>
@@ -173,7 +178,8 @@ const Navbar = () => {
               {user ? (
                 <>
                   <li className="flex items-center space-x-2 py-2">
-                    <span className="w-8 h-8 flex items-center justify-center bg-blue-500 rounded-full text-white font-bold uppercase">
+                    <span className="w-8 h-8 flex items-center justify-center bg-blue-500 rounded-full text-white font-bold uppercase"
+                      onClick={handleProfileClick}>
                       {user.name.charAt(0)}
                     </span>
                     <span>{user.name}</span>

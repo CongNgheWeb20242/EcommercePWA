@@ -1,3 +1,4 @@
+import { Order } from '@/types/Order';
 import apiClient from './api';
 
 interface CreatePaymentURLBody {
@@ -21,10 +22,7 @@ interface CreatePaymentURLBody {
 interface CreatePaymentURLResponse {
     success: boolean;
     paymentUrl: string;
-    order: {
-        order_id: string;
-        amount: number;
-    }
+    order: Order
 }
 
 function delay(ms: number) {
