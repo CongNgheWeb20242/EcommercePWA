@@ -3,6 +3,7 @@ import { useUserStore } from '../../store/userStore';
 import { Navigate } from 'react-router-dom';
 import { axiosInstance } from '../../config/axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import toast from 'react-hot-toast';
 
 // Dữ liệu mẫu cứng để hiển thị khi API lỗi hoặc không có dữ liệu
 const DEFAULT_DATA = {
@@ -67,10 +68,12 @@ const Revenue = () => {
           console.log('API response không đúng định dạng, sử dụng dữ liệu mẫu');
           setData(DEFAULT_DATA);
           setUsingMockData(true);
+          toast.error('Dữ liệu tổng quan trả về không đúng định dạng.');
         }
       } catch (err) {
         console.error('Lỗi khi lấy dữ liệu:', err);
         setError('Không thể lấy dữ liệu từ server, hiển thị dữ liệu mẫu');
+        toast.error('Lỗi khi tải dữ liệu tổng quan từ server.');
         setData(DEFAULT_DATA);
         setUsingMockData(true);
       } finally {

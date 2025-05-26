@@ -104,15 +104,11 @@ const Products = () => {
   // State for products data
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   
   // State for modal and editing
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [existingImages, setExistingImages] = useState<string[]>([]);
   
   // State for pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -212,7 +208,6 @@ const Products = () => {
       setProducts(response.data.products || []);
       setTotalPages(response.data.pages || 1);
       setCurrentPage(page);
-      setError(null);
     } catch (err: unknown) {
       console.error("Error fetching products:", err);
       // Hiển thị dữ liệu mẫu thay vì hiện thông báo lỗi
@@ -292,7 +287,6 @@ const Products = () => {
       }
     ]);
     setTotalPages(1);
-    setError(null); // Xóa thông báo lỗi khi hiển thị dữ liệu mẫu
   };
 
   // Initial data load
@@ -388,7 +382,7 @@ const Products = () => {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            reject(new Error('Không thể tạo context canvas'));
+            reject(new Error("Không thể lấy context 2D từ canvas để nén ảnh."));
             return;
           }
           
@@ -406,57 +400,38 @@ const Products = () => {
           const dataUrl = canvas.toDataURL(imageType, quality);
           resolve(dataUrl);
         };
-        img.onerror = () => {
-          reject(new Error('Lỗi khi tải ảnh'));
+        img.onerror = (error) => {
+          console.error("Lỗi khi tải ảnh để nén (img.onerror):", error);
+          reject(new Error("Lỗi khi tải ảnh để nén (img.onerror)."));
         };
       };
-      reader.onerror = () => {
-        reject(new Error('Lỗi khi đọc file'));
+      reader.onerror = (error) => {
+        console.error("Lỗi FileReader khi đọc ảnh:", error);
+        reject(new Error("Lỗi FileReader khi đọc ảnh."));
       };
     });
   };
 
-  // Thêm hàm chuyển đổi ảnh sang base64 - không sử dụng trực tiếp, sử dụng compressImage thay thế
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const convertImageToBase64 = (file: File): Promise<string> => {
-    // Sử dụng hàm nén ảnh thay vì chuyển đổi trực tiếp
-    return compressImage(file);
-  };
-
-  // Cập nhật để xử lý URL ảnh thay vì file
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    if (url) {
-      setImagePreview(url);
-    } else {
-      setImagePreview(null);
-    }
-  };
-
-  // Thay đổi hàm handleMultipleImagesChange để thêm ảnh mới vào imagesPreview và formState.images, không reset toàn bộ
-  const handleMultipleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Khôi phục hàm handleMultipleImagesChange
+  const handleMultipleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
-      const validFiles = files.filter(file => validateImage(file));
-      if (validFiles.length === 0) return;
-      let loaded = 0;
+      const filesArray = Array.from(e.target.files);
+      const newImagesBase64: string[] = [];
       const newPreviews: string[] = [];
-      const newBase64Arr: string[] = [];
-      validFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = reader.result as string;
-          newPreviews.push(base64);
-          newBase64Arr.push(base64);
-          loaded++;
-          if (loaded === validFiles.length) {
-            setImagesPreview(prev => [...prev, ...newPreviews]);
-            setFormState(prev => ({ ...prev, images: [...prev.images, ...newBase64Arr] }));
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+
+      for (const file of filesArray) {
+        if (!validateImage(file)) continue; 
+        try {
+          const compressedBase64 = await compressImage(file);
+          newImagesBase64.push(compressedBase64);
+          newPreviews.push(compressedBase64); 
+        } catch (error) {
+          console.error(`Lỗi khi xử lý ảnh phụ ${file.name}:`, error);
+          // Sẽ thêm toast ở đây sau
+        }
+      }
+      setFormState(prev => ({ ...prev, images: [...prev.images, ...newImagesBase64] }));
+      setImagesPreview(prev => [...prev, ...newPreviews]);
     }
   };
 
@@ -464,14 +439,6 @@ const Products = () => {
   const handleRemovePreviewImage = (idx: number) => {
     setImagesPreview(prev => prev.filter((_, i) => i !== idx));
     setFormState(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }));
-  };
-
-  // Handle removing an existing image - không còn sử dụng vì ẩn tính năng nhiều ảnh
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleRemoveExistingImage = (index: number) => {
-    const updatedImages = [...existingImages];
-    updatedImages.splice(index, 1);
-    setExistingImages(updatedImages);
   };
 
   // Toggle product visibility với xác nhận
@@ -542,7 +509,6 @@ const Products = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!validateImage(file)) return;
-    setImageFile(file);
 
     // Chuyển file sang base64
     const reader = new FileReader();
@@ -623,9 +589,7 @@ const Products = () => {
       formRef.current.reset();
     }
     setEditingProduct(null);
-    setImageFile(null);
     setImagePreview(null);
-    setExistingImages([]);
     setImagesPreview([]);
     setFormState({
       name: '',
@@ -669,7 +633,6 @@ const Products = () => {
   // Khi mở modal chỉnh sửa sản phẩm
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
-    setExistingImages(product.images || []);
     setImagesPreview(product.images || []);
     setFormState({
       name: product.name,
@@ -703,19 +666,12 @@ const Products = () => {
         </button>
       </div>
 
-      {/* Success message */}
-      {/* {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-          <span className="block sm:inline">{successMessage}</span>
-        </div>
-      )} */}
-
       {/* Error message */}
-      {error && (
+      {/* {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 hidden">
           {error}
         </div>
-      )}
+      )} */}
 
       {/* Search and filters */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
