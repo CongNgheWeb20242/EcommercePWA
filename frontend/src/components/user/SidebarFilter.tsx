@@ -164,7 +164,7 @@ export default function SidebarFilter({ show, onClose, onSearchTextChange }: Sid
                 {/* Thương hiệu */}
                 <div>
                     <div className="font-semibold mb-2">Thương hiệu</div>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex gap-2 flex-wrap">
                         {["Nike", "Adidas", "Puma", "Converse"].map((b) => (
                             <label key={b} className="flex items-center gap-2">
                                 <input

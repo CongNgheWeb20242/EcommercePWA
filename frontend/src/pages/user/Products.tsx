@@ -26,8 +26,8 @@ export default function Products({ searchText }: ProductsProps) {
     // Reset khi _searchText thay đổi
     const queryMap: { [key: string]: string | undefined } = {
         "Tất Cả Sản Phẩm": "",
-        "Thời trang Nam": "nam",
-        "Thời trang Nữ": "nữ"
+        "Thời trang Nam": "male",
+        "Thời trang Nữ": "female"
     };
 
     useEffect(() => {
@@ -40,7 +40,7 @@ export default function Products({ searchText }: ProductsProps) {
         fetchProducts({
             page: 1,
             pageSize,
-            query
+            sexual: query
         });
     }, [searchText]);
 

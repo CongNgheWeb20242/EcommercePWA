@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { User } from "../types/User.ts";
-import { login, register } from "@/services/auth/authService.ts";
+import { forget_password, login, register } from "@/services/auth/authService.ts";
 import { LoginCredentials, RegisterData } from "@/types/Auth.ts";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -17,6 +17,7 @@ type AuthState = {
   signUp: (registerData: RegisterData) => Promise<Boolean>;
   logIn: (loginCredentials: LoginCredentials) => Promise<Boolean>;
   logOut: () => void;
+  sendResetPasswordEmail: (email: string) => Promise<Boolean>;
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -61,6 +62,13 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null });
         localStorage.removeItem("token");
       },
+
+      sendResetPasswordEmail: async (email) => {
+        const prop = {
+          email: email
+        }
+        return await forget_password(prop)
+      }
     }),
     {
       name: 'auth-storage',

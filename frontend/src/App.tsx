@@ -13,6 +13,7 @@ import { Toaster } from 'react-hot-toast';
 import HomePage from './pages/user/HomePage';
 import SignUp from './pages/user/SignUp';
 import SignIn from './pages/user/SignIn';
+import ForgotPassword from './pages/user/ForgotPassword';
 import ProfilePage from './pages/user/ProfilePage';
 import UserProducts from './pages/user/Products';
 import Product from './pages/user/Product';
@@ -54,6 +55,7 @@ const App = () => {
         <Route path="/home" element={<UserLayout><HomePage /></UserLayout>} />
         <Route path="/user/register" element={<UserLayout><SignUp /></UserLayout>} />
         <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
+        <Route path="/user/forgetpassword" element={<UserLayout><ForgotPassword /></UserLayout>} />
         <Route path="/user/profile" element={<UserLayout><ProfilePage /></UserLayout>} />
 
         <Route path="/user/products" element={<UserLayout><UserProducts key={'Tất Cả Sản Phẩm'} searchText={'Tất Cả Sản Phẩm'} /></UserLayout>} />

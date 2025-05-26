@@ -3,14 +3,6 @@ import { LoginCredentials, RegisterData } from '../../types/Auth';
 import { User } from '@/types/User';
 import axios from 'axios';
 
-interface LoginResponse {
-  _id: string;
-  name: string;
-  token: string;
-  email: string;
-  profilePic: string;
-}
-
 
 export const login = async (credentials: LoginCredentials): Promise<{ user?: User; error?: string }> => {
   try {
@@ -87,4 +79,20 @@ export const register = async (userData: RegisterData): Promise<{ user?: User; e
 
 export const googleLoginUrl = (): string => {
   return `${authApiClient.defaults.baseURL}user/google`;
+};
+
+
+interface forget_password_prop {
+  email: string;
+}
+
+export const forget_password = async (forget_password_prop: forget_password_prop): Promise<Boolean> => {
+  try {
+    await authApiClient.post('/user/forget-password', forget_password_prop);
+    return true;
+
+  } catch (error) {
+    console.log("Send email failed")
+    return false
+  }
 };
