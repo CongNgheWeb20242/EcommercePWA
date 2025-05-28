@@ -83,7 +83,12 @@ const Users = () => {
   });
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // State cho các trường đang được chỉnh sửa
+  const [editedName, setEditedName] = useState('');
+  const [editedEmail, setEditedEmail] = useState('');
+  const [editedIsAdmin, setEditedIsAdmin] = useState(false);
 
   // Gọi API để lấy dữ liệu người dùng
   const fetchUsers = async (page = currentPage) => {
@@ -193,6 +198,71 @@ const Users = () => {
     return <Navigate to="/" replace />;
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const { checked } = e.target as HTMLInputElement;
+      if (name === 'isAdmin') {
+        setEditedIsAdmin(checked);
+      }
+    } else {
+      if (name === 'name') {
+        setEditedName(value);
+      } else if (name === 'email') {
+        setEditedEmail(value);
+      }
+    }
+  };
+  
+  const handleSaveChanges = async () => {
+    if (!selectedUser) return;
+    // Kiểm tra xem người dùng hiện tại có phải admin không
+    if (!currentUser?.isAdmin) {
+      toast.error('Bạn không có quyền thực hiện hành động này');
+      return;
+    }
+
+    // Không cho phép bỏ quyền admin của chính tài khoản đang đăng nhập
+    if (currentUser._id === selectedUser._id && !editedIsAdmin) {
+        toast.error('Bạn không thể bỏ quyền Admin của chính mình.');
+        setEditedIsAdmin(true); // Đặt lại giá trị isAdmin nếu họ cố gắng bỏ
+        return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        name: editedName,
+        email: editedEmail,
+        isAdmin: editedIsAdmin,
+      };
+      // Sử dụng đúng đường dẫn API theo cấu hình trong axiosInstance và method PUT
+      const response = await axiosInstance.put(`/user/${selectedUser._id}`, payload);
+
+      if (response.status === 200 && response.data.user) {
+        // Cập nhật danh sách người dùng trên UI
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user._id === selectedUser._id ? { ...user, ...response.data.user } : user
+          )
+        );
+        toast.success('Cập nhật thông tin người dùng thành công!');
+        setIsEditModalOpen(false); // Đóng modal sau khi lưu thành công
+        setSelectedUser(null); // Reset selectedUser
+      } else {
+        toast.error(response.data?.message || 'Lỗi khi cập nhật thông tin người dùng.');
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as { response?: { data?: { message?: string } } };
+      const errorMessage = errorResponse?.response?.data?.message || 'Lỗi khi cập nhật thông tin người dùng.';
+      toast.error(errorMessage);
+      console.error('Error updating user:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Lọc users trong trường hợp cần thiết (nếu không thể lọc bằng API)
   const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = searchTerm === '' || 
@@ -279,15 +349,39 @@ const Users = () => {
   };
 
   // Thêm hàm xem chi tiết user
-  const handleViewUserDetail = async (userId: string) => {
+  const handleOpenEditModal = async (userId: string) => {
     try {
-      const response = await axiosInstance.get(`/user/${userId}`);
-      setSelectedUser(response.data);
-      setShowDetailModal(true);
+      // Tìm user trong danh sách hiện tại để tránh gọi API không cần thiết nếu đã có
+      const userToEdit = users.find(u => u._id === userId);
+      if (userToEdit) {
+        setSelectedUser(userToEdit);
+        setEditedName(userToEdit.name);
+        setEditedEmail(userToEdit.email);
+        setEditedIsAdmin(userToEdit.isAdmin);
+        setIsEditModalOpen(true);
+      } else {
+        // Nếu không tìm thấy (ví dụ: dữ liệu chưa được fetch đầy đủ), gọi API
+        const response = await axiosInstance.get(`/user/${userId}`);
+        if (response.data) {
+            setSelectedUser(response.data);
+            setEditedName(response.data.name);
+            setEditedEmail(response.data.email);
+            setEditedIsAdmin(response.data.isAdmin);
+            setIsEditModalOpen(true);
+        } else {
+            toast.error('Không tìm thấy thông tin người dùng.');
+        }
+      }
     } catch (err) {
-      console.error('Error fetching user details:', err);
-      toast.error('Không thể tải thông tin chi tiết người dùng');
+      console.error('Error fetching user details for edit:', err);
+      toast.error('Không thể tải thông tin chi tiết người dùng để chỉnh sửa');
     }
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedUser(null);
+    // Reset các trường edited nếu cần, nhưng thường không cần thiết vì sẽ được set lại khi mở modal
   };
 
   return (
@@ -414,7 +508,7 @@ const Users = () => {
                   </td>
                   <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap text-right text-xs md:text-sm font-medium">
                     <button
-                      onClick={() => handleViewUserDetail(user._id)}
+                      onClick={() => handleOpenEditModal(user._id)}
                       className="px-3 py-1 text-blue-600 hover:text-blue-800 mr-2 cursor-pointer"
                       title="Xem chi tiết"
                     >
@@ -483,63 +577,97 @@ const Users = () => {
       )}
 
       {/* Modal xem chi tiết user */}
-      {showDetailModal && selectedUser && (
+      {isEditModalOpen && selectedUser && (
         <div className="fixed inset-0 z-50 overflow-auto backdrop-blur-sm bg-white/30 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl m-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Thông tin chi tiết người dùng</h3>
+              <h3 className="text-xl font-semibold">Chỉnh sửa thông tin người dùng</h3>
               <button 
-                onClick={() => setShowDetailModal(false)}
+                onClick={handleCloseEditModal}
                 className="text-gray-500 hover:text-gray-700 cursor-pointer"
               >
                 ✕
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
+            {/* Form chỉnh sửa */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Tăng gap cho dễ nhìn */}
+              {/* Cột 1: Name, Email, Phone (hiển thị) */}
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-500">Họ tên</label>
-                  <p className="text-base">{selectedUser.name}</p>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">Họ tên</label>
+                  <input
+                    type="text"
+                    name="name"
+                    id="name"
+                    value={editedName}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-500">Email</label>
-                  <p className="text-base">{selectedUser.email}</p>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    id="email"
+                    value={editedEmail}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  />
                 </div>
-                <div>
+                 <div>
                   <label className="block text-sm font-medium text-gray-500">Số điện thoại</label>
-                  <p className="text-base">{selectedUser.phone || 'Chưa cập nhật'}</p>
+                  <p className="text-base mt-1 text-gray-700">{selectedUser.phone || 'Chưa cập nhật'}</p>
                 </div>
               </div>
               
-              <div className="space-y-3">
+              {/* Cột 2: Address (hiển thị), IsAdmin, CreatedAt (hiển thị) */}
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-500">Địa chỉ</label>
-                  <p className="text-base">{selectedUser.address || 'Chưa cập nhật'}</p>
+                  <p className="text-base mt-1 text-gray-700">{selectedUser.address || 'Chưa cập nhật'}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">Vai trò</label>
-                  <p className="text-base">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      selectedUser.isAdmin ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {selectedUser.isAdmin ? 'Quản Trị Viên' : 'Người dùng'}
-                    </span>
-                  </p>
+                <div className="flex items-center">
+                  <input
+                    id="isAdmin"
+                    name="isAdmin"
+                    type="checkbox"
+                    checked={editedIsAdmin}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    // Không cho phép bỏ quyền admin của chính tài khoản đang đăng nhập
+                    disabled={currentUser?._id === selectedUser._id}
+                  />
+                  <label htmlFor="isAdmin" className="ml-2 block text-sm text-gray-900">
+                    Là Quản Trị Viên
+                  </label>
                 </div>
-                <div>
+                 <div>
                   <label className="block text-sm font-medium text-gray-500">Ngày tạo tài khoản</label>
-                  <p className="text-base">{new Date(selectedUser.createdAt).toLocaleDateString('vi-VN')}</p>
+                  <p className="text-base mt-1 text-gray-700">{new Date(selectedUser.createdAt).toLocaleDateString('vi-VN')}</p>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-end space-x-3">
               <button
-                onClick={() => setShowDetailModal(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 cursor-pointer"
+                type="button"
+                onClick={handleCloseEditModal}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               >
-                Đóng
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveChanges}
+                disabled={loading || (currentUser?._id === selectedUser._id && !editedIsAdmin)} // Vô hiệu hóa nếu đang tải hoặc admin cố bỏ quyền của chính mình
+                className={`px-4 py-2 rounded-md text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 
+                  ${(currentUser?._id === selectedUser._id && !editedIsAdmin) 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'}`}
+              >
+                {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
               </button>
             </div>
           </div>

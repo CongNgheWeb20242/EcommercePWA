@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = "https://ecommercepwa-be.onrender.com/api/";
+const BASE_URL = "http://localhost:3000/api/";
 
 const authApiClient = axios.create({
   baseURL: BASE_URL,

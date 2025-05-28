@@ -8,6 +8,7 @@ import Users from './pages/admin/Users';
 import PaymentReturn from './test/PaymentReturn';
 import './App.css';
 import { Toaster } from 'react-hot-toast';
+import ChatWidget from './components/ChatWidget/ChatWidget';
 
 // User pages
 import HomePage from './pages/user/HomePage';
@@ -84,6 +85,7 @@ const App = () => {
         <Route path="/" element={<Navigate to="/home" replace />} />
       </Routes>
       <Toaster />
+      <ChatWidget />
     </>
   );
 };

@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import Sidebar from '../components/admin/Sidebar';
 import { useUserStore } from '@/store/userStore';
+import ChatAdmin from '../pages/admin/ChatAdmin';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -50,6 +51,10 @@ const AdminLayout = ({ children, title = "Dashboard" }: AdminLayoutProps) => {
         <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
           {children}
         </main>
+        {/* ChatAdmin widget nổi ở góc phải dưới */}
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000 }}>
+          <ChatAdmin />
+        </div>
       </div>
     </div>
   );
