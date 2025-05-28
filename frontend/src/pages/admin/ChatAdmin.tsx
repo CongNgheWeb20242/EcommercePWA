@@ -24,272 +24,250 @@ const SOCKET_SERVER_URL = process.env.NODE_ENV === 'production'
   ? 'YOUR_PRODUCTION_BACKEND_URL'
   : 'http://localhost:3000';
 
+const API_BASE_URL = SOCKET_SERVER_URL;
+
 const ChatAdmin: React.FC = () => {
-  const [conversations, setConversations] = useState<IConversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<IConversation | null>(null);
-  const [messages, setMessages] = useState<IChatMessage[]>([]);
-  const [message, setMessage] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [unread, setUnread] = useState<{ [key: string]: boolean }>({});
-  const [hasGlobalUnread, setHasGlobalUnread] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const user = useUserStore((state) => state.user);
-  const previousConversationIdRef = useRef<string | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
-  useEffect(() => {
-    const fetchConversations = async () => {
-      const res = await fetch('/api/chat');
-      const data = await res.json();
-      setConversations(data);
-    };
-    if (user?.isAdmin) {
-        fetchConversations();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!selectedConversation?._id) return;
-    const fetchHistory = async () => {
-      const res = await fetch(`/api/chat/${selectedConversation._id}`);
-      const data = await res.json();
-      setMessages(data);
-      setUnread((prev) => ({ ...prev, [selectedConversation._id]: false }));
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-    };
-    fetchHistory();
-  }, [selectedConversation?._id]);
-
-  useEffect(() => {
-    if (!user?.isAdmin) return;
-
-    socketRef.current = io(SOCKET_SERVER_URL, { transports: ['websocket'] });
-
-    socketRef.current.on('connect', () => {
-      console.log('Admin connected to Socket.IO server');
-      if (selectedConversation?._id) {
-        socketRef.current?.emit('joinRoom', selectedConversation._id);
-        previousConversationIdRef.current = selectedConversation._id;
-      }
-    });
-
-    socketRef.current.on('newChatMessage', (newMessage: IChatMessage) => {
-      console.log('Admin received newChatMessage:', newMessage, 'Current selected:', selectedConversation?._id, 'Is panel open:', isOpen);
-      
-      // Logic cập nhật unread cho từng conversation
-      if (newMessage.conversationId === selectedConversation?._id) {
-        setMessages((prev) => [...prev, newMessage]);
-        setUnread((prev) => ({ ...prev, [newMessage.conversationId]: false }));
-      } else {
-        setUnread((prev) => ({ ...prev, [newMessage.conversationId]: true }));
-      }
-
-      // Logic cập nhật hasGlobalUnread
-      // Dấu đỏ chỉ nên xuất hiện khi tin nhắn MỚI NHẤT là từ USER và panel ĐANG ĐÓNG
-      if (newMessage.sender.role === 'user' && !isOpen) {
-        console.log('Triggering global unread for admin panel');
-        setHasGlobalUnread(true);
-      }
+  const [conversations, setConversations] = useState<IConversation[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<IChatMessage[]>([]);
+  const [inputText, setInputText] = useState('');
   
-      // Logic cập nhật và sắp xếp lại danh sách conversations
-      setConversations((prevConversations) => {
-        const existingConvIndex = prevConversations.findIndex(c => c._id === newMessage.conversationId);
-        let updatedConversations;
-        if (existingConvIndex !== -1) {
-          const conversationToUpdate = { ...prevConversations[existingConvIndex], lastMessage: newMessage };
-          updatedConversations = [
-            conversationToUpdate,
-            ...prevConversations.slice(0, existingConvIndex),
-            ...prevConversations.slice(existingConvIndex + 1)
-          ];
-        } else {
-          updatedConversations = [
-            { _id: newMessage.conversationId, lastMessage: newMessage },
-            ...prevConversations
-          ];
-          // Nếu là cuộc trò chuyện mới, cũng cần set unread cho nó nếu không phải là cuộc trò chuyện đang xem
-          if (newMessage.conversationId !== selectedConversation?._id) {
-            setUnread((prev) => ({ ...prev, [newMessage.conversationId]: true }));
-          }
-        }
-        return updatedConversations;
+  const [isOpen, setIsOpen] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const previousSelectedConversationIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (user?.isAdmin) {
+      console.log('ChatAdmin: Admin user detected, attempting to connect socket...');
+      const newSocket = io(SOCKET_SERVER_URL, {
+        transports: ['websocket'],
+        // auth: { token: user.token } // Nếu backend yêu cầu token để xác thực socket
       });
-    });
 
-    socketRef.current.on('disconnect', () => {
-      console.log('Admin disconnected from Socket.IO server');
-    });
+      newSocket.on('connect', () => {
+        console.log('ChatAdmin: Socket connected successfully.', newSocket.id);
+        setSocket(newSocket);
+      });
 
-    socketRef.current.on('connect_error', (err) => {
-      console.error('Admin socket connection error:', err);
-    });
+      newSocket.on('disconnect', (reason) => {
+        console.log('ChatAdmin: Socket disconnected. Reason:', reason);
+        setSocket(null);
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.error('ChatAdmin: Socket connection error:', error);
+        setSocket(null);
+      });
+
+      // Lắng nghe tin nhắn mới từ server
+      newSocket.on('newChatMessage', (newMessage: IChatMessage) => {
+        console.log('ChatAdmin: Received new chat message:', newMessage);
+        
+        // Cập nhật messages nếu tin nhắn thuộc về conversation đang chọn
+        // Sử dụng callback form của setState để đảm bảo state messages là mới nhất
+        if (newMessage.conversationId === previousSelectedConversationIdRef.current) { // So sánh với ref vì selectedConversationId có thể chưa cập nhật ngay
+            setMessages((prevMessages) => [...prevMessages, newMessage]);
+        }
+
+        // Cập nhật lastMessage trong danh sách conversations
+        setConversations(prevConversations => 
+          prevConversations.map(conv => 
+            conv._id === newMessage.conversationId 
+              ? { ...conv, lastMessage: newMessage } 
+              : conv
+          ).sort((a, b) => { // Sắp xếp lại để conv có tin nhắn mới nhất lên đầu (hoặc theo logic khác)
+            // Ví dụ: sắp xếp theo thời gian của lastMessage
+            const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+            const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+            return timeB - timeA; // Mới nhất lên đầu
+          })
+        );
+        
+        // TODO: Xử lý unread messages count nếu cần
+      });
+
+      // Cleanup khi component unmount hoặc user thay đổi
+      return () => {
+        console.log('ChatAdmin: Cleaning up socket connection and listeners.');
+        newSocket.off('newChatMessage'); // Gỡ listener khi cleanup
+        newSocket.disconnect();
+        setSocket(null);
+      };
+    } else {
+      // Nếu không phải admin, đảm bảo socket đã ngắt (nếu có từ trước)
+      if (socket) {
+        console.log('ChatAdmin: User is not admin, disconnecting existing socket.');
+        socket.disconnect();
+        setSocket(null);
+      }
+    }
+  }, [user]); // Chạy lại khi user thay đổi (ví dụ: login/logout)
+
+  useEffect(() => {
+    if (user?.isAdmin && socket?.connected) {
+      const fetchConversations = async () => {
+        try {
+          console.log('ChatAdmin: Fetching conversations...');
+          const response = await fetch(`${API_BASE_URL}/api/chat`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch conversations: ${response.statusText}`);
+          }
+          let data: IConversation[] = await response.json();
+          // Sắp xếp conversations ban đầu theo lastMessage.createdAt
+          data = data.sort((a, b) => {
+            const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+            const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+            return timeB - timeA; // Mới nhất lên đầu
+          });
+          console.log('ChatAdmin: Conversations fetched:', data);
+          setConversations(data);
+        } catch (error) {
+          console.error(error);
+          setConversations([]); 
+        }
+      };
+      fetchConversations();
+    }
+  }, [user?.isAdmin, socket]);
+
+  useEffect(() => {
+    if (!selectedConversationId || !socket?.connected || !user?.isAdmin) {
+      if (!selectedConversationId) {
+        setMessages([]);
+      }
+      return;
+    }
+
+    const fetchHistoryAndJoinRoom = async () => {
+      try {
+        console.log(`ChatAdmin: Fetching history for ${selectedConversationId}`);
+        const response = await fetch(`${API_BASE_URL}/api/chat/${selectedConversationId}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch chat history: ${response.statusText}`);
+        }
+        const historyMessages: IChatMessage[] = await response.json();
+        console.log('ChatAdmin: History fetched:', historyMessages);
+        setMessages(historyMessages);
+      } catch (error) {
+        console.error(error);
+        setMessages([]);
+      }
+    };
+
+    fetchHistoryAndJoinRoom();
+
+    if (previousSelectedConversationIdRef.current && previousSelectedConversationIdRef.current !== selectedConversationId) {
+      console.log(`ChatAdmin: Leaving room ${previousSelectedConversationIdRef.current}`);
+      socket.emit('leaveRoom', previousSelectedConversationIdRef.current);
+    }
+    
+    console.log(`ChatAdmin: Joining room ${selectedConversationId}`);
+    socket.emit('joinRoom', selectedConversationId);
+    previousSelectedConversationIdRef.current = selectedConversationId;
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
+      if (socket?.connected && selectedConversationId) {
+        console.log(`ChatAdmin: Leaving room ${selectedConversationId} on cleanup`);
+        socket.emit('leaveRoom', selectedConversationId);
       }
     };
-  }, [user, isOpen]);
-
-  useEffect(() => {
-    if (!socketRef.current || !socketRef.current.connected) return;
-
-    const currentConvId = selectedConversation?._id;
-    const previousConvId = previousConversationIdRef.current;
-
-    if (previousConvId && previousConvId !== currentConvId) {
-      socketRef.current.emit('leaveRoom', previousConvId);
-      console.log(`Admin left room: ${previousConvId}`);
-    }
-
-    if (currentConvId && currentConvId !== previousConvId) {
-      socketRef.current.emit('joinRoom', currentConvId);
-      console.log(`Admin joined room: ${currentConvId}`);
-      previousConversationIdRef.current = currentConvId;
-      setUnread((prev) => ({ ...prev, [currentConvId]: false }));
-    } else if (!currentConvId && previousConvId) {
-      socketRef.current.emit('leaveRoom', previousConvId);
-      console.log(`Admin left room: ${previousConvId} (no conversation selected)`);
-      previousConversationIdRef.current = null;
-    }
-
-  }, [selectedConversation, setUnread]);
+  }, [selectedConversationId, socket, user?.isAdmin]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, isOpen]);
 
-  useEffect(() => {
-    if (isOpen && selectedConversation && messages.length > 0) {
-      setTimeout(() => {
-        if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    }
-  }, [isOpen, selectedConversation, messages]);
-
-  if (!user || !user.isAdmin) return <div className="chat-admin-no-access">Bạn không có quyền truy cập trang này.</div>;
-
+  if (!user || !user.isAdmin) {
+    return <div className="chat-admin-no-access">Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản admin.</div>;
+  }
+  
   if (!isOpen) {
     return (
       <button
         className="chat-admin-toggle-button"
-        onClick={() => {
-          setIsOpen(true);
-          setHasGlobalUnread(false);
-        }}
+        onClick={() => setIsOpen(true)}
       >
-        Chat hỗ trợ
-        {!isOpen && hasGlobalUnread && 
-          <span className="unread-indicator"></span>}
+        Hỗ trợ Chat (Admin)
       </button>
     );
   }
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !selectedConversation || !user) return;
+    if (!inputText.trim() || !selectedConversationId || !user || !socket || !socket.connected) return;
     const chatMessageData: Omit<IChatMessage, '_id' | 'createdAt'> = {
-      conversationId: selectedConversation._id,
+      conversationId: selectedConversationId,
       sender: {
-        name: user.name,
+        id: user._id,
+        name: user.name || 'Admin',
         role: 'admin',
       },
-      message: message.trim(),
+      message: inputText.trim(),
     };
-    socketRef.current?.emit('chatMessage', chatMessageData);
-    setMessage('');
+    socket.emit('chatMessage', chatMessageData);
+    setInputText('');
   };
 
   return (
     <div className="chat-admin-panel">
-      {/* Header */}
       <div className="chat-admin-header">
-        <span className="chat-admin-header-title">Hỗ trợ khách hàng</span>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="chat-admin-close-button"
-          title="Đóng chat"
-        >
-          ×
-        </button>
+        <span>Hỗ trợ Khách hàng</span>
+        <button onClick={() => setIsOpen(false)} className="chat-admin-close-button">×</button>
       </div>
       <div className="chat-admin-content">
-        {/* Danh sách user đã chat */}
         <div className="chat-admin-conversation-list">
-          <h3 className="conversation-list-header">Khách</h3>
-          {conversations.length === 0 && <div className="chat-admin-no-conversations">Chưa có cuộc trò chuyện nào.</div>}
+          <h3 className="conversation-list-header">Cuộc trò chuyện</h3>
+          {conversations.length === 0 && <p>Chưa có cuộc trò chuyện nào.</p>}
           {conversations.map((conv) => (
             <div
               key={conv._id}
-              onClick={() => {
-                setSelectedConversation(conv);
-                setUnread((prev) => ({ ...prev, [conv._id]: false }));
-              }}
-              className={`conversation-item ${selectedConversation?._id === conv._id ? 'selected' : ''}`.trim()}
+              className={`conversation-item ${selectedConversationId === conv._id ? 'selected' : ''}`}
+              onClick={() => setSelectedConversationId(conv._id)}
             >
-              <div className="conversation-item-details">
-                <span className={`conversation-id ${unread[conv._id] ? 'unread' : ''}`.trim()}>
-                  {conv._id}
-                </span>
-                {unread[conv._id] && (
-                  <span className="conversation-unread-badge"></span>
-                )}
-              </div>
-              <div className={`conversation-last-message ${unread[conv._id] ? 'unread' : ''}`.trim()}>
-                {conv.lastMessage?.sender?.name}: {conv.lastMessage?.message}
-              </div>
+              <div>ID: {conv._id}</div> 
+              {conv.lastMessage && (
+                <div className="conversation-last-message">
+                  <strong>{conv.lastMessage.sender.name}:</strong> {conv.lastMessage.message}
+                </div>
+              )}
             </div>
           ))}
         </div>
-        {/* Khung chat */}
         <div className="chat-area">
           <div className="chat-area-header">
-            {selectedConversation ? (
-              <>
-                Chat với user: <span className="user-id">{selectedConversation._id}</span>
-              </>
+            {selectedConversationId ? (
+              <span>Chat với: {selectedConversationId}</span>
             ) : (
-              <span className="chat-admin-select-conversation">Chọn một khách hàng để xem và trả lời tin nhắn</span>
+              <span>Chọn một cuộc trò chuyện</span>
             )}
           </div>
           <div className="chat-area-messages">
-            {selectedConversation ? (
-              messages.length === 0 ? (
-                <div className="chat-admin-no-conversations">Chưa có tin nhắn nào.</div>
-              ) : (
-                messages.map((msg, idx) => (
-                  <div
-                    key={msg._id || idx}
-                    className={`chat-area-message-item ${msg.sender.role === 'admin' ? 'sent' : 'received'}`}
-                  >
-                    <span className={`message-sender-name ${msg.sender.role === 'admin' ? 'admin-sent' : ''}`.trim()}>{msg.sender.name}:</span>
-                    <span className="message-text-content">{msg.message}</span>
-                    {msg.createdAt && (
-                      <span className="message-timestamp">
-                        {new Date(msg.createdAt).toLocaleTimeString()}
-                      </span>
-                    )}
-                  </div>
-                ))
-              )
-            ) : null}
+            {selectedConversationId && messages.length === 0 && <p>Chưa có tin nhắn nào cho cuộc trò chuyện này.</p>}
+            {!selectedConversationId && <p>Vui lòng chọn một cuộc trò chuyện để xem tin nhắn.</p>}
+            {messages.map((msg, index) => (
+              <div key={msg._id || `msg-${index}`} className={`message-item ${msg.sender.role === 'admin' ? 'sent' : 'received'}`}>
+                <div className="message-sender">{msg.sender.name}</div>
+                <div className="message-text">{msg.message}</div>
+                {msg.createdAt && <div className="message-time">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}</div>}
+              </div>
+            ))}
             <div ref={messagesEndRef} />
           </div>
-          {selectedConversation && (
+          {selectedConversationId && (
             <form onSubmit={handleSendMessage} className="chat-area-input-form">
               <input
                 type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
                 placeholder="Nhập tin nhắn..."
-                className="chat-area-input"
+                disabled={!socket || !socket.connected}
               />
-              <button type="submit" className="chat-area-send-button">
+              <button type="submit" disabled={!socket || !socket.connected}>
                 Gửi
               </button>
             </form>
