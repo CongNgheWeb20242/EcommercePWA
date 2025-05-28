@@ -51,7 +51,7 @@ const io = new Server(server, {
   cors: {
     origin:
       process.env.NODE_ENV === 'production'
-        ? ['http://localhost:5173', 'https://your-fe-domain.com'] // Nhớ cập nhật domain frontend của bạn
+        ? ['http://localhost:5173', 'https://loquacious-paletas-3e891d.netlify.app']
         : 'http://localhost:5173',
     methods: ['GET', 'POST'],
     credentials: true,
@@ -65,7 +65,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use(passport.initialize());
 app.use(cookieParser());
 app.use(devLogger);
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -135,30 +134,25 @@ io.on('connection', (socket) => {
   socket.on('chatMessage', async (data) => {
     console.log('Message from client ' + socket.id + ':', data);
     try {
-      // Giả sử client gửi object data có dạng: 
-      // { conversationId: 'someUserId', sender: { id: 'userId', name: 'UserName', role: 'user' }, message: 'Hello' }
-      // Hoặc { conversationId: 'someUserId', sender: { name: 'Admin', role: 'admin' }, message: 'Hi user' }
-      
       const newMessage = new ChatMessage({
         conversationId: data.conversationId,
         sender: {
-          id: data.sender.id, // Sẽ là undefined nếu admin gửi và admin không có id user
+          id: data.sender.id, 
           name: data.sender.name, 
           role: data.sender.role,
         },
-        message: data.message,
+        message: data.message, 
+        imageUrl: data.imageUrl,
+        messageType: data.messageType,
       });
 
       const savedMessage = await newMessage.save();
       console.log('Message saved to DB:', savedMessage);
 
-      // Gửi tin nhắn đã lưu (với _id và timestamps) tới phòng chat cụ thể
-      // Hoặc có thể io.emit nếu muốn gửi global, nhưng gửi vào room sẽ hiệu quả hơn
       io.to(savedMessage.conversationId).emit('newChatMessage', savedMessage);
 
     } catch (error) {
       console.error('Error saving chat message:', error);
-      // Có thể gửi thông báo lỗi về cho client nếu cần
       socket.emit('chatMessageError', { message: 'Could not save message', error: error.message });
     }
   });

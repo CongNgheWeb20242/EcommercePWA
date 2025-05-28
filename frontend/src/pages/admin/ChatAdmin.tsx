@@ -11,7 +11,9 @@ interface IChatMessage {
     name: string;
     role: 'user' | 'admin';
   };
-  message: string;
+  message?: string; // Sẽ là optional nếu có ảnh
+  imageUrl?: string; // URL của ảnh sau khi upload
+  messageType?: 'text' | 'image'; // Phân biệt loại tin nhắn
   createdAt?: string;
 }
 
@@ -26,6 +28,9 @@ const SOCKET_SERVER_URL = process.env.NODE_ENV === 'production'
 
 const API_BASE_URL = SOCKET_SERVER_URL;
 
+const IMAGE_UPLOAD_ENDPOINT = `${API_BASE_URL}/api/upload/chat-image`;
+const MAX_IMAGE_SIZE_MB = 2; // Giới hạn 2MB cho ảnh
+
 const ChatAdmin: React.FC = () => {
   const user = useUserStore((state) => state.user);
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -38,6 +43,12 @@ const ChatAdmin: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const previousSelectedConversationIdRef = useRef<string | null>(null);
+
+  // State cho việc gửi ảnh
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -182,6 +193,96 @@ const ChatAdmin: React.FC = () => {
     }
   }, [messages, isOpen]);
 
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn một file ảnh (JPEG, PNG, GIF).');
+        return;
+      }
+      if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+        alert(`Kích thước ảnh không được vượt quá ${MAX_IMAGE_SIZE_MB}MB.`);
+        return;
+      }
+      setSelectedImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      // Không reset inputText ở đây để user có thể nhập caption
+      if(fileInputRef.current) fileInputRef.current.value = ""; // Reset input file để có thể chọn lại cùng file
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedImageFile(null);
+    setImagePreviewUrl(null);
+    if(fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if ((!inputText.trim() && !selectedImageFile) || !selectedConversationId || !user || !socket || !socket.connected || isUploadingImage) {
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      let messageToSend: Omit<IChatMessage, '_id' | 'createdAt'>;
+
+      if (selectedImageFile) {
+        const base64ImageData = imagePreviewUrl;
+
+        if (!base64ImageData) {
+          throw new Error("Không thể đọc dữ liệu ảnh.");
+        }
+
+        const uploadResponse = await fetch(IMAGE_UPLOAD_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64ImageData }), 
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({ message: 'Lỗi không xác định khi upload ảnh.'}));
+          throw new Error(errorData.message || 'Upload ảnh thất bại.');
+        }
+        const { imageUrl } = await uploadResponse.json();
+        messageToSend = {
+          conversationId: selectedConversationId,
+          sender: { id: user._id, name: user.name, role: 'admin' },
+          message: inputText.trim() || undefined,
+          imageUrl,
+          messageType: 'image',
+        };
+      } else {
+        messageToSend = {
+          conversationId: selectedConversationId,
+          sender: { id: user._id, name: user.name, role: 'admin' },
+          message: inputText.trim(),
+          messageType: 'text',
+        };
+      }
+
+      socket.emit('chatMessage', messageToSend);
+      // Không thêm tin nhắn vào state messages ngay, đợi server gửi lại qua socket để nhất quán
+      setInputText('');
+      removeSelectedImage(); // Xóa ảnh đã chọn và preview sau khi gửi
+
+    } catch (error) {
+      console.error('ChatAdmin: Error sending message:', error);
+      alert('Lỗi gửi tin nhắn: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   if (!user || !user.isAdmin) {
     return <div className="chat-admin-no-access">Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản admin.</div>;
   }
@@ -196,22 +297,6 @@ const ChatAdmin: React.FC = () => {
       </button>
     );
   }
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() || !selectedConversationId || !user || !socket || !socket.connected) return;
-    const chatMessageData: Omit<IChatMessage, '_id' | 'createdAt'> = {
-      conversationId: selectedConversationId,
-      sender: {
-        id: user._id,
-        name: user.name || 'Admin',
-        role: 'admin',
-      },
-      message: inputText.trim(),
-    };
-    socket.emit('chatMessage', chatMessageData);
-    setInputText('');
-  };
 
   return (
     <div className="chat-admin-panel">
@@ -232,7 +317,8 @@ const ChatAdmin: React.FC = () => {
               <div>ID: {conv._id}</div> 
               {conv.lastMessage && (
                 <div className="conversation-last-message">
-                  <strong>{conv.lastMessage.sender.name}:</strong> {conv.lastMessage.message}
+                  <strong>{conv.lastMessage.sender.name}:</strong> 
+                  {conv.lastMessage.messageType === 'image' && conv.lastMessage.imageUrl ? '[Hình ảnh]' : conv.lastMessage.message}
                 </div>
               )}
             </div>
@@ -252,25 +338,58 @@ const ChatAdmin: React.FC = () => {
             {messages.map((msg, index) => (
               <div key={msg._id || `msg-${index}`} className={`message-item ${msg.sender.role === 'admin' ? 'sent' : 'received'}`}>
                 <div className="message-sender">{msg.sender.name}</div>
-                <div className="message-text">{msg.message}</div>
+                {msg.messageType === 'image' && msg.imageUrl ? (
+                  <div className="chat-message-image-container">
+                    {msg.message && <p className="chat-image-caption">{msg.message}</p>}
+                    <img src={msg.imageUrl} alt={msg.message || 'Hình ảnh chat'} className="chat-image-content" />
+                  </div>
+                ) : (
+                  <div className="message-text">{msg.message}</div>
+                )}
                 {msg.createdAt && <div className="message-time">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}</div>}
               </div>
             ))}
             <div ref={messagesEndRef} />
           </div>
           {selectedConversationId && (
-            <form onSubmit={handleSendMessage} className="chat-area-input-form">
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Nhập tin nhắn..."
-                disabled={!socket || !socket.connected}
-              />
-              <button type="submit" disabled={!socket || !socket.connected}>
-                Gửi
-              </button>
-            </form>
+            <div className="chat-area-input-wrapper">
+              {imagePreviewUrl && (
+                <div className="chat-image-upload-preview">
+                  <img src={imagePreviewUrl} alt="Preview" />
+                  <button onClick={removeSelectedImage} className="remove-preview-button">×</button>
+                </div>
+              )}
+              <form onSubmit={handleSendMessage} className="chat-area-input-form">
+                <button type="button" onClick={triggerFileInput} className="chat-admin-attach-button" disabled={isUploadingImage}>
+                  {/* Thay bằng icon SVG hoặc font icon nếu muốn */} 
+                  📎
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  style={{ display: 'none' }} 
+                  accept="image/png, image/jpeg, image/gif" 
+                  onChange={handleImageFileChange} 
+                  disabled={isUploadingImage}
+                  aria-label="Chọn ảnh để gửi"
+                />
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder={selectedImageFile ? 'Nhập caption cho ảnh (tùy chọn)...' : "Nhập tin nhắn..."}
+                  disabled={!socket || !socket.connected || isUploadingImage}
+                  className="chat-input-text-field"
+                />
+                <button 
+                  type="submit" 
+                  className="chat-admin-send-button" 
+                  disabled={(!inputText.trim() && !selectedImageFile) || !socket || !socket.connected || isUploadingImage}
+                >
+                  {isUploadingImage ? 'Đang gửi...' : 'Gửi'}
+                </button>
+              </form>
+            </div>
           )}
         </div>
       </div>

@@ -141,6 +141,16 @@
   background-color: #218838;
 }
 
+/* Class để ẩn các phần tử một cách trực quan nhưng vẫn giữ khả năng truy cập */
+.visually-hidden {
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap; /* Đảm bảo ẩn hoàn toàn trên một số trình duyệt */
+}
+
 /* CSS cho thanh cuộn (tuỳ chọn, cho đẹp hơn) */
 .chat-messages::-webkit-scrollbar {
   width: 6px;

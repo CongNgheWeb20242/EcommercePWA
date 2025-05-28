@@ -18,8 +18,16 @@ const chatMessageSchema = new mongoose.Schema(
     },
     message: {
       type: String,
-      required: true,
       trim: true,
+    },
+    imageUrl: {
+      type: String,
+      trim: true,
+    },
+    messageType: {
+      type: String,
+      enum: ['text', 'image'],
+      default: 'text',
     },
     // Bạn có thể thêm các trường khác như isRead, etc.
   },
