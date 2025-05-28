@@ -1,5 +1,6 @@
 import * as productService from '../services/productService.js';
 import expressAsyncHandler from 'express-async-handler';
+import Product from '../models/productModel.js';
 
 export const getProducts = expressAsyncHandler(async (req, res) => {
     try {
@@ -74,6 +75,8 @@ export const addReview = expressAsyncHandler(async (req, res) => {
       comment: req.body.comment,
     };
     const product = await productService.addReview(productId, reviewData);
+    await Product.updateAverageRating(productId);
+
     if (product) {
       res.status(201).send({
         message: 'Review Created',

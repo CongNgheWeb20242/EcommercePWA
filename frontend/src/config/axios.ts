@@ -3,9 +3,7 @@ import { useUserStore } from "@/store/userStore";
 
 // https://axios-http.com/docs/instance
 export const axiosInstance = axios.create({
-    baseURL: import.meta.env.MODE === "development" 
-        ? "http://localhost:3000/api" 
-        : "http://localhost:3000/api",
+    baseURL: 'https://ecommercepwa-be.onrender.com/api',
 
     // Cho phép gửi cookie, token hoặc thông tin xác thực (credentials) cùng với yêu cầu HTTP.
     /*

@@ -22,6 +22,9 @@ interface Product {
   isVisible: boolean;
   createdAt: string;
   updatedAt: string;
+  size?: string[];
+  color?: string[];
+  sexual: string;
 }
 
 interface CategoryType {
@@ -81,19 +84,31 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, o
   );
 };
 
+type ProductFormState = {
+  name: string;
+  slug: string;
+  description: string;
+  price: string;
+  countInStock: string;
+  brand: string;
+  category: string;
+  isVisible: boolean;
+  image: string;
+  images: string[];
+  size: string[];
+  color: string[];
+  sexual: string;
+};
+
 const Products = () => {
   // State for products data
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   
   // State for modal and editing
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [existingImages, setExistingImages] = useState<string[]>([]);
   
   // State for pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -123,19 +138,8 @@ const Products = () => {
     onConfirm: () => {},
   });
 
-  // Thêm state cho form sản phẩm
-  const [formState, setFormState] = useState<{
-    name: string;
-    slug: string;
-    description: string;
-    price: string;
-    countInStock: string;
-    brand: string;
-    category: string;
-    isVisible: boolean;
-    image: string;
-    images: string[];
-  }>({
+  // Cập nhật state formState
+  const [formState, setFormState] = useState<ProductFormState>({
     name: '',
     slug: '',
     description: '',
@@ -146,7 +150,13 @@ const Products = () => {
     isVisible: true,
     image: '',
     images: [],
+    size: [],
+    color: [],
+    sexual: 'unisex',
   });
+
+  // State cho preview ảnh phụ
+  const [imagesPreview, setImagesPreview] = useState<string[]>([]);
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -188,22 +198,18 @@ const Products = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
-        sortField: sortField,
-        sortOrder: sortDirection,
-      });
       
+      });
       if (searchTerm) params.append('query', searchTerm);
       if (selectedCategory) params.append('category', selectedCategory);
 
-      // Thử gọi API và xử lý kết quả
+      // Chỉ truyền đúng các tham số backend hỗ trợ
       const response = await axiosInstance.get<ApiResponse>(`/products/admin?${params.toString()}`);
       setProducts(response.data.products || []);
       setTotalPages(response.data.pages || 1);
-      setCurrentPage(response.data.page || 1);
-      setError(null); // Xóa thông báo lỗi nếu thành công
+      setCurrentPage(page);
     } catch (err: unknown) {
       console.error("Error fetching products:", err);
-      
       // Hiển thị dữ liệu mẫu thay vì hiện thông báo lỗi
       loadSampleData();
     } finally {
@@ -229,6 +235,7 @@ const Products = () => {
         isVisible: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        sexual: 'unisex',
       },
       {
         _id: '2',
@@ -244,6 +251,7 @@ const Products = () => {
         isVisible: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        sexual: 'female',
       },
       {
         _id: '3',
@@ -259,6 +267,7 @@ const Products = () => {
         isVisible: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        sexual: 'unisex',
       },
       {
         _id: '4',
@@ -274,10 +283,10 @@ const Products = () => {
         isVisible: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        sexual: 'unisex',
       }
     ]);
     setTotalPages(1);
-    setError(null); // Xóa thông báo lỗi khi hiển thị dữ liệu mẫu
   };
 
   // Initial data load
@@ -373,7 +382,7 @@ const Products = () => {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            reject(new Error('Không thể tạo context canvas'));
+            reject(new Error("Không thể lấy context 2D từ canvas để nén ảnh."));
             return;
           }
           
@@ -391,71 +400,45 @@ const Products = () => {
           const dataUrl = canvas.toDataURL(imageType, quality);
           resolve(dataUrl);
         };
-        img.onerror = () => {
-          reject(new Error('Lỗi khi tải ảnh'));
+        img.onerror = (error) => {
+          console.error("Lỗi khi tải ảnh để nén (img.onerror):", error);
+          reject(new Error("Lỗi khi tải ảnh để nén (img.onerror)."));
         };
       };
-      reader.onerror = () => {
-        reject(new Error('Lỗi khi đọc file'));
+      reader.onerror = (error) => {
+        console.error("Lỗi FileReader khi đọc ảnh:", error);
+        reject(new Error("Lỗi FileReader khi đọc ảnh."));
       };
     });
   };
 
-  // Thêm hàm chuyển đổi ảnh sang base64 - không sử dụng trực tiếp, sử dụng compressImage thay thế
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const convertImageToBase64 = (file: File): Promise<string> => {
-    // Sử dụng hàm nén ảnh thay vì chuyển đổi trực tiếp
-    return compressImage(file);
-  };
-
-  // Cập nhật để xử lý URL ảnh thay vì file
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    if (url) {
-      setImagePreview(url);
-    } else {
-      setImagePreview(null);
-    }
-  };
-
-  // Handle multiple images change with validation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleMultipleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Khôi phục hàm handleMultipleImagesChange
+  const handleMultipleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
-      
-      // Validate each file
-      const validFiles = files.filter(file => validateImage(file));
-      
-      if (validFiles.length !== files.length) {
-        // Some files were invalid - reset if necessary
-        if (validFiles.length === 0) {
-          e.target.value = '';
-          return;
+      const filesArray = Array.from(e.target.files);
+      const newImagesBase64: string[] = [];
+      const newPreviews: string[] = [];
+
+      for (const file of filesArray) {
+        if (!validateImage(file)) continue; 
+        try {
+          const compressedBase64 = await compressImage(file);
+          newImagesBase64.push(compressedBase64);
+          newPreviews.push(compressedBase64); 
+        } catch (error) {
+          console.error(`Lỗi khi xử lý ảnh phụ ${file.name}:`, error);
+          // Sẽ thêm toast ở đây sau
         }
       }
-      
-      // Preview multiple images
-      const previews: string[] = [];
-      validFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (reader.result) {
-            previews.push(reader.result as string);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      setFormState(prev => ({ ...prev, images: [...prev.images, ...newImagesBase64] }));
+      setImagesPreview(prev => [...prev, ...newPreviews]);
     }
   };
 
-  // Handle removing an existing image - không còn sử dụng vì ẩn tính năng nhiều ảnh
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleRemoveExistingImage = (index: number) => {
-    const updatedImages = [...existingImages];
-    updatedImages.splice(index, 1);
-    setExistingImages(updatedImages);
+  // Thêm hàm xóa ảnh phụ theo index
+  const handleRemovePreviewImage = (idx: number) => {
+    setImagesPreview(prev => prev.filter((_, i) => i !== idx));
+    setFormState(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }));
   };
 
   // Toggle product visibility với xác nhận
@@ -482,20 +465,12 @@ const Products = () => {
     // Hiển thị hộp thoại xác nhận trước khi thực hiện hành động
     setConfirmDialog({
       isOpen: true,
-      title: product.isVisible ? 'Ẩn sản phẩm' : 'Hiện sản phẩm',
+      title: product.isVisible ? 'Ẩn sản phẩm' : 'Hiển thị sản phẩm',
       message: product.isVisible 
         ? `Bạn có chắc chắn muốn ẩn sản phẩm "${product.name}" không?` 
         : `Bạn có chắc chắn muốn hiển thị sản phẩm "${product.name}" không?`,
       onConfirm: confirmAction
     });
-  };
-
-  // Generate slug from name
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-');
   };
 
   // Xử lý thay đổi input trong form
@@ -505,51 +480,106 @@ const Products = () => {
     if (type === 'checkbox' && e.target instanceof HTMLInputElement) {
       newValue = e.target.checked;
     }
-    setFormState(prev => ({
-      ...prev,
-      [name]: newValue
-    }));
-    if (name === 'name') {
-      setFormState(prev => ({ ...prev, slug: generateSlug(value) }));
+    // Xử lý riêng cho size, color
+    if (name === 'size' || name === 'color') {
+      const currentInputValue = e.target.value;
+      // Log để debug (bạn có thể xóa sau này)
+      console.log(`--- Debug cho: ${name} ---`);
+      console.log("Giá trị nhập thô:", currentInputValue);
+      let charCodesLog = "";
+      for (let i = 0; i < currentInputValue.length; i++) {
+        charCodesLog += `Ký tự: '${currentInputValue[i]}', Mã: ${currentInputValue.charCodeAt(i)};  `;
+      }
+      console.log("Mã ký tự:", charCodesLog.trim());
+      // --- Hết phần log ---
+
+      const parts = currentInputValue.split(',');
+      setFormState(prev => ({
+        ...prev,
+        // Chỉ trim, không filter(Boolean) ở đây để giữ trải nghiệm nhập liệu
+        [name]: parts.map(s => s.trim())
+      }));
+    } else {
+      setFormState(prev => ({ ...prev, [name]: newValue }));
     }
-    if (name === 'image') {
-      setImagePreview(value);
-    }
+  };
+
+  // Thêm hàm chọn ảnh: chuyển file sang base64, lưu vào formState.image
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!validateImage(file)) return;
+
+    // Chuyển file sang base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setFormState(prev => ({ ...prev, image: base64 }));
+      setImagePreview(base64);
+      toast.success('Chọn ảnh thành công!');
+    };
+    reader.onerror = () => {
+      toast.error('Lỗi khi đọc file ảnh!');
+    };
+    reader.readAsDataURL(file);
   };
 
   // Xử lý submit form với xác nhận
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!editingProduct && (!formState.image || !formState.image.startsWith('data:'))) {
+      toast.error('Bạn phải chọn ảnh sản phẩm trước khi lưu!');
+      return;
+    }
+    // Tạo productData với size và color đã được lọc sạch
     const productData = {
-      ...formState,
-      price: formState.price === '' ? 0 : Number(formState.price),
-      countInStock: formState.countInStock === '' ? 0 : Number(formState.countInStock),
+      name: formState.name,
+      slug: formState.slug,
+      description: formState.description,
+      price: Number(formState.price),
+      countInStock: Number(formState.countInStock),
+      brand: formState.brand,
+      category: formState.category,
+      isVisible: formState.isVisible,
+      image: formState.image,
+      images: formState.images,
+      size: formState.size.map(s => s.trim()).filter(s => s !== ''), // Lọc chuỗi rỗng sau khi trim
+      color: formState.color.map(c => c.trim()).filter(c => c !== ''), // Lọc chuỗi rỗng sau khi trim
+      sexual: formState.sexual,
     };
-    const submitForm = async () => {
+
+    const submitFormLogic = async () => {
       try {
         if (editingProduct) {
           await axiosInstance.put(`/products/${editingProduct._id}/update`, productData);
           toast.success('Sản phẩm đã được cập nhật thành công');
+          setShowModal(false);
+          resetForm();
+          await fetchProducts(currentPage); // Giữ nguyên khi chỉnh sửa
         } else {
           await axiosInstance.post('/products/create', productData);
           toast.success('Sản phẩm đã được thêm thành công');
+          setShowModal(false);
+          resetForm();
+          // Đảm bảo tải trang 1 và cập nhật state currentPage
+          setCurrentPage(1); // Đặt lại currentPage một cách tường minh
+          await fetchProducts(1); 
         }
-        setShowModal(false);
-        resetForm();
-        fetchProducts(1); // Gọi lại API để cập nhật bảng
       } catch (err) {
         console.error('Error saving product:', err);
-        toast.error('Lỗi khi lưu sản phẩm');
+        const apiError = err as ApiError;
+        toast.error(apiError.response?.data?.message || 'Lỗi khi lưu sản phẩm');
       }
       setConfirmDialog({ ...confirmDialog, isOpen: false });
     };
+
     setConfirmDialog({
       isOpen: true,
       title: editingProduct ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới',
       message: editingProduct
         ? `Bạn có chắc chắn muốn cập nhật sản phẩm "${formState.name}" không?`
         : `Bạn có chắc chắn muốn thêm sản phẩm "${formState.name}" mới không?`,
-      onConfirm: submitForm
+      onConfirm: submitFormLogic // Đổi tên hàm bên trong để tránh lỗi redeclare
     });
   };
 
@@ -559,9 +589,8 @@ const Products = () => {
       formRef.current.reset();
     }
     setEditingProduct(null);
-    setImageFile(null);
     setImagePreview(null);
-    setExistingImages([]);
+    setImagesPreview([]);
     setFormState({
       name: '',
       slug: '',
@@ -573,6 +602,9 @@ const Products = () => {
       isVisible: true,
       image: '',
       images: [],
+      size: [],
+      color: [],
+      sexual: 'unisex',
     });
   };
 
@@ -590,15 +622,18 @@ const Products = () => {
       isVisible: true,
       image: '',
       images: [],
+      size: [],
+      color: [],
+      sexual: 'unisex',
     });
+    setImagesPreview([]);
     setShowModal(true);
   };
 
   // Khi mở modal chỉnh sửa sản phẩm
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
-    setImagePreview(product.image);
-    setExistingImages(product.images || []);
+    setImagesPreview(product.images || []);
     setFormState({
       name: product.name,
       slug: typeof product.slug === 'string' ? product.slug : '',
@@ -610,7 +645,11 @@ const Products = () => {
       isVisible: product.isVisible,
       image: product.image,
       images: product.images || [],
+      size: product.size || [],
+      color: product.color || [],
+      sexual: product.sexual || 'unisex',
     });
+    setImagePreview(product.image);
     setShowModal(true);
   };
 
@@ -627,19 +666,12 @@ const Products = () => {
         </button>
       </div>
 
-      {/* Success message */}
-      {/* {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-          <span className="block sm:inline">{successMessage}</span>
-        </div>
-      )} */}
-
       {/* Error message */}
-      {error && (
+      {/* {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 hidden">
           {error}
         </div>
-      )}
+      )} */}
 
       {/* Search and filters */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -784,42 +816,83 @@ const Products = () => {
       </div>
 
       {/* Pagination */}
-          {totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="flex justify-center mt-6">
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
             <button
-              onClick={() => fetchProducts(currentPage - 1)}
+              onClick={() => {
+                if (currentPage > 1) {
+                  fetchProducts(currentPage - 1);
+                }
+              }}
               disabled={currentPage === 1}
               className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
                 currentPage === 1 
                   ? 'text-gray-300 cursor-not-allowed' 
-                  : 'text-gray-500 hover:bg-gray-50'
+                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
               }`}
             >
               Trước
             </button>
-            
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => fetchProducts(page)}
-                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                    currentPage === page
-                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-            
+            {/* Phân trang thông minh */}
+            {(() => {
+              const pageButtons: React.ReactNode[] = [];
+              const maxPageButtons = 7; // Số nút trang tối đa hiển thị
+              let pages: (number | string)[] = [];
+
+              if (totalPages <= maxPageButtons) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+              } else {
+                if (currentPage <= 4) {
+                  // Đầu danh sách
+                  pages = [1, 2, 3, 4, 5, 'end-ellipsis', totalPages];
+                } else if (currentPage >= totalPages - 3) {
+                  // Cuối danh sách
+                  pages = [1, 'start-ellipsis'];
+                  for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+                } else {
+                  // Ở giữa
+                  pages = [1, 'start-ellipsis', currentPage - 1, currentPage, currentPage + 1, 'end-ellipsis', totalPages];
+                }
+              }
+
+              pages.forEach((page, idx) => {
+                if (typeof page === 'string') {
+                  pageButtons.push(
+                    <span key={page + idx} className="px-2 py-2 text-gray-400 select-none">...</span>
+                  );
+                } else {
+                  const isCurrent = currentPage === page;
+                  pageButtons.push(
+                    <button
+                      key={page}
+                      onClick={() => !isCurrent && fetchProducts(page)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        isCurrent
+                          ? 'z-10 bg-blue-800 border-blue-800 text-white font-extrabold shadow-lg ring-2 ring-blue-900 text-lg'
+                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                      disabled={isCurrent}
+                      style={isCurrent ? { pointerEvents: 'none' } : {}}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+              });
+              return pageButtons;
+            })()}
             <button
-              onClick={() => fetchProducts(currentPage + 1)}
+              onClick={() => {
+                if (currentPage < totalPages) {
+                  fetchProducts(currentPage + 1);
+                }
+              }}
               disabled={currentPage === totalPages}
               className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
                 currentPage === totalPages 
                   ? 'text-gray-300 cursor-not-allowed' 
-                  : 'text-gray-500 hover:bg-gray-50'
+                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
               }`}
             >
               Sau
@@ -967,6 +1040,7 @@ const Products = () => {
                     aria-label="Danh mục sản phẩm"
                   >
                     <option value="" disabled>Chọn danh mục</option>
+                    {/* TRẢ LẠI HIỂN THỊ DANH MỤC NHƯ CŨ, KHÔNG PHÂN NHÓM */}
                     {Array.isArray(categories) && categories.length > 0 ? (
                       categories.map((category) => (
                         <option key={category._id} value={category._id}>
@@ -974,39 +1048,105 @@ const Products = () => {
                         </option>
                       ))
                     ) : (
-                      <>
-                        <option value="682dafa0b610839036b63530">Giày nam</option>
-                        <option value="682dafa0b610839036b63531">Giày nữ</option>
-                        <option value="682dafa0b610839036b63532">Giày trẻ em</option>
-                      </>
+                      // Hiển thị khi categories rỗng (ví dụ: đang tải)
+                      <option value="" disabled>Đang tải danh mục...</option>
                     )}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">Bạn phải chọn một danh mục để phân loại sản phẩm trên trang người dùng</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Giới tính (sexual)*
+                  </label>
+                  <select
+                    name="sexual"
+                    required
+                    value={formState.sexual}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border rounded-md"
+                    aria-label="Giới tính sản phẩm"
+                  >
+                    <option value="unisex">Unisex</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Size (cách nhau dấu phẩy)
+                  </label>
+                  <input
+                    type="text"
+                    name="size"
+                    value={formState.size.join(', ')}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border rounded-md"
+                    aria-label="Size sản phẩm"
+                    placeholder="VD: XL, L, M"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Màu sắc (cách nhau dấu phẩy)
+                  </label>
+                  <input
+                    type="text"
+                    name="color"
+                    value={formState.color.join(', ')}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border rounded-md"
+                    aria-label="Màu sắc sản phẩm"
+                    placeholder="VD: Blue, Red, Black"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ảnh phụ (có thể chọn nhiều ảnh)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleMultipleImagesChange}
+                    title="Chọn ảnh phụ cho sản phẩm"
+                  />
+                  {imagesPreview.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {imagesPreview.map((img, idx) => (
+                        <div key={idx} className="relative group">
+                          <img src={img} alt={`Ảnh phụ ${idx+1}`} className="h-20 object-contain border rounded" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePreviewImage(idx)}
+                            className="absolute -top-2 -right-2 w-7 h-7 flex items-center justify-center rounded-full border-2 border-red-500 bg-white text-red-500 shadow-md transition-all duration-200 hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-400 z-10"
+                            title="Xóa ảnh này"
+                          >
+                            <FontAwesomeIcon icon={faTimes} size="sm" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Hình ảnh chính {!editingProduct && '*'}
                   </label>
-                  
-                  <div className="mb-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      URL Ảnh (Bắt buộc)
+                  <div className="mb-2 flex flex-col gap-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="image-upload">
+                      Chọn ảnh từ máy tính:
                     </label>
                     <input
-                      type="text"
-                      name="imageUrl"
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full p-2 border rounded-md"
-                      aria-label="URL hình ảnh sản phẩm"
-                      required={!editingProduct}
-                      value={formState.image}
-                      onChange={handleFormChange}
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                      placeholder="Chọn ảnh sản phẩm chính"
                     />
-                    <p className="text-xs text-green-600 font-semibold mt-1">Nhập URL ảnh từ internet</p>
-                    <p className="text-xs text-gray-500 mt-1">Gợi ý: Tìm ảnh sản phẩm trên Google, nhấp chuột phải vào ảnh và chọn "Sao chép địa chỉ hình ảnh"</p>
                   </div>
-                  
                   {imagePreview && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-700 mb-1">Xem trước ảnh:</p>

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import Product from './productModel.js';
 
 const reviewSchema = new mongoose.Schema(
   {
@@ -9,6 +10,16 @@ const reviewSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Auto-update averageRating after save
+reviewSchema.post('save', async function () {
+  await Product.updateAverageRating(this.productId);
+});
+
+// Auto-update averageRating after remove
+reviewSchema.post('remove', async function () {
+  await Product.updateAverageRating(this.productId);
+});
 
 const Review = mongoose.model('Review', reviewSchema);
 export default Review;

@@ -197,7 +197,8 @@ const Users = () => {
   const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = searchTerm === '' || 
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.phone && user.phone.includes(searchTerm));
       
     const matchesAdminFilter = adminFilter === '' || 
       user.isAdmin === (adminFilter === true);
@@ -400,7 +401,9 @@ const Users = () => {
                     <div className="text-xs md:text-sm text-gray-500">{user.email}</div>
                   </td>
                   <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap hidden md:table-cell">
-                    <div className="text-xs md:text-sm text-gray-500">N/A</div>
+                    <div className="text-xs md:text-sm text-gray-500">
+                      {user.phone && user.phone.trim() !== '' ? user.phone : 'N/A'}
+                    </div>
                   </td>
                   <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${

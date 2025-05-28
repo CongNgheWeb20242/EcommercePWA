@@ -175,33 +175,46 @@ export const addReview = async (productId, reviewData) => {
 
 export const getAdminProducts = async (page, pageSize) => {
   const products = await Product.find()
+    .sort({ createdAt: -1 })
     .skip(pageSize * (page - 1))
     .limit(pageSize);
   const countProducts = await Product.countDocuments();
   return {
     products,
     countProducts,
-    page,
+    page: parseInt(page, 10),
     pages: Math.ceil(countProducts / pageSize),
   };
 };
 
 export const searchProducts = async (queryParams, user = null) => {
-  const {
+  let {
     pageSize = 3,
     page = 1,
     category = '',
     price = '',
-    rating = '',
+    ratingFrom = '',
+    ratingTo = '',
     order = '',
     query = '',
+    brand = '',
+    color = '', 
   } = queryParams;
+  
+  page = parseInt(page, 10);
+  pageSize = parseInt(pageSize, 10);
 
   const queryFilter =
     query && query !== 'all' ? { name: { $regex: query, $options: 'i' } } : {};
   const categoryFilter = category && category !== 'all' ? { category } : {};
-  const ratingFilter =
-    rating && rating !== 'all' ? { rating: { $gte: Number(rating) } } : {};
+  let ratingFilter = {};
+  if (ratingFrom !== '' && ratingTo !== '') {
+    ratingFilter = { averageRating: { $gte: Number(ratingFrom), $lte: Number(ratingTo) } };
+  } else if (ratingFrom !== '') {
+    ratingFilter = { averageRating: { $gte: Number(ratingFrom) } };
+  } else if (ratingTo !== '') {
+    ratingFilter = { averageRating: { $lte: Number(ratingTo) } };
+  }
   const priceFilter =
     price && price !== 'all'
       ? {
@@ -210,6 +223,14 @@ export const searchProducts = async (queryParams, user = null) => {
             $lte: Number(price.split('-')[1]),
           },
         }
+      : {};
+  const brandFilter =
+    brand && brand !== 'all'
+      ? { brand: { $regex: brand, $options: 'i' } }
+      : {};
+  const colorFilter =
+    color && color !== 'all'
+      ? { color: { $in: [color] } }
       : {};
   const visibilityFilter = !user || !user.isAdmin ? { isVisible: true } : {};
   const sortOrder =
@@ -231,6 +252,8 @@ export const searchProducts = async (queryParams, user = null) => {
     ...priceFilter,
     ...ratingFilter,
     ...visibilityFilter,
+    ...brandFilter,
+    ...colorFilter,
   })
     .populate('category')
     .populate('reviews')
@@ -243,13 +266,15 @@ export const searchProducts = async (queryParams, user = null) => {
     ...categoryFilter,
     ...priceFilter,
     ...ratingFilter,
+    ...brandFilter,
+    ...colorFilter,
     ...visibilityFilter,
   });
   return {
     products,
     countProducts,
-    page,
-    pages: Math.ceil(countProducts / pageSize),
+    page: parseInt(page, 10),
+    pages: Math.ceil(countProducts / parseInt(pageSize, 10)),
   };
 };
 

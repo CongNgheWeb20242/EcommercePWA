@@ -1,6 +1,7 @@
 import logo from '../../assets/common/logo.png';
 import home_bg from '../../assets/common/home_bg.jpg';
 import NikeCollection from '@/components/user/Collection';
+import ChatWidget from '@/services/chat-bot/components/ChatWidget';
 
 const Banner = () => (
     <div className="relative bg-black text-white h-[600px] flex items-center justify-between px-30">
@@ -71,6 +72,7 @@ const Banner = () => (
 
             {/* Collection Section */}
             <NikeCollection />
+            <ChatWidget />
         </div>
     )
   }

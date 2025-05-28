@@ -90,6 +90,7 @@ const Orders = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [redirectToHome, setRedirectToHome] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
   
   // State cho hộp thoại xác nhận
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -177,13 +178,29 @@ const Orders = () => {
 
   // Lọc đơn hàng theo từ khóa tìm kiếm
   const filteredOrders = orders.filter(order => {
-    const searchTermLower = searchTerm.toLowerCase();
-    const orderIdMatch = order.order_id?.toLowerCase().includes(searchTermLower) || false;
-    const userNameMatch = order.userName?.toLowerCase().includes(searchTermLower) || false;
-    const phoneMatch = order.shippingAddress?.phone?.includes(searchTerm) || 
-                      order.userPhone?.includes(searchTerm) || false;
-    
-    return orderIdMatch || userNameMatch || phoneMatch;
+    if (!searchTerm.trim()) return true; // Giữ nguyên: nếu ô tìm kiếm rỗng, hiện tất cả
+
+    const normalizeText = (str: string = '') => (str || '').toLowerCase().trim();
+    const normalizePhone = (str: string = '') => (str || '').replace(/\D/g, '');
+
+    const lcSearchTermText = normalizeText(searchTerm); // Chuỗi tìm kiếm đã chuẩn hóa cho tên
+    const searchDigits = normalizePhone(searchTerm); // Các chữ số từ chuỗi tìm kiếm cho SĐT
+
+    // 1. Tìm kiếm theo Tên Người Dùng
+    const nameMatch = normalizeText(order.userName).includes(lcSearchTermText);
+
+    // 2. Tìm kiếm theo Số Điện Thoại (chỉ khi searchDigits không rỗng)
+    let phoneMatch = false;
+    if (searchDigits) { // Chỉ tìm SĐT nếu có nhập số
+      const shippingPhone = normalizePhone(order.shippingAddress?.phone);
+      const userModelPhone = normalizePhone(order.userPhone); // SĐT từ User model (hiện tại backend không gửi, nên sẽ là chuỗi rỗng)
+      
+      if (shippingPhone.includes(searchDigits) || userModelPhone.includes(searchDigits)) {
+        phoneMatch = true;
+      }
+    }
+
+    return nameMatch || phoneMatch;
   });
 
   // Hiển thị hộp thoại xác nhận
@@ -203,55 +220,58 @@ const Orders = () => {
       return;
     }
 
+    // Tìm đối tượng order từ orderId
+    const order = orders.find(o => o._id === orderId);
+    if (!order) {
+      toast.error('Không tìm thấy đơn hàng!');
+      return;
+    }
+
+    // Chỉ xử lý logic cho isDelivered = true (Xác nhận)
+    // và chỉ khi đơn hàng chưa được giao (để tránh gọi confirmAction không cần thiết nếu nút bị click dù đã disabled)
+    if (!isDelivered && !order.isDelivered) { 
+      return; 
+    }
+
     const confirmAction = async () => {
       try {
-      if (isDelivered) {
-          await axiosInstance.put(`/orders/${orderId}/deliver`, {}, {
-            headers: {
-              'Authorization': `Bearer ${currentUser.token}`,
-            }
-          });
+        // Logic cho isDelivered === true (Xác nhận đơn hàng)
+        await axiosInstance.put(`/orders/${orderId}/deliver`, {}, {
+          headers: {
+            'Authorization': `Bearer ${currentUser.token}`,
+          }
+        });
           
-        setOrders(orders.map(order => 
-          order._id === orderId ? { 
-            ...order, 
+        setOrders(currentOrders => currentOrders.map(o => 
+          o._id === orderId ? { 
+            ...o, 
             isDelivered: true,
             deliveredAt: new Date().toISOString()
-          } : order
+          } : o
         ));
           
-          toast.success('Đã xác nhận đơn hàng thành công');
-      } else {
-          // Giả lập API hủy đơn hàng (vì backend không có API này)
-          toast.success('Đã hủy đơn hàng thành công');
-        setOrders(orders.filter(order => order._id !== orderId));
-      }
-    } catch (err) {
-        toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
-      console.error('Error updating order status:', err);
+        toast.success('Đã xác nhận đơn hàng thành công');
+
+      } catch (err) {
+          toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
+        console.error('Error updating order status:', err);
       }
       setConfirmDialog({ ...confirmDialog, isOpen: false });
     };
 
-    if (isDelivered) {
-      showConfirmDialog(
-        'Xác nhận đơn hàng',
-        'Bạn có chắc chắn muốn xác nhận đơn hàng này không?',
-        confirmAction
-      );
-    } else {
-      showConfirmDialog(
-        'Hủy đơn hàng',
-        'Bạn có chắc chắn muốn hủy đơn hàng này không?',
-        confirmAction
-      );
-    }
+    // Luôn hiển thị hộp thoại xác nhận cho hành động "Xác Nhận"
+    showConfirmDialog(
+      order.isDelivered ? 'Thông Báo' : 'Xác nhận đơn hàng',
+      order.isDelivered ? 'Đơn hàng này đã được xác nhận giao.' : 'Bạn có chắc chắn muốn xác nhận đơn hàng này không?',
+      // Nếu đã giao, hành động confirm chỉ là đóng dialog. Nếu chưa, thì thực hiện confirmAction.
+      order.isDelivered ? () => setConfirmDialog({ ...confirmDialog, isOpen: false }) : confirmAction 
+    );
   };
 
   return (
     <div className="container mx-auto p-3">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Quản Trị Admin</h1>
+        <h1 className="text-xl font-bold">Quản lý đơn hàng</h1>
       </div>
 
       {/* Bộ lọc và tìm kiếm */}
@@ -259,7 +279,7 @@ const Orders = () => {
         <div className="relative w-64">
           <input
             type="text"
-            placeholder="Tìm kiếm..."
+            placeholder="Tìm kiếm theo tên hoặc SĐT..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full border rounded-md p-1.5 pl-8 text-sm"
@@ -269,93 +289,113 @@ const Orders = () => {
       </div>
 
       {/* Bảng đơn hàng */}
-      <div className="overflow-x-auto border rounded">
+      <div className="overflow-x-auto rounded-lg shadow border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-100 sticky top-0 z-10">
             <tr>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Người Dùng</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">SĐT</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Địa Chỉ</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tên Đơn Hàng</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Size</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">SL</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tổng Giá</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Trạng Thái</th>
-              <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Hành Động</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Người Dùng</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">SĐT</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap hidden md:table-cell max-w-[180px] truncate">Địa Chỉ</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap max-w-[220px] truncate">Tên Đơn Hàng</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Size</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">SL</th>
+              <th className="px-4 py-3 text-right font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Tổng Giá</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Trạng Thái TT</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Ngày TT</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Trạng Thái GH</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Hành Động</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-3 py-2 text-center">
+                <td colSpan={11} className="px-3 py-4 text-center">
                   <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                   </div>
                 </td>
               </tr>
             ) : filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-2 text-center text-xs text-gray-500">
+                <td colSpan={11} className="px-3 py-4 text-center text-xs text-gray-500">
                   Không tìm thấy đơn hàng nào
                 </td>
               </tr>
             ) : (
-              filteredOrders.map((order) => (
-                order.orderItems.map((item, index) => (
-                  <tr key={`${order._id}_${index}`}>
+              filteredOrders.flatMap((order) => [
+                ...order.orderItems.map((item, index) => (
+                  <tr
+                    key={`${order._id}_${index}`}
+                    onMouseEnter={() => setHoveredOrderId(order._id)}
+                    onMouseLeave={() => setHoveredOrderId(null)}
+                    className={
+                      (hoveredOrderId === order._id ? 'bg-blue-50 ' : '') + 'transition-colors'
+                    }
+                  >
                     {index === 0 ? (
                       <>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          {order.userName || 'Trần Trọng Luân'}
+                        <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          {order.shippingAddress?.fullName || 'Trần Trọng Luân'}
                         </td>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                        <td className="px-4 py-3 whitespace-nowrap align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
                           {order.shippingAddress?.phone || order.userPhone || '0899804328'}
                         </td>
-                        <td className="px-2 py-2 whitespace-nowrap hidden md:table-cell" rowSpan={order.orderItems.length}>
-                          {order.shippingAddress?.address || 'ngõ 36 bắc ninh'}
+                        <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell align-middle max-w-[180px] truncate" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          <span title={order.shippingAddress?.address || 'ngõ 36 bắc ninh'}>
+                            {order.shippingAddress?.address || 'ngõ 36 bắc ninh'}
+                          </span>
                         </td>
                       </>
                     ) : null}
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      {item.name || 'Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy'}
+                    <td className="px-4 py-3 whitespace-nowrap max-w-[220px] truncate">
+                      <span title={item.name || 'Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy'}>
+                        {item.name || 'Giày Chạy Bộ Nam On Cloudstratus 3 - Xanh Navy'}
+                      </span>
                     </td>
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      {item.size || (index % 2 === 0 ? '40' : '41')}
-                    </td>
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      {item.quantity || (index % 3 === 0 ? 3 : (index % 2 === 0 ? 1 : 2))}
-                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">{item.size || (index % 2 === 0 ? '40' : '41')}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">{item.quantity || (index % 3 === 0 ? 3 : (index % 2 === 0 ? 1 : 2))}</td>
                     {index === 0 ? (
                       <>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
+                        <td className="px-4 py-3 whitespace-nowrap text-right font-semibold align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
                           {(order.totalPrice || 1950000).toLocaleString()} đ
                         </td>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <span className={`font-medium ${order.isDelivered ? 'text-green-600' : 'text-blue-600'}`}>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {order.isPaid ? 'Đã Thanh Toán' : 'Chưa Thanh Toán'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          {order.paidAt ? new Date(order.paidAt).toLocaleDateString('vi-VN') : 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isDelivered ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                             {order.isDelivered ? 'Đã Giao' : 'Chuẩn Bị Hàng'}
                           </span>
                         </td>
-                        <td className="px-2 py-2 whitespace-nowrap" rowSpan={order.orderItems.length}>
-                          <div className="flex flex-col sm:flex-row gap-1">
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                          <div className="flex flex-col sm:flex-row gap-1 justify-center">
                             <button
                               onClick={() => handleUpdateStatus(order._id, true)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
+                              className={`bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition ${
+                                order.isDelivered ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                              }`}
+                              disabled={order.isDelivered} // Vô hiệu hóa nếu đã giao
                             >
-                              Xác Nhận
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStatus(order._id, false)}
-                              className="bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 rounded text-xs cursor-pointer"
-                            >
-                              Hủy
+                              {order.isDelivered ? 'Đã Xác Nhận' : 'Xác Nhận'}
                             </button>
                           </div>
                         </td>
                       </>
                     ) : null}
                   </tr>
-                ))
-              ))
+                )),
+                // Dòng phân cách đậm giữa các đơn hàng
+                <tr key={`divider_${order._id}`}> 
+                  <td colSpan={11} className="p-0">
+                    <div style={{ borderTop: '3px solid #d1d5db', margin: 0 }}></div>
+                  </td>
+                </tr>
+              ])
             )}
           </tbody>
         </table>

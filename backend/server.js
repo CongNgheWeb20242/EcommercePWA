@@ -22,6 +22,7 @@ import { devLogger } from './middlewares/morganLogger.js';
 import { connectDB } from './lib/db.js';
 import './lib/passport.js';
 import { baseUrl } from './lib/utils.js';
+import { askQuestion } from "./lib/chatbot.js"
 
 // Routes
 import productRouter from './routes/productRoutes.js';
@@ -68,24 +69,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-/* Do đã deploy tách biệt fe - be nên không cần: host riêng 
-
-// Serve frontend in production
-// if (NODE_ENV === 'production') {
-//   app.use(express.static(path.join(__dirname, '/frontend/build')));
-//   app.get('*', (req, res) =>
-//     res.sendFile(path.join(__dirname, '/frontend/build/index.html'))
-//   );
-// }
-
-*/
-
 // CORS - Cho phép FE gọi API từ cả local + hosting
 app.use(
   cors({
     origin:
       process.env.NODE_ENV === 'production'
-        ? ['http://localhost:5173', 'https://your-fe-domain.com']
+        ? ['http://localhost:5173', 'https://loquacious-paletas-3e891d.netlify.app']
         : 'http://localhost:5173',
     credentials: true,
   })
@@ -99,6 +88,26 @@ app.use('/api/orders', orderRouter);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/orders', orderReportRoutes);
 app.use('/api/chat', chatRoutes);
+
+app.post('/api/ai/ask', async (req, res) => {
+  console.log('Received AI request:', req.body);
+  const { question } = req.body;
+  
+  if (!question) {
+    console.error('No question provided in request');
+    return res.status(400).json({ error: 'Question is required' });
+  }
+
+  try {
+    console.log('Processing question:', question);
+    const answer = await askQuestion(question);
+    console.log('Got answer from AI:', answer);
+    res.json({ answer });
+  } catch (error) {
+    console.error('Error in /api/ai/ask:', error);
+    res.status(500).json({ error: 'Lỗi AI' });
+  }
+});
 
 app.use('/', (req, res) => {
   res.send(

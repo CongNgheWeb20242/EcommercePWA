@@ -14,7 +14,7 @@ orderRouter.get(
   isAuth,
   isAdmin,
   expressAsyncHandler(async (req, res) => {
-    const orders = await Order.find().populate('user', 'name');
+    const orders = await Order.find().populate('user', 'name email phone');
     res.send(orders);
   })
 );
@@ -180,5 +180,35 @@ orderRouter.put(
 //     }
 //   })
 // );
+
+orderRouter.get(
+  '/search',
+  isAuth,
+  isAdmin,
+  expressAsyncHandler(async (req, res) => {
+    const { email, phone, name } = req.query;
+
+    // Build user filter
+    let userFilter = {};
+    if (email) userFilter.email = email;
+    if (phone) userFilter.phone = phone;
+    if (name) userFilter.name = { $regex: name, $options: 'i' };
+
+    // Find matching users
+    let userIds = [];
+    if (Object.keys(userFilter).length > 0) {
+      const users = await User.find(userFilter).select('_id');
+      userIds = users.map(u => u._id);
+    }
+
+    // Find orders by user
+    const orderFilter = userIds.length > 0 ? { user: { $in: userIds } } : {};
+    const orders = await Order.find(orderFilter)
+      .populate('user', 'name email phone')
+      .populate('orderItems.product');
+
+    res.json(orders);
+  })
+);
 
 export default orderRouter;
