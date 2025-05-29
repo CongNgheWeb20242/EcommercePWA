@@ -211,4 +211,28 @@ orderRouter.get(
   })
 );
 
+orderRouter.put(
+  '/:id/status',
+  isAuth,
+  expressAsyncHandler(async (req, res) => {
+    const { status } = req.body;
+    // Kiểm tra hợp lệ
+    if (![0, 1, 2].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    order.status = status;
+    await order.save();
+
+    if (order.user && order.user.email) {
+      await sendOrderStatusEmail(order.user.email, order.order_id, status);
+    }
+
+    res.json({ message: 'Order status updated', order });
+  })
+);
+
 export default orderRouter;

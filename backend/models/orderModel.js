@@ -52,6 +52,11 @@ const orderSchema = new mongoose.Schema(
     paidAt: { type: Date },
     isDelivered: { type: Boolean, default: false },
     deliveredAt: { type: Date },
+    status: {
+      type: Number,
+      enum: [0, 1, 2], // 0: đang chuẩn bị hàng, 1: đang giao, 2: đã giao
+      default: 0
+    },
   },
   {
     timestamps: true,
