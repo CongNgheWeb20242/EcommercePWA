@@ -4,12 +4,12 @@ import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { googleLoginUrl } from '@/services/auth/authService';
-import { useAuthStore } from '@/store/useAuthStore';
+import { userStore } from '@/store/userStore';
 
 
 const SignUpForm = () => {
   const navigate = useNavigate();
-  const { signUp, error, setError, loading } = useAuthStore();
+  const { signUp, error, setError, loading } = userStore();
 
   const [formData, setFormData] = useState({
     name: '',
