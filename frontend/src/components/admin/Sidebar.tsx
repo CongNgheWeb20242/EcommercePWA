@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useUserStore } from '@/store/userStore';
 import { useState } from 'react';
+import { userStore } from '@/store/userStore';
 
 interface SidebarProps {
   open?: boolean;
@@ -51,12 +51,12 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel }: {
 const Sidebar = ({ open = false, onClose }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useUserStore();
+  const { logOut } = userStore();
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
     message: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const handleLogout = () => {
@@ -65,7 +65,7 @@ const Sidebar = ({ open = false, onClose }: SidebarProps) => {
       title: 'Đăng xuất',
       message: 'Bạn có chắc chắn muốn đăng xuất khỏi trang quản trị không?',
       onConfirm: () => {
-        logout();
+        logOut();
         navigate('/user/login');
         setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
       },
@@ -102,11 +102,10 @@ const Sidebar = ({ open = false, onClose }: SidebarProps) => {
             <li key={item.path}>
               <Link
                 to={item.path}
-                className={`flex items-center px-4 py-3 text-sm rounded-lg ${
-                  location.pathname === item.path
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center px-4 py-3 text-sm rounded-lg ${location.pathname === item.path
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 onClick={onClose}
               >
                 <span className="ml-3">{item.label}</span>
@@ -117,7 +116,7 @@ const Sidebar = ({ open = false, onClose }: SidebarProps) => {
       </nav>
       {/* Logout Button */}
       <div className="p-4 border-t">
-        <button 
+        <button
           onClick={handleLogout}
           className="w-full flex items-center px-4 py-3 text-sm rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
         >

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { axiosInstance } from '../../config/axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faFilter, faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
-import { useUserStore } from '../../store/userStore';
 import { Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { userStore } from '@/store/userStore';
 
 // Component hộp thoại xác nhận
 interface ConfirmDialogProps {
@@ -55,20 +55,20 @@ interface User {
 }
 
 const Users = () => {
-  const { user: currentUser } = useUserStore();
+  const { user: currentUser } = userStore();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [adminFilter, setAdminFilter] = useState<boolean | ''>('');
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sortField, setSortField] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [redirectToHome, setRedirectToHome] = useState(false);
-  
+
   // State cho hộp thoại xác nhận
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -79,7 +79,7 @@ const Users = () => {
     isOpen: false,
     title: '',
     message: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -99,7 +99,7 @@ const Users = () => {
         page: page.toString(),
         limit: '10', // Thêm giới hạn kết quả
       });
-      
+
       if (searchTerm) params.append('search', searchTerm);
       if (adminFilter !== '') params.append('isAdmin', String(adminFilter));
 
@@ -107,20 +107,20 @@ const Users = () => {
       console.log('URL: /user?' + params.toString());
       console.log('Token: ' + (currentUser?.token || 'không có token'));
       console.log('Người dùng hiện tại:', currentUser);
-      
+
       // Đường dẫn API đúng theo routes trong backend và cấu hình axiosInstance
       const response = await axiosInstance.get(`/user?${params.toString()}`);
-      
+
       console.log('API đã phản hồi thành công');
       console.log('Status:', response.status);
       console.log('Status Text:', response.statusText);
       console.log('Headers:', response.headers);
       console.log('Kiểu dữ liệu trả về:', typeof response.data);
       console.log('Dữ liệu trả về từ API:', JSON.stringify(response.data, null, 2));
-      
+
       // Xử lý dữ liệu trả về
       let userData = [];
-      
+
       // Đảm bảo userData luôn là một mảng
       if (Array.isArray(response.data)) {
         console.log('Response là một mảng');
@@ -135,30 +135,30 @@ const Users = () => {
           userData = [response.data];
         }
       }
-      
+
       console.log('userData sau khi xử lý:', userData);
-      
+
       // Kiểm tra một lần nữa để đảm bảo userData là mảng
       if (!Array.isArray(userData)) {
         console.error('userData không phải là mảng:', userData);
         userData = [];
       }
-      
+
       setUsers(userData);
-      
+
       // Cập nhật thông tin phân trang (giả định có 1 trang)
       setTotalPages(1);
       setCurrentPage(1);
-      
+
       setError(null);
     } catch (err) {
       console.error("Error fetching users:", err);
-      
+
       // Hiển thị chi tiết lỗi để debug
       if (err && typeof err === 'object' && 'response' in err) {
         const errorResponse = err.response;
         console.error("Error response:", errorResponse);
-        
+
         if (errorResponse && typeof errorResponse === 'object') {
           if ('status' in errorResponse) {
             console.error("Error status:", errorResponse.status);
@@ -168,8 +168,8 @@ const Users = () => {
           }
         }
       }
-      
-      setError('Lỗi khi tải danh sách người dùng: ' + 
+
+      setError('Lỗi khi tải danh sách người dùng: ' +
         (err instanceof Error ? err.message : 'Lỗi không xác định'));
       setUsers([]);
     } finally {
@@ -190,7 +190,7 @@ const Users = () => {
     if (currentUser?.isAdmin) {
       fetchUsers(1);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, adminFilter, sortField, sortDirection, currentUser]);
 
   // Nếu không phải admin, chuyển hướng về trang chính
@@ -200,7 +200,7 @@ const Users = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const { checked } = e.target as HTMLInputElement;
       if (name === 'isAdmin') {
@@ -214,7 +214,7 @@ const Users = () => {
       }
     }
   };
-  
+
   const handleSaveChanges = async () => {
     if (!selectedUser) return;
     // Kiểm tra xem người dùng hiện tại có phải admin không
@@ -225,9 +225,9 @@ const Users = () => {
 
     // Không cho phép bỏ quyền admin của chính tài khoản đang đăng nhập
     if (currentUser._id === selectedUser._id && !editedIsAdmin) {
-        toast.error('Bạn không thể bỏ quyền Admin của chính mình.');
-        setEditedIsAdmin(true); // Đặt lại giá trị isAdmin nếu họ cố gắng bỏ
-        return;
+      toast.error('Bạn không thể bỏ quyền Admin của chính mình.');
+      setEditedIsAdmin(true); // Đặt lại giá trị isAdmin nếu họ cố gắng bỏ
+      return;
     }
 
     setLoading(true);
@@ -242,8 +242,8 @@ const Users = () => {
 
       if (response.status === 200 && response.data.user) {
         // Cập nhật danh sách người dùng trên UI
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
+        setUsers(prevUsers =>
+          prevUsers.map(user =>
             user._id === selectedUser._id ? { ...user, ...response.data.user } : user
           )
         );
@@ -265,14 +265,14 @@ const Users = () => {
 
   // Lọc users trong trường hợp cần thiết (nếu không thể lọc bằng API)
   const filteredUsers = Array.isArray(users) ? users.filter(user => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.phone && user.phone.includes(searchTerm));
-      
-    const matchesAdminFilter = adminFilter === '' || 
+
+    const matchesAdminFilter = adminFilter === '' ||
       user.isAdmin === (adminFilter === true);
-      
+
     return matchesSearch && matchesAdminFilter;
   }) : [];
 
@@ -283,20 +283,20 @@ const Users = () => {
       toast.error('Bạn không có quyền xóa người dùng');
       return;
     }
-    
+
     // Ngăn xóa tài khoản admin
     const userToDelete = users.find(u => u._id === userId);
     if (userToDelete?.isAdmin) {
       toast.error('Không thể xóa tài khoản Admin');
       return;
     }
-    
+
     const performDelete = async () => {
       setLoading(true);
       try {
         // Sử dụng đúng đường dẫn API theo cấu hình trong axiosInstance
         const response = await axiosInstance.delete(`/user/${userId}`);
-        
+
         // Kiểm tra phản hồi từ server
         if (response.status === 200) {
           // Cập nhật danh sách sau khi xóa
@@ -307,20 +307,20 @@ const Users = () => {
         }
       } catch (err: unknown) {
         // Kiểm tra kiểu của lỗi và trích xuất thông điệp lỗi
-        const errorMessage = err && typeof err === 'object' && 'response' in err && 
-          err.response && typeof err.response === 'object' && 'data' in err.response && 
+        const errorMessage = err && typeof err === 'object' && 'response' in err &&
+          err.response && typeof err.response === 'object' && 'data' in err.response &&
           err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data
-          ? String(err.response.data.message) 
+          ? String(err.response.data.message)
           : 'Lỗi khi xóa người dùng';
-        
+
         toast.error(errorMessage);
         console.error('Error deleting user:', err);
       } finally {
         setLoading(false);
-        setConfirmDialog({...confirmDialog, isOpen: false});
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
       }
     };
-    
+
     // Hiển thị hộp thoại xác nhận
     setConfirmDialog({
       isOpen: true,
@@ -343,7 +343,7 @@ const Users = () => {
   // Hiển thị biểu tượng sắp xếp
   const getSortIcon = (field: string) => {
     if (field !== sortField) return <FontAwesomeIcon icon={faSort} className="ml-1 text-gray-400" />;
-    return sortDirection === 'asc' 
+    return sortDirection === 'asc'
       ? <FontAwesomeIcon icon={faSortUp} className="ml-1 text-blue-500" />
       : <FontAwesomeIcon icon={faSortDown} className="ml-1 text-blue-500" />;
   };
@@ -363,13 +363,13 @@ const Users = () => {
         // Nếu không tìm thấy (ví dụ: dữ liệu chưa được fetch đầy đủ), gọi API
         const response = await axiosInstance.get(`/user/${userId}`);
         if (response.data) {
-            setSelectedUser(response.data);
-            setEditedName(response.data.name);
-            setEditedEmail(response.data.email);
-            setEditedIsAdmin(response.data.isAdmin);
-            setIsEditModalOpen(true);
+          setSelectedUser(response.data);
+          setEditedName(response.data.name);
+          setEditedEmail(response.data.email);
+          setEditedIsAdmin(response.data.isAdmin);
+          setIsEditModalOpen(true);
         } else {
-            toast.error('Không tìm thấy thông tin người dùng.');
+          toast.error('Không tìm thấy thông tin người dùng.');
         }
       }
     } catch (err) {
@@ -388,7 +388,7 @@ const Users = () => {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản Lý Người Dùng</h1>
-        <button 
+        <button
           onClick={() => fetchUsers(1)}
           className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
           disabled={loading}
@@ -500,9 +500,8 @@ const Users = () => {
                     </div>
                   </td>
                   <td className="px-2 py-2 md:px-6 md:py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.isAdmin ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isAdmin ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
                       {user.isAdmin ? 'Quản Trị Viên' : 'Người dùng'}
                     </span>
                   </td>
@@ -538,37 +537,34 @@ const Users = () => {
             <button
               onClick={() => fetchUsers(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                currentPage === 1 
-                  ? 'text-gray-300 cursor-not-allowed' 
-                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
-              }`}
+              className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${currentPage === 1
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
+                }`}
             >
               Trước
             </button>
-            
+
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
                 onClick={() => fetchUsers(page)}
-                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium cursor-pointer ${
-                  currentPage === page
-                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                }`}
+                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium cursor-pointer ${currentPage === page
+                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }`}
               >
                 {page}
               </button>
             ))}
-            
+
             <button
               onClick={() => fetchUsers(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                currentPage === totalPages 
-                  ? 'text-gray-300 cursor-not-allowed' 
-                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
-              }`}
+              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${currentPage === totalPages
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
+                }`}
             >
               Sau
             </button>
@@ -582,14 +578,14 @@ const Users = () => {
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl m-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Chỉnh sửa thông tin người dùng</h3>
-              <button 
+              <button
                 onClick={handleCloseEditModal}
                 className="text-gray-500 hover:text-gray-700 cursor-pointer"
               >
                 ✕
               </button>
             </div>
-            
+
             {/* Form chỉnh sửa */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Tăng gap cho dễ nhìn */}
               {/* Cột 1: Name, Email, Phone (hiển thị) */}
@@ -616,12 +612,12 @@ const Users = () => {
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   />
                 </div>
-                 <div>
+                <div>
                   <label className="block text-sm font-medium text-gray-500">Số điện thoại</label>
                   <p className="text-base mt-1 text-gray-700">{selectedUser.phone || 'Chưa cập nhật'}</p>
                 </div>
               </div>
-              
+
               {/* Cột 2: Address (hiển thị), IsAdmin, CreatedAt (hiển thị) */}
               <div className="space-y-4">
                 <div>
@@ -643,7 +639,7 @@ const Users = () => {
                     Là Quản Trị Viên
                   </label>
                 </div>
-                 <div>
+                <div>
                   <label className="block text-sm font-medium text-gray-500">Ngày tạo tài khoản</label>
                   <p className="text-base mt-1 text-gray-700">{new Date(selectedUser.createdAt).toLocaleDateString('vi-VN')}</p>
                 </div>
@@ -663,8 +659,8 @@ const Users = () => {
                 onClick={handleSaveChanges}
                 disabled={loading || (currentUser?._id === selectedUser._id && !editedIsAdmin)} // Vô hiệu hóa nếu đang tải hoặc admin cố bỏ quyền của chính mình
                 className={`px-4 py-2 rounded-md text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 
-                  ${(currentUser?._id === selectedUser._id && !editedIsAdmin) 
-                    ? 'bg-gray-400 cursor-not-allowed' 
+                  ${(currentUser?._id === selectedUser._id && !editedIsAdmin)
+                    ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'}`}
               >
                 {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -675,7 +671,7 @@ const Users = () => {
       )}
 
       {/* Hộp thoại xác nhận */}
-      <ConfirmDialog 
+      <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}
