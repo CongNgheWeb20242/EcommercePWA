@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 
-interface CustomImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface FitImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
     onLoad?: (event: React.SyntheticEvent<HTMLImageElement, Event>) => void;
     onError?: (event: React.SyntheticEvent<HTMLImageElement, Event>) => void;
 }
 
-const CustomImage: React.FC<CustomImageProps> = ({
+const FitImage: React.FC<FitImageProps> = ({
     src,
     alt,
     className,
@@ -41,7 +41,7 @@ const CustomImage: React.FC<CustomImageProps> = ({
                 src={src}
                 alt={alt}
                 {...rest}
-                className={`w-full h-full object-cover transition-opacity duration-300 ${loading ? "opacity-0" : "opacity-100"
+                className={`w-full h-full object-contain transition-opacity duration-300 ${loading ? "opacity-0" : "opacity-100"
                     }`}
                 onLoad={handleLoad}
                 onError={handleError}
@@ -50,4 +50,4 @@ const CustomImage: React.FC<CustomImageProps> = ({
     );
 };
 
-export default CustomImage;
+export default FitImage;

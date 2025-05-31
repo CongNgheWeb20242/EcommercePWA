@@ -3,7 +3,6 @@ import CartPage from "./Cart";
 import OrderInfo from "./OrderInfo";
 import Payment from "./Payment";
 import CheckoutProgressBar from "@/components/user/CheckoutProcessBar";
-import ShippingPage from "../../components/user/Shipping";
 import Complete from "@/components/user/Complete";
 
 const CheckoutPage = () => {
@@ -15,8 +14,7 @@ const CheckoutPage = () => {
             case 1: return <CartPage />;
             case 2: return <OrderInfo />;
             case 3: return <Payment />
-            case 4: return <ShippingPage />;
-            case 5: return <Complete />;
+            case 4: return <Complete />;
             default: return null;
         }
     };

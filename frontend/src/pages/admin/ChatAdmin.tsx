@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
-import { useUserStore } from '@/store/userStore';
 import './ChatAdmin.css';
+import { userStore } from '@/store/userStore';
 
 interface IChatMessage {
   _id?: string;
@@ -32,14 +32,14 @@ const IMAGE_UPLOAD_ENDPOINT = `${API_BASE_URL}/api/upload/chat-image`;
 const MAX_IMAGE_SIZE_MB = 2; // Giới hạn 2MB cho ảnh
 
 const ChatAdmin: React.FC = () => {
-  const user = useUserStore((state) => state.user);
+  const user = userStore((state) => state.user);
   const [socket, setSocket] = useState<Socket | null>(null);
 
   const [conversations, setConversations] = useState<IConversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<IChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const previousSelectedConversationIdRef = useRef<string | null>(null);
@@ -76,18 +76,18 @@ const ChatAdmin: React.FC = () => {
       // Lắng nghe tin nhắn mới từ server
       newSocket.on('newChatMessage', (newMessage: IChatMessage) => {
         console.log('ChatAdmin: Received new chat message:', newMessage);
-        
+
         // Cập nhật messages nếu tin nhắn thuộc về conversation đang chọn
         // Sử dụng callback form của setState để đảm bảo state messages là mới nhất
         if (newMessage.conversationId === previousSelectedConversationIdRef.current) { // So sánh với ref vì selectedConversationId có thể chưa cập nhật ngay
-            setMessages((prevMessages) => [...prevMessages, newMessage]);
+          setMessages((prevMessages) => [...prevMessages, newMessage]);
         }
 
         // Cập nhật lastMessage trong danh sách conversations
-        setConversations(prevConversations => 
-          prevConversations.map(conv => 
-            conv._id === newMessage.conversationId 
-              ? { ...conv, lastMessage: newMessage } 
+        setConversations(prevConversations =>
+          prevConversations.map(conv =>
+            conv._id === newMessage.conversationId
+              ? { ...conv, lastMessage: newMessage }
               : conv
           ).sort((a, b) => { // Sắp xếp lại để conv có tin nhắn mới nhất lên đầu (hoặc theo logic khác)
             // Ví dụ: sắp xếp theo thời gian của lastMessage
@@ -96,7 +96,7 @@ const ChatAdmin: React.FC = () => {
             return timeB - timeA; // Mới nhất lên đầu
           })
         );
-        
+
         // TODO: Xử lý unread messages count nếu cần
       });
 
@@ -137,7 +137,7 @@ const ChatAdmin: React.FC = () => {
           setConversations(data);
         } catch (error) {
           console.error(error);
-          setConversations([]); 
+          setConversations([]);
         }
       };
       fetchConversations();
@@ -174,7 +174,7 @@ const ChatAdmin: React.FC = () => {
       console.log(`ChatAdmin: Leaving room ${previousSelectedConversationIdRef.current}`);
       socket.emit('leaveRoom', previousSelectedConversationIdRef.current);
     }
-    
+
     console.log(`ChatAdmin: Joining room ${selectedConversationId}`);
     socket.emit('joinRoom', selectedConversationId);
     previousSelectedConversationIdRef.current = selectedConversationId;
@@ -211,7 +211,7 @@ const ChatAdmin: React.FC = () => {
       };
       reader.readAsDataURL(file);
       // Không reset inputText ở đây để user có thể nhập caption
-      if(fileInputRef.current) fileInputRef.current.value = ""; // Reset input file để có thể chọn lại cùng file
+      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input file để có thể chọn lại cùng file
     }
   };
 
@@ -222,7 +222,7 @@ const ChatAdmin: React.FC = () => {
   const removeSelectedImage = () => {
     setSelectedImageFile(null);
     setImagePreviewUrl(null);
-    if(fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -246,11 +246,11 @@ const ChatAdmin: React.FC = () => {
         const uploadResponse = await fetch(IMAGE_UPLOAD_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64ImageData }), 
+          body: JSON.stringify({ image: base64ImageData }),
         });
 
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json().catch(() => ({ message: 'Lỗi không xác định khi upload ảnh.'}));
+          const errorData = await uploadResponse.json().catch(() => ({ message: 'Lỗi không xác định khi upload ảnh.' }));
           throw new Error(errorData.message || 'Upload ảnh thất bại.');
         }
         const { imageUrl } = await uploadResponse.json();
@@ -286,7 +286,7 @@ const ChatAdmin: React.FC = () => {
   if (!user || !user.isAdmin) {
     return <div className="chat-admin-no-access">Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản admin.</div>;
   }
-  
+
   if (!isOpen) {
     return (
       <button
@@ -314,10 +314,10 @@ const ChatAdmin: React.FC = () => {
               className={`conversation-item ${selectedConversationId === conv._id ? 'selected' : ''}`}
               onClick={() => setSelectedConversationId(conv._id)}
             >
-              <div>ID: {conv._id}</div> 
+              <div>ID: {conv._id}</div>
               {conv.lastMessage && (
                 <div className="conversation-last-message">
-                  <strong>{conv.lastMessage.sender.name}:</strong> 
+                  <strong>{conv.lastMessage.sender.name}:</strong>
                   {conv.lastMessage.messageType === 'image' && conv.lastMessage.imageUrl ? '[Hình ảnh]' : conv.lastMessage.message}
                 </div>
               )}
@@ -346,7 +346,7 @@ const ChatAdmin: React.FC = () => {
                 ) : (
                   <div className="message-text">{msg.message}</div>
                 )}
-                {msg.createdAt && <div className="message-time">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}</div>}
+                {msg.createdAt && <div className="message-time">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>}
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -361,15 +361,15 @@ const ChatAdmin: React.FC = () => {
               )}
               <form onSubmit={handleSendMessage} className="chat-area-input-form">
                 <button type="button" onClick={triggerFileInput} className="chat-admin-attach-button" disabled={isUploadingImage}>
-                  {/* Thay bằng icon SVG hoặc font icon nếu muốn */} 
+                  {/* Thay bằng icon SVG hoặc font icon nếu muốn */}
                   📎
                 </button>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  style={{ display: 'none' }} 
-                  accept="image/png, image/jpeg, image/gif" 
-                  onChange={handleImageFileChange} 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  accept="image/png, image/jpeg, image/gif"
+                  onChange={handleImageFileChange}
                   disabled={isUploadingImage}
                   aria-label="Chọn ảnh để gửi"
                 />
@@ -381,9 +381,9 @@ const ChatAdmin: React.FC = () => {
                   disabled={!socket || !socket.connected || isUploadingImage}
                   className="chat-input-text-field"
                 />
-                <button 
-                  type="submit" 
-                  className="chat-admin-send-button" 
+                <button
+                  type="submit"
+                  className="chat-admin-send-button"
                   disabled={(!inputText.trim() && !selectedImageFile) || !socket || !socket.connected || isUploadingImage}
                 >
                   {isUploadingImage ? 'Đang gửi...' : 'Gửi'}

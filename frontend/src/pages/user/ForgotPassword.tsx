@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/store/useAuthStore";
+import { userStore } from "@/store/userStore";
+import { forget_password } from "@/services/auth/authService";
 
 const ForgotPasswordForm: React.FC = () => {
     const navigate = useNavigate();
-    const { sendResetPasswordEmail, error, setError, loading } = useAuthStore();
+    const { error, setError, loading } = userStore();
     const [email, setEmail] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
 
@@ -18,8 +19,10 @@ const ForgotPasswordForm: React.FC = () => {
             setError("Vui lòng nhập đúng định dạng email.");
             return;
         }
-
-        const result = await sendResetPasswordEmail(email);
+        const prop = {
+            email: email
+        }
+        const result = await forget_password(prop);
         if (result) {
             setSuccessMsg("Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn!");
         } else {

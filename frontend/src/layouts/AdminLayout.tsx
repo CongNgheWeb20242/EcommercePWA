@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import Sidebar from '../components/admin/Sidebar';
-import { useUserStore } from '@/store/userStore';
 import ChatAdmin from '../pages/admin/ChatAdmin';
+import { userStore } from '@/store/userStore';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -9,7 +9,7 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout = ({ children, title = "Dashboard" }: AdminLayoutProps) => {
-  const { user } = useUserStore();
+  const { user } = userStore();
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'A';
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

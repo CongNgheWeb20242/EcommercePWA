@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { axiosInstance } from '../../config/axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import { useUserStore } from '../../store/userStore';
 import { Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { userStore } from '@/store/userStore';
 
 // Định nghĩa các interfaces cần thiết
 interface OrderItem {
@@ -85,13 +85,13 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, o
 
 // Component chính hiển thị danh sách đơn hàng
 const Orders = () => {
-  const { user: currentUser } = useUserStore();
+  const { user: currentUser } = userStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [redirectToHome, setRedirectToHome] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
-  
+
   // State cho hộp thoại xác nhận
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -102,7 +102,7 @@ const Orders = () => {
     isOpen: false,
     title: '',
     message: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   // Kiểm tra quyền admin
@@ -127,33 +127,33 @@ const Orders = () => {
           'Authorization': `Bearer ${currentUser.token}`,
         }
       });
-      
+
       const ordersData = response.data;
-      
+
       if (!Array.isArray(ordersData) || ordersData.length === 0) {
         setOrders([]);
         toast.error('Không có đơn hàng nào trong hệ thống.');
         setLoading(false);
         return;
       }
-      
+
       // Xử lý dữ liệu đơn hàng
       const processedOrders = ordersData.map((order: Order) => {
         let userName = '';
         let userPhone = '';
-        
+
         if (typeof order.user === 'object' && order.user !== null) {
           userName = order.user.name || 'Không xác định';
           userPhone = order.user.phone || '';
         }
-        
+
         return {
           ...order,
           userName,
           userPhone
         };
       });
-      
+
       setOrders(processedOrders);
     } catch (err) {
       console.error("Error fetching orders:", err);
@@ -168,7 +168,7 @@ const Orders = () => {
     if (!redirectToHome) {
       fetchOrders();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [redirectToHome]);
 
   // Chuyển hướng nếu không phải admin
@@ -194,7 +194,7 @@ const Orders = () => {
     if (searchDigits) { // Chỉ tìm SĐT nếu có nhập số
       const shippingPhone = normalizePhone(order.shippingAddress?.phone);
       const userModelPhone = normalizePhone(order.userPhone); // SĐT từ User model (hiện tại backend không gửi, nên sẽ là chuỗi rỗng)
-      
+
       if (shippingPhone.includes(searchDigits) || userModelPhone.includes(searchDigits)) {
         phoneMatch = true;
       }
@@ -229,8 +229,8 @@ const Orders = () => {
 
     // Chỉ xử lý logic cho isDelivered = true (Xác nhận)
     // và chỉ khi đơn hàng chưa được giao (để tránh gọi confirmAction không cần thiết nếu nút bị click dù đã disabled)
-    if (!isDelivered && !order.isDelivered) { 
-      return; 
+    if (!isDelivered && !order.isDelivered) {
+      return;
     }
 
     const confirmAction = async () => {
@@ -241,19 +241,19 @@ const Orders = () => {
             'Authorization': `Bearer ${currentUser.token}`,
           }
         });
-          
-        setOrders(currentOrders => currentOrders.map(o => 
-          o._id === orderId ? { 
-            ...o, 
+
+        setOrders(currentOrders => currentOrders.map(o =>
+          o._id === orderId ? {
+            ...o,
             isDelivered: true,
             deliveredAt: new Date().toISOString()
           } : o
         ));
-          
+
         toast.success('Đã xác nhận đơn hàng thành công');
 
       } catch (err) {
-          toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
+        toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
         console.error('Error updating order status:', err);
       }
       setConfirmDialog({ ...confirmDialog, isOpen: false });
@@ -264,7 +264,7 @@ const Orders = () => {
       order.isDelivered ? 'Thông Báo' : 'Xác nhận đơn hàng',
       order.isDelivered ? 'Đơn hàng này đã được xác nhận giao.' : 'Bạn có chắc chắn muốn xác nhận đơn hàng này không?',
       // Nếu đã giao, hành động confirm chỉ là đóng dialog. Nếu chưa, thì thực hiện confirmAction.
-      order.isDelivered ? () => setConfirmDialog({ ...confirmDialog, isOpen: false }) : confirmAction 
+      order.isDelivered ? () => setConfirmDialog({ ...confirmDialog, isOpen: false }) : confirmAction
     );
   };
 
@@ -334,13 +334,13 @@ const Orders = () => {
                   >
                     {index === 0 ? (
                       <>
-                        <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           {order.shippingAddress?.fullName || 'Trần Trọng Luân'}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           {order.shippingAddress?.phone || order.userPhone || '0899804328'}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell align-middle max-w-[180px] truncate" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell align-middle max-w-[180px] truncate" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           <span title={order.shippingAddress?.address || 'ngõ 36 bắc ninh'}>
                             {order.shippingAddress?.address || 'ngõ 36 bắc ninh'}
                           </span>
@@ -356,29 +356,28 @@ const Orders = () => {
                     <td className="px-4 py-3 whitespace-nowrap text-center">{item.quantity || (index % 3 === 0 ? 3 : (index % 2 === 0 ? 1 : 2))}</td>
                     {index === 0 ? (
                       <>
-                        <td className="px-4 py-3 whitespace-nowrap text-right font-semibold align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap text-right font-semibold align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           {(order.totalPrice || 1950000).toLocaleString()} đ
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                             {order.isPaid ? 'Đã Thanh Toán' : 'Chưa Thanh Toán'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           {order.paidAt ? new Date(order.paidAt).toLocaleDateString('vi-VN') : 'N/A'}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isDelivered ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                             {order.isDelivered ? 'Đã Giao' : 'Chuẩn Bị Hàng'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           <div className="flex flex-col sm:flex-row gap-1 justify-center">
                             <button
                               onClick={() => handleUpdateStatus(order._id, true)}
-                              className={`bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition ${
-                                order.isDelivered ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                              }`}
+                              className={`bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition ${order.isDelivered ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                                }`}
                               disabled={order.isDelivered} // Vô hiệu hóa nếu đã giao
                             >
                               {order.isDelivered ? 'Đã Xác Nhận' : 'Xác Nhận'}
@@ -390,7 +389,7 @@ const Orders = () => {
                   </tr>
                 )),
                 // Dòng phân cách đậm giữa các đơn hàng
-                <tr key={`divider_${order._id}`}> 
+                <tr key={`divider_${order._id}`}>
                   <td colSpan={11} className="p-0">
                     <div style={{ borderTop: '3px solid #d1d5db', margin: 0 }}></div>
                   </td>
@@ -400,7 +399,7 @@ const Orders = () => {
           </tbody>
         </table>
       </div>
-          
+
       {/* Phân trang */}
       <div className="flex justify-center mt-4">
         <nav className="flex items-center space-x-2">
@@ -414,7 +413,7 @@ const Orders = () => {
       </div>
 
       {/* Hộp thoại xác nhận */}
-      <ConfirmDialog 
+      <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}

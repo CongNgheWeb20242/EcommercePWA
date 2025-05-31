@@ -20,6 +20,8 @@ import UserProducts from './pages/user/Products';
 import Product from './pages/user/Product';
 import Cart from './pages/user/Cart';
 import CheckOut from './pages/user/CheckOut';
+import OAuthSuccess from './pages/user/OAuthSuccess';
+import ResetPasswordPage from './pages/user/ResetPasswordPage';
 
 // Protected Routes
 import AdminProtectedRoute from './components/AdminProtectedRoute';
@@ -57,21 +59,19 @@ const App = () => {
         <Route path="/user/register" element={<UserLayout><SignUp /></UserLayout>} />
         <Route path="/user/login" element={<UserLayout><SignIn /></UserLayout>} />
         <Route path="/user/forgetpassword" element={<UserLayout><ForgotPassword /></UserLayout>} />
+        <Route path="/user/reset-password/:token" element={<UserLayout><ResetPasswordPage /></UserLayout>} />
+
         <Route path="/user/profile" element={<UserLayout><ProfilePage /></UserLayout>} />
+
+        {/* Route nhận callback từ Google SSO */}
+        <Route path="/user/oauth-success" element={<UserLayout><OAuthSuccess /></UserLayout>} />
 
         <Route path="/user/products" element={<UserLayout><UserProducts key={'Tất Cả Sản Phẩm'} searchText={'Tất Cả Sản Phẩm'} /></UserLayout>} />
         <Route path="/user/products/men" element={<UserLayout><UserProducts key={'Thời Trang Nam'} searchText={'Thời Trang Nam'} /></UserLayout>} />
         <Route path="/user/products/women" element={<UserLayout><UserProducts key={'Thời Trang Nữ'} searchText={'Thời Trang Nữ'} /></UserLayout>} />
         <Route path="/user/product/:id" element={<UserLayout><Product /></UserLayout>} />
         <Route path="/user/cart" element={<UserLayout><Cart /></UserLayout>} />
-        <Route path="/user/checkout" element={<UserLayout><CheckOut /></UserLayout>} />
 
-        {/* Protected User Routes - Yêu cầu đăng nhập */}
-        <Route path="/user/cart" element={
-          <UserProtectedRoute>
-            <UserLayout><Cart /></UserLayout>
-          </UserProtectedRoute>
-        } />
         <Route path="/user/checkout" element={
           <UserProtectedRoute>
             <UserLayout><CheckOut /></UserLayout>
@@ -81,8 +81,6 @@ const App = () => {
         {/* Payment Routes */}
         <Route path="/payment/vnpay_return" element={<PaymentReturn />} />
 
-        {/* Redirect trang chủ về home */}
-        <Route path="/" element={<Navigate to="/home" replace />} />
       </Routes>
       <Toaster />
       <ChatWidget />
