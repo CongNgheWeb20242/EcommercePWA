@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { User } from "../types/User.ts";
-import { forget_password, login, register } from "@/services/auth/authService.ts";
+import { login, register } from "@/services/auth/authService.ts";
 import { LoginCredentials, RegisterData } from "@/types/Auth.ts";
 import { createJSONStorage, persist } from "zustand/middleware";
 

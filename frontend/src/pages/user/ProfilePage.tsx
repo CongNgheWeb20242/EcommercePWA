@@ -6,8 +6,6 @@ import {
     PhoneIcon,
     MapPinIcon,
     ArrowRightOnRectangleIcon,
-    EyeIcon,
-    EyeSlashIcon,
     PencilIcon,
     ArrowPathIcon
 } from '@heroicons/react/24/outline';
@@ -16,17 +14,16 @@ import { userStore } from '@/store/userStore';
 import { Order } from '@/types/Order';
 import { getUserOrder } from '@/services/api/orderService';
 import { useNavigate } from 'react-router-dom';
-import CustomImage from '@/components/ui/image';
 import { updateProfile } from '@/services/api/userService';
 import Avatar from '@/components/ui/avatar';
 
 const ProfilePage: React.FC = () => {
     const navigate = useNavigate()
     const { logOut } = userStore()
-    const [showPassword, setShowPassword] = useState(false);
+    const [_showPassword, _setShowPassword] = useState(false);
 
     const [isUploading, setIsUploading] = useState(false);
-    const [uploadError, setUploadError] = useState('');
+    const [_uploadError, setUploadError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Order Store

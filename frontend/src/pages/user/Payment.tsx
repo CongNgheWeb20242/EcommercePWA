@@ -21,8 +21,6 @@ export default function Payment() {
             try {
                 console.log(orderId)
                 const order = await getOrderById(orderId);
-                if (order == null)
-                    console.log("null")
                 setOrderStatus(order?.paymentResult?.status ? order?.paymentResult?.status : "pending");
                 if (order?.paymentResult?.status && order?.paymentResult?.status === "success") {
                     clearInterval(interval);
