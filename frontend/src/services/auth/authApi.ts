@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = "http://localhost:3000/api/";
+const BASE_URL = "https://ecommercepwa-be.onrender.com/api/";
 
 const authApiClient = axios.create({
   baseURL: BASE_URL,
@@ -9,5 +9,15 @@ const authApiClient = axios.create({
   },
   timeout: 20000
 });
+
+authApiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+);
 
 export default authApiClient;
