@@ -15,7 +15,6 @@ export default function Payment() {
     // Polling kiểm tra trạng thái đơn hàng
     useEffect(() => {
         if (!orderId) return;
-        console.log("run")
         setIsPolling(true);
 
         const interval = setInterval(async () => {

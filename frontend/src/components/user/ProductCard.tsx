@@ -21,7 +21,7 @@ const Card: React.FC<CardProps> = ({ product }) => {
             <div className="relative w-full h-80 overflow-hidden bg-gray-200 rounded">
                 {/* Image */}
                 <CustomImage
-                    src={product._id} //TODO
+                    src={product.image}
                     alt={product.name}
                     className={'w-full h-full object-cover'}
                     onLoad={() => { }}
@@ -39,7 +39,6 @@ const Card: React.FC<CardProps> = ({ product }) => {
                 <p className="text-gray-500 text-sm">{product.description}</p>
                 {/* Đánh giá */}
                 <div className="flex items-center mt-2 mb-1">
-                    {/* //TODO: Xoá hàm này khi có dữ liệu thực*/}
                     {renderStars(product.averageRating)}
                     <span className="ml-2 text-sm text-gray-500">
                         {product.averageRating} ({product.reviews.length} đánh giá)

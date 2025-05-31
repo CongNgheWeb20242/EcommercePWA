@@ -36,7 +36,6 @@ export default function Products({ searchText }: ProductsProps) {
 
         const query = queryMap[_searchText] ?? _searchText;
 
-        setCurrentPage(1);
         fetchProducts({
             page: 1,
             pageSize,
@@ -55,7 +54,6 @@ export default function Products({ searchText }: ProductsProps) {
             page: nextPage,
             append: true,
         });
-        setCurrentPage(nextPage);
     }, [currentPage, pages, loading, fetchProducts]);
 
     useEffect(() => {
@@ -89,8 +87,13 @@ export default function Products({ searchText }: ProductsProps) {
             >
                 <SidebarFilter show={showFilters} onClose={() => setShowFilters(false)} onSearchTextChange={(text: string) => { setSearchText(text) }} />
                 <main className="w-full transition-all duration-300">
-                    <div className="flex sticky top-20 items-center justify-between mb-6 bg-white z-10 px-4 py-5">
-                        <h2 className="text-2xl font-semibold">
+                    <div className="
+                        flex flex-col gap-3
+                        md:flex-row md:items-center md:justify-between
+                        sticky top-10 md:top-20 mb-6 bg-white z-10 px-4 py-5
+                        border-b
+                        ">
+                        <h2 className="text-xl md:text-2xl font-semibold">
                             {(!_searchText || _searchText.trim() === "")
                                 ? "Tất Cả Sản Phẩm"
                                 : (specialTitles.includes(_searchText)
@@ -98,9 +101,9 @@ export default function Products({ searchText }: ProductsProps) {
                                     : `Kết quả cho: ${_searchText}`)}
                         </h2>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 md:gap-4">
                             <button
-                                className="flex items-center gap-2 border px-3 py-1 rounded hover:bg-gray-100"
+                                className="flex items-center gap-2 border px-3 py-1 rounded hover:bg-gray-100 text-sm md:text-base"
                                 onClick={() => setShowFilters((v) => !v)}
                             >
                                 {showFilters ? "Ẩn bộ lọc" : "Hiển thị bộ lọc"}
@@ -109,9 +112,10 @@ export default function Products({ searchText }: ProductsProps) {
                             <SortByDropdown />
                         </div>
                     </div>
+
                     <div className="mx-auto pt-0 pb-8 px-4">
                         {loading && currentPage === 1 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 min-h-[80vh]">
                                 {[...Array(16)].map((_, idx) => (
                                     <div key={idx} className="bg-white rounded-lg shadow">
                                         <div className="skeleton-shimmer w-full h-56 mb-4 rounded"></div>
@@ -125,7 +129,7 @@ export default function Products({ searchText }: ProductsProps) {
                                 ))}
                             </div>
                         ) : error ? (
-                            <div className="flex flex-col items-center justify-center py-16">
+                            <div className="flex flex-col items-center justify-center py-16 min-h-[80vh]">
                                 <div className="w-32 h-32 mb-4">
                                     <div className="skeleton-shimmer w-full h-full rounded-full"></div>
                                 </div>

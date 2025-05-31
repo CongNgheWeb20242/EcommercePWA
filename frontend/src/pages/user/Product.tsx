@@ -44,7 +44,7 @@ const ProductPage: React.FC = () => {
     );
 
     if (error) return (
-        <div className="flex flex-col items-center justify-center py-16">
+        <div className="flex flex-col items-center justify-center py-16 min-h-[50vh]">
             <svg className="h-10 w-10 text-red-500 mb-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-.01-8a9 9 0 110 18 9 9 0 010-18z" />
             </svg>
@@ -60,7 +60,7 @@ const ProductPage: React.FC = () => {
     );
 
     if (!product) return (
-        <div className="flex flex-col items-center justify-center py-16">
+        <div className="flex flex-col items-center justify-center py-16 min-h-[50vh]">
             <svg className="h-10 w-10 text-gray-300 mb-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h8M12 8v8" />
@@ -77,23 +77,32 @@ const ProductPage: React.FC = () => {
 
 
     return (
-        <div className="bg-gray-100 px-[20%] py-[2%]">
-            <div className="bg-white rounded-lg p-10 pl-6 flex flex-col md:flex-row gap-8 h-[100%]">
+        <div className="bg-gray-100 px-2 sm:px-4 md:px-10 lg:px-[20%] py-4 md:py-8">
+            <div className="bg-white rounded-lg p-4 sm:p-6 md:p-10 md:pl-6 flex flex-col md:flex-row gap-6 md:gap-8">
                 {/* Left: Images */}
-                <ProductImages product={product} />
-
+                <div className="w-full md:w-1/2 mb-4 md:mb-0">
+                    <ProductImages product={product} />
+                </div>
                 {/* Right: Product Info */}
-                <ProductInfo product={product} />
+                <div className="w-full md:w-1/2">
+                    <ProductInfo product={product} />
+                </div>
             </div>
 
-            <ShopInfo />
-
-            <div className="flex flex-col md:flex-row gap-3 mt-3">
-                <ProductReviews product={product} />
-                <SuggestProductsSidebar categoryId={product.category._id} productId={product._id} />
+            <div className="mt-6">
+                <ShopInfo />
             </div>
 
+            <div className="flex flex-col lg:flex-row gap-4 mt-4">
+                <div className="flex-1">
+                    <ProductReviews product={product} />
+                </div>
+                <div className="w-full lg:w-[340px] flex-shrink-0">
+                    <SuggestProductsSidebar categoryId={product.category._id} productId={product._id} />
+                </div>
+            </div>
         </div>
+
     );
 }
 

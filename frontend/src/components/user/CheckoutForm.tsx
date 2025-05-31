@@ -3,7 +3,7 @@ import VietnamAddressSelector from "./VietnamAddressSelector";
 import useCheckoutStore from "@/store/useCheckOutStore";
 import { PaymentMethod } from "@/types/PaymentMethod";
 import VnPayLogo from "@/assets/common/vnpay.png";
-import { useAuthStore } from "@/store/useAuthStore";
+import { userStore } from "@/store/userStore";
 
 
 export default function CheckoutForm() {
@@ -20,7 +20,7 @@ export default function CheckoutForm() {
     const [ward, setWard] = useState("");
     const [payment, setPayment] = useState<PaymentMethod>("cod");
 
-    const user = useAuthStore(state => state.user);
+    const user = userStore(state => state.user);
 
     const isSubmitDisabled = !user;
 

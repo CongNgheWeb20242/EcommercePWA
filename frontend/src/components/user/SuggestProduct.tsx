@@ -24,20 +24,23 @@ export default function SuggestProductsSidebar({ categoryId, productId }: Sugges
 
 
     return (
-        <div className="bg-white p-3 rounded shadow-sm w-64">
+        <div className="bg-white p-2 sm:p-3 rounded shadow-sm">
             <h3 className="text-gray-400 text-sm font-semibold mb-3">Sản Phẩm tương tự</h3>
-            <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6">
                 {products
                     .filter((prod) => prod._id !== productId)
                     .map((prod) => (
-                        <div key={prod._id} className="flex flex-col px-3 items-left pb-2 border-b-2 last:border-b-0 last:pb-0"
+                        <div
+                            key={prod._id}
+                            className="flex flex-col px-2 sm:px-3 items-start pb-2 border-b-2 last:border-b-0 last:pb-0 cursor-pointer hover:bg-gray-50 transition"
                             onClick={() => {
                                 navigate(`/user/product/${prod._id}`);
-                            }}>
+                            }}
+                        >
                             <CustomImage
-                                src={prod._id} //TODO
+                                src={prod.image}
                                 alt={prod.name}
-                                className="object-cover rounded mb-2"
+                                className="object-cover w-full h-40 sm:h-48 md:h-60 rounded mb-2"
                             />
                             <div className="w-full text-[15px] font-medium text-gray-700 truncate">
                                 {prod.name.length > 40 ? prod.name.slice(0, 40) + "..." : prod.name}
