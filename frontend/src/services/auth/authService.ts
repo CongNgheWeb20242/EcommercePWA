@@ -86,7 +86,7 @@ export const googleLoginUrl = (): string => {
 
 
 interface forget_password_prop {
-  email: string;
+email: string
 }
 
 export const forget_password = async (forget_password_prop: forget_password_prop): Promise<Boolean> => {

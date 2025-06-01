@@ -51,7 +51,7 @@ const io = new Server(server, {
   cors: {
     origin:
       process.env.NODE_ENV === 'production'
-        ? ['http://localhost:5173', 'https://loquacious-paletas-3e891d.netlify.app']
+        ? ['http://localhost:5173', 'https://ecommercepwa-fe.netlify.app']
         : 'http://localhost:5173',
     methods: ['GET', 'POST'],
     credentials: true,
