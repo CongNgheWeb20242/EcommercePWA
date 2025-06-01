@@ -6,6 +6,8 @@ import { Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { userStore } from '@/store/userStore';
 
+const STATUS_TEXTS = ['Đang chuẩn bị hàng', 'Đang giao', 'Đã giao'];
+
 // Định nghĩa các interfaces cần thiết
 interface OrderItem {
   product: string; // MongoDB ID của sản phẩm
@@ -39,6 +41,7 @@ interface Order {
   paidAt?: string;
   isDelivered: boolean;
   deliveredAt?: string;
+  status?: number;
   itemsPrice: number;
   shippingPrice: number;
   taxPrice: number;
@@ -91,6 +94,7 @@ const Orders = () => {
   const [redirectToHome, setRedirectToHome] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
+  const [actionDropdownOrderId, setActionDropdownOrderId] = useState<string | null>(null);
 
   // State cho hộp thoại xác nhận
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -150,7 +154,9 @@ const Orders = () => {
         return {
           ...order,
           userName,
-          userPhone
+          userPhone,
+          // Nếu status không có từ API, mặc định là 0 (Đang chuẩn bị)
+          status: order.status !== undefined ? order.status : 0,
         };
       });
 
@@ -214,43 +220,54 @@ const Orders = () => {
   };
 
   // Hàm cập nhật trạng thái đơn hàng
-  const handleUpdateStatus = async (orderId: string, isDelivered: boolean) => {
+  const handleUpdateStatus = async (orderId: string, newStatus: number) => {
     if (!currentUser || !currentUser.isAdmin) {
       toast.error('Bạn không có quyền thực hiện hành động này');
       return;
     }
 
-    // Tìm đối tượng order từ orderId
     const order = orders.find(o => o._id === orderId);
     if (!order) {
       toast.error('Không tìm thấy đơn hàng!');
       return;
     }
 
-    // Chỉ xử lý logic cho isDelivered = true (Xác nhận)
-    // và chỉ khi đơn hàng chưa được giao (để tránh gọi confirmAction không cần thiết nếu nút bị click dù đã disabled)
-    if (!isDelivered && !order.isDelivered) {
+    // Kiểm tra xem trạng thái mới có khác trạng thái hiện tại không
+    if (order.status === newStatus) {
+      toast('Đơn hàng đã ở trạng thái này.');
       return;
     }
 
     const confirmAction = async () => {
       try {
-        // Logic cho isDelivered === true (Xác nhận đơn hàng)
-        await axiosInstance.put(`/orders/${orderId}/deliver`, {}, {
-          headers: {
-            'Authorization': `Bearer ${currentUser.token}`,
+        const response = await axiosInstance.put<{ message: string, order: Order }>(
+          `/orders/${orderId}/status`,
+          { status: newStatus },
+          {
+            headers: {
+              Authorization: `Bearer ${currentUser.token}`,
+            }
           }
-        });
+        );
+        const updatedOrderFromServer = response.data.order;
 
-        setOrders(currentOrders => currentOrders.map(o =>
-          o._id === orderId ? {
-            ...o,
-            isDelivered: true,
-            deliveredAt: new Date().toISOString()
-          } : o
-        ));
+        setOrders(currentOrders => currentOrders.map(o => {
+          if (o._id === orderId) {
+            // Bắt đầu bằng cách lấy tất cả các trường từ server
+            // Sau đó, ghi đè status và các trường liên quan dựa trên newStatus
+            // để đảm bảo giao diện người dùng phản ánh hành động vừa thực hiện.
+            return {
+              ...o, // Giữ lại các trường client đã xử lý như userName, userPhone
+              ...updatedOrderFromServer, // Áp dụng các thay đổi từ server (ví dụ: updatedAt)
+              status: newStatus, // Đảm bảo status được cập nhật theo hành động của admin
+              isDelivered: newStatus === 2, // Cập nhật isDelivered dựa trên newStatus
+              deliveredAt: newStatus === 2 ? new Date().toISOString() : undefined, // Sửa: dùng undefined thay vì null
+            };
+          }
+          return o;
+        }));
 
-        toast.success('Đã xác nhận đơn hàng thành công');
+        toast.success(`Đã cập nhật trạng thái đơn hàng thành "${STATUS_TEXTS[newStatus]}"`);
 
       } catch (err) {
         toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
@@ -259,12 +276,10 @@ const Orders = () => {
       setConfirmDialog({ ...confirmDialog, isOpen: false });
     };
 
-    // Luôn hiển thị hộp thoại xác nhận cho hành động "Xác Nhận"
     showConfirmDialog(
-      order.isDelivered ? 'Thông Báo' : 'Xác nhận đơn hàng',
-      order.isDelivered ? 'Đơn hàng này đã được xác nhận giao.' : 'Bạn có chắc chắn muốn xác nhận đơn hàng này không?',
-      // Nếu đã giao, hành động confirm chỉ là đóng dialog. Nếu chưa, thì thực hiện confirmAction.
-      order.isDelivered ? () => setConfirmDialog({ ...confirmDialog, isOpen: false }) : confirmAction
+      'Xác nhận cập nhật trạng thái',
+      `Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng thành "${STATUS_TEXTS[newStatus]}" không?`,
+      confirmAction
     );
   };
 
@@ -368,20 +383,74 @@ const Orders = () => {
                           {order.paidAt ? new Date(order.paidAt).toLocaleDateString('vi-VN') : 'N/A'}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isDelivered ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {order.isDelivered ? 'Đã Giao' : 'Chuẩn Bị Hàng'}
-                          </span>
+                          {(() => {
+                            let statusText = 'Chưa xác định';
+                            let statusColor = 'bg-gray-100 text-gray-700';
+                            switch (order.status) {
+                              case 0:
+                                statusText = STATUS_TEXTS[0];
+                                statusColor = 'bg-yellow-100 text-yellow-700';
+                                break;
+                              case 1:
+                                statusText = STATUS_TEXTS[1];
+                                statusColor = 'bg-blue-100 text-blue-700';
+                                break;
+                              case 2:
+                                statusText = STATUS_TEXTS[2];
+                                statusColor = 'bg-green-100 text-green-700';
+                                break;
+                            }
+                            return (
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${statusColor}`}>
+                                {statusText}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
-                          <div className="flex flex-col sm:flex-row gap-1 justify-center">
-                            <button
-                              onClick={() => handleUpdateStatus(order._id, true)}
-                              className={`bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition ${order.isDelivered ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                                }`}
-                              disabled={order.isDelivered} // Vô hiệu hóa nếu đã giao
-                            >
-                              {order.isDelivered ? 'Đã Xác Nhận' : 'Xác Nhận'}
-                            </button>
+                          <div className="relative inline-block text-left">
+                            <div>
+                              <button
+                                type="button"
+                                className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-3 py-1.5 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500"
+                                id={`menu-button-${order._id}`}
+                                // aria-expanded={`${!!(actionDropdownOrderId === order._id)}`} // Tạm thời bình luận để tránh lỗi linter
+                                aria-haspopup="true"
+                                onClick={() => setActionDropdownOrderId(actionDropdownOrderId === order._id ? null : order._id)}
+                              >
+                                Hành động
+                                <svg className="-mr-1 ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
+
+                            {actionDropdownOrderId === order._id && (
+                              <div
+                                className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20"
+                                role="menu"
+                                aria-orientation="vertical"
+                                aria-labelledby={`menu-button-${order._id}`}
+                              >
+                                <div className="py-1" role="none">
+                                  {STATUS_TEXTS.map((text, statusValue) => (
+                                    <button
+                                      key={statusValue}
+                                      onClick={() => {
+                                        handleUpdateStatus(order._id, statusValue);
+                                        setActionDropdownOrderId(null);
+                                      }}
+                                      disabled={order.status === statusValue}
+                                      className={`${order.status === statusValue ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                        } block w-full text-left px-4 py-2 text-xs`}
+                                      role="menuitem"
+                                    >
+                                      {text}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </>
