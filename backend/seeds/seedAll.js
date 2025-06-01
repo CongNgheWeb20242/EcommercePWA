@@ -6,11 +6,12 @@ import Product from '../models/productModel.js';
 import Review from '../models/reviewModel.js';
 import dotenv from "dotenv";
 import bcrypt from 'bcryptjs';
+import { addReview } from '../controllers/productController.js';
 
 dotenv.config();
 const MONGODB_URI = process.env.MONGODB_URI;
 
-async function seedUsers(n = 1000) {
+async function seedUsers(n = 200) {
   const users = [];
     users.push({
     name: 'admin',
@@ -52,7 +53,7 @@ async function seedCategories(n = 20) {
   return inserted;
 }
 
-async function seedProducts(categories, n = 1000) {
+async function seedProducts(categories, n = 10) {
   const products = [];
   for (let i = 0; i < n; i++) {
     const category = faker.helpers.arrayElement(categories);
@@ -76,6 +77,7 @@ async function seedProducts(categories, n = 1000) {
       color: colors,
       category: category._id,
       reviews: [],
+      status: faker.helpers.arrayElement([0, 1, 2]),
     });
   }
   await Product.deleteMany({});
@@ -84,7 +86,7 @@ async function seedProducts(categories, n = 1000) {
   return inserted;
 }
 
-async function seedReviews(users, products, n = 1000) {
+async function seedReviews(users, products, n = 30) {
   const reviews = [];
   for (let i = 0; i < n; i++) {
     const user = faker.helpers.arrayElement(users);
@@ -116,11 +118,11 @@ async function main() {
   mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
   // Seed order: User -> Category -> Product -> Review
-  await seedUsers(1000);
+  await seedUsers();
   const users = await User.find({});
   const categories = await seedCategories(20);
-  const products = await seedProducts(categories, 1000);
-  await seedReviews(users, products, 1000);
+  const products = await seedProducts(categories);
+  await seedReviews(users, products);
   await updateAllAverageRatings(products);
   await mongoose.disconnect();
   console.log('Seeding completed!');

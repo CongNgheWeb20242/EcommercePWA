@@ -27,7 +27,7 @@ router.get('/google/callback', googleCallback);
 router.get('/', protectedRoute, isAdmin, getAllUsers);
 
 // GET user by id
-router.get('/:id', protectedRoute, isAdminOrSelf, getUser);
+router.get('/:id', protectedRoute, getUser);
 
 // Update profile by user
 router.put('/profile', protectedRoute, updateUser);
