@@ -83,13 +83,8 @@ export const useCheckoutStore = create<CheckoutState>()(
                                         detailedAddress: `${get().customerInfo.ward}, ${get().customerInfo.district}, ${get().customerInfo.province}`,
                                         note: get().customerInfo.notes || '',
                                         paymentMethod: get().customerInfo.paymentMethod,
-<<<<<<< HEAD
-                                        shippingFee: 0, //TODO: Cần tính toán phí vận chuyển
-                                        taxRate: 0, //TODO: Cần tính toán thuế
-=======
                                         shippingFee: 0,
                                         taxRate: 0,
->>>>>>> 7620e58a6b92a0aacd5ef40a23da2e20a89f1ead
                                         user: user!._id,
                                         products: selectCartItem.map(item => ({
                                             id: item._id,
