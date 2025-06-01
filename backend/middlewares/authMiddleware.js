@@ -18,7 +18,7 @@ export const isAdminOrSelf = (req, res, next) => {
   return res.status(403).json({ message: "Forbidden" });
 };
 
-// protectedRoute là middleware để bảo vệ các route cần xác thực người dùng
+
 export const protectedRoute = async (req, res, next) => {
   try {
     // Get token from request
@@ -37,7 +37,7 @@ export const protectedRoute = async (req, res, next) => {
       return res.status(401).json({ message: 'Unauthorized - Invalid Token' });
     }
 
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded._id).select('-password');
     if (!user) {
       return res.status(400).json({ message: 'User not Found' });
     }
