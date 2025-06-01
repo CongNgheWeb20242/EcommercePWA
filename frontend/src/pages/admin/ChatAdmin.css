@@ -1,0 +1,405 @@
+/* Styles for ChatAdmin component */
+
+:root {
+  --chat-admin-primary-color: #007bff; /* Màu xanh dương chủ đạo */
+  --chat-admin-secondary-color: #6c757d; /* Màu xám phụ */
+  --chat-admin-light-gray: #f8f9fa;    /* Màu xám rất nhạt cho nền */
+  --chat-admin-border-color: #dee2e6;  /* Màu viền */
+  --chat-admin-text-color: #212529;     /* Màu chữ chính */
+  --chat-admin-text-muted: #6c757d;   /* Màu chữ phụ, mờ hơn */
+  --chat-admin-message-sent-bg: #dcf8c6; /* Nền tin nhắn gửi đi */
+  --chat-admin-message-received-bg: #ffffff; /* Nền tin nhắn nhận được */
+  --chat-admin-send-button-bg: #28a745;    /* Màu xanh lá cho nút gửi */
+  --chat-admin-white: #ffffff;
+  --chat-admin-panel-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  --chat-admin-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  font-family: var(--chat-admin-font-family);
+}
+
+.chat-admin-no-access,
+.chat-admin-no-conversations,
+.chat-admin-select-conversation {
+  padding: 20px;
+  text-align: center;
+  color: var(--chat-admin-text-muted);
+  font-size: 0.9em;
+}
+
+.chat-admin-toggle-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999;
+  background-color: var(--chat-admin-primary-color);
+  color: var(--chat-admin-white);
+  border: none;
+  border-radius: 50px;
+  padding: 12px 20px;
+  font-size: 1em;
+  box-shadow: var(--chat-admin-panel-shadow);
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.chat-admin-toggle-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.chat-admin-toggle-button .unread-indicator {
+  position: absolute;
+  top: 8px; 
+  right: 8px; 
+  width: 12px; 
+  height: 12px; 
+  background-color: red; 
+  border-radius: 50%; 
+  border: 2px solid white;
+}
+
+.chat-admin-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 420px; /* Tăng chiều rộng tổng thể của panel */
+  height: calc(100vh - 40px);
+  max-height: 580px; /* Tăng max-height một chút */
+  background: var(--chat-admin-light-gray);
+  border-radius: 12px; /* Giữ bo góc panel */
+  box-shadow: var(--chat-admin-panel-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--chat-admin-text-color);
+}
+
+.chat-admin-header {
+  background: var(--chat-admin-primary-color);
+  color: var(--chat-admin-white);
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-admin-header span {
+  font-weight: 600;
+  font-size: 1.05em; /* Điều chỉnh kích thước font header */
+}
+
+.chat-admin-close-button {
+  background: transparent;
+  border: none;
+  color: var(--chat-admin-white);
+  font-size: 1.6em;
+  line-height: 1;
+  padding: 0 5px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.chat-admin-close-button:hover {
+  opacity: 1;
+}
+
+.chat-admin-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.chat-admin-conversation-list {
+  width: 220px; /* Tăng nhẹ chiều rộng danh sách conversation */
+  background: var(--chat-admin-white);
+  border-right: 1px solid var(--chat-admin-border-color);
+  overflow-y: auto;
+  padding-top: 0; 
+}
+
+.conversation-list-header {
+  padding: 12px 12px; /* Đồng nhất padding */
+  font-size: 0.95em; /* Điều chỉnh font */
+  font-weight: 600;
+  color: var(--chat-admin-text-color);
+  border-bottom: 1px solid var(--chat-admin-border-color);
+  background-color: var(--chat-admin-light-gray);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.conversation-item {
+  padding: 10px 12px; /* Giảm padding ngang một chút để nội dung có thêm không gian */
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0; 
+  transition: background-color 0.2s ease;
+  /* Thêm display flex để kiểm soát tốt hơn các con */
+  display: flex;
+  flex-direction: column; /* Để ID và last message xếp chồng lên nhau */
+}
+
+.conversation-item:last-child {
+  border-bottom: none;
+}
+
+.conversation-item.selected {
+  background: #e9f5ff; /* Màu chọn nhạt hơn, tương tự màu primary nhưng rất nhạt */
+}
+
+.conversation-item:hover:not(.selected) {
+  background: #f8f9fa;
+}
+
+/* ID User trong danh sách conversation */
+.conversation-item div:first-child { 
+  font-weight: 500;
+  font-size: 0.9em;
+  margin-bottom: 4px;
+  white-space: normal; 
+  word-break: break-all; 
+  color: var(--chat-admin-text-color);
+  line-height: 1.3; /* Thêm line-height */
+  /* không cần set width ở đây, để nó tự chiếm không gian */
+}
+
+.conversation-last-message {
+  font-size: 0.8em;
+  color: var(--chat-admin-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversation-last-message strong {
+  color: var(--chat-admin-text-color); /* Phân biệt tên người gửi cuối */
+}
+
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--chat-admin-light-gray);
+}
+
+.chat-area-header {
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--chat-admin-border-color);
+  background: var(--chat-admin-white);
+  font-weight: 600;
+  font-size: 0.95em;
+  text-align: left; /* Căn trái để dễ đọc khi xuống dòng */
+  color: var(--chat-admin-text-color);
+  line-height: 1.4; /* Thêm line-height để các dòng không quá sát nhau */
+}
+
+/* Áp dụng cho span chứa "Chat với: ID" */
+.chat-area-header span {
+  white-space: normal; /* Cho phép xuống dòng */
+  word-break: break-all; /* Ngắt từ nếu cần */
+  display: inline-block; /* Để padding có tác dụng nếu cần */
+}
+
+.chat-area-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Khoảng cách giữa các tin nhắn */
+}
+
+.message-item {
+  display: flex; /* Giữ lại flex để .message-time có thể align-self */
+  flex-direction: column;
+  max-width: 78%; /* Điều chỉnh max-width */
+  word-break: break-word;
+  padding: 10px 14px; /* Tăng padding */
+  border-radius: 20px; /* Bo tròn nhiều hơn */
+  line-height: 1.45;
+  position: relative; /* Để định vị .message-time nếu cần (không dùng absolute nữa) */
+}
+
+.message-item.sent {
+  align-self: flex-end;
+  background-color: var(--chat-admin-message-sent-bg);
+  color: #303030;
+  border-bottom-right-radius: 6px; /* Điều chỉnh bo góc nhọn hơn */
+}
+
+.message-item.received {
+  align-self: flex-start;
+  background-color: var(--chat-admin-message-received-bg);
+  border: 1px solid #e9ecef;
+  color: var(--chat-admin-text-color);
+  border-bottom-left-radius: 6px; /* Điều chỉnh bo góc nhọn hơn */
+}
+
+.message-sender {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--chat-admin-primary-color); /* Màu tên người gửi (user) */
+  margin-bottom: 4px;
+}
+
+.message-item.sent .message-sender {
+  display: none;
+}
+
+.message-text {
+  font-size: 0.95em;
+}
+
+.message-time {
+  font-size: 0.7em; /* Font nhỏ hơn cho time */
+  color: var(--chat-admin-text-muted);
+  margin-top: 5px;
+  text-align: right; /* Luôn căn phải cho thời gian */
+  /* align-self: flex-end; không cần nếu text-align: right đã đủ */
+}
+
+.chat-area-input-wrapper { /* Wrapper cho cả preview và form input */
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--chat-admin-border-color);
+}
+
+.chat-area-input-form {
+  display: flex;
+  align-items: center; 
+  padding: 6px 10px; /* Giảm padding tổng thể */
+  gap: 6px; /* Giảm khoảng cách */
+  background-color: var(--chat-admin-white);
+}
+
+.chat-admin-attach-button {
+  background: transparent;
+  border: none;
+  font-size: 1.1em; /* Giảm thêm kích thước icon */
+  color: var(--chat-admin-secondary-color);
+  cursor: pointer;
+  padding: 3px; /* Giảm thêm padding */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1; /* Đảm bảo icon không chiếm thêm chiều cao không cần thiết */
+}
+
+.chat-admin-attach-button:hover {
+  color: var(--chat-admin-primary-color);
+}
+
+.chat-admin-attach-button:disabled,
+.chat-admin-send-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chat-input-text-field { 
+  flex-grow: 1;
+  border: 1px solid var(--chat-admin-border-color);
+  border-radius: 16px; /* Giảm bo tròn một chút */
+  padding: 6px 10px; /* Giảm padding */
+  font-size: 0.9em; /* Giảm font size */
+  line-height: 1.3;
+  resize: none; 
+  min-height: 32px; /* Giảm chiều cao tối thiểu */
+  max-height: 90px; 
+  overflow-y: auto; 
+}
+
+.chat-admin-send-button { 
+  background-color: var(--chat-admin-send-button-bg);
+  color: var(--chat-admin-white);
+  border: none;
+  border-radius: 16px; /* Giảm bo tròn */
+  padding: 6px 12px; /* Giảm padding */
+  font-size: 0.85em; /* Giảm font size */
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  height: 32px; /* Đồng bộ chiều cao với input */
+  display: flex; /* Để căn giữa text trong nút */
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-admin-send-button:hover:not(:disabled) {
+  background-color: #1e7e34; /* Màu đậm hơn khi hover */
+}
+
+/* Image preview trong phần input - Đổi tên class cho nhất quán */
+.image-preview-admin { /* class cũ từ JSX có thể không còn, đây là class mới nếu cần */
+  padding: 5px 0;
+  text-align: center; /* Căn giữa nếu chỉ có ảnh */
+}
+
+.image-preview-admin img {
+  max-width: 100px;
+  max-height: 80px;
+  border-radius: 4px;
+  margin-right: 5px;
+  object-fit: cover;
+}
+
+.remove-image-button-admin {
+  /* Style cho nút xóa ảnh preview nếu cần */
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  position: relative; /* Hoặc absolute nếu muốn đặt chồng lên ảnh */
+  /* bottom: 5px; */
+  /* right: 5px; */
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) { 
+  .chat-admin-panel {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    bottom: 0;
+    right: 0;
+    border-radius: 0;
+  }
+
+  .chat-admin-conversation-list {
+    width: 160px; /* Điều chỉnh lại cho màn hình nhỏ hơn nếu cần */
+  }
+  
+  .conversation-item div:first-child {
+    font-size: 0.85em; /* Giảm font ID user trên mobile */
+  }
+
+  .message-item {
+    max-width: 88%; /* Tăng nhẹ max-width tin nhắn trên mobile */
+    padding: 8px 12px;
+  }
+  .chat-area-input-form input[type="text"] {
+    padding: 8px 15px;
+  }
+  .chat-area-input-form button {
+    padding: 8px 15px;
+    font-size: 0.9em;
+  }
+} 
+
+/* Class để ẩn các phần tử một cách trực quan nhưng vẫn giữ khả năng truy cập */
+.visually-hidden {
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
+} 

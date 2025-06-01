@@ -4,6 +4,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import streamifier from 'streamifier';
 import { isAuth } from '../lib/utils.js';
 import { isAdmin } from '../middlewares/authMiddleware.js';
+import { handleChatImageUpload } from '../controllers/uploadController.js';
 
 const upload = multer();
 
@@ -36,4 +37,9 @@ uploadRouter.post(
     res.send(result);
   }
 );
+
+// POST /api/upload/chat-image
+// Hiện tại để public, nếu cần chỉ admin hoặc user đã login mới được upload thì thêm middleware
+uploadRouter.post('/chat-image', handleChatImageUpload);
+
 export default uploadRouter;

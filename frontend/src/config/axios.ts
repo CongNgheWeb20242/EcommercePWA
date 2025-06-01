@@ -1,9 +1,9 @@
 import axios from "axios";
-import { useUserStore } from "@/store/userStore";
+import { userStore } from "@/store/userStore";
 
 // https://axios-http.com/docs/instance
 export const axiosInstance = axios.create({
-    baseURL: 'https://ecommercepwa-be.onrender.com/api',
+    baseURL: 'https://ecommercepwa-be.onrender.com/api/',
 
     // Cho phép gửi cookie, token hoặc thông tin xác thực (credentials) cùng với yêu cầu HTTP.
     /*
@@ -18,13 +18,13 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         // Lấy user từ store
-        const user = useUserStore.getState().user;
-        
+        const user = userStore.getState().user;
+
         // Nếu có user và token, thêm vào header
         if (user && user.token) {
             config.headers.Authorization = `Bearer ${user.token}`;
         }
-        
+
         return config;
     },
     (error) => {

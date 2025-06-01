@@ -55,3 +55,20 @@ export async function getCategories(): Promise<Category[] | null> {
         return null;
     }
 }
+
+interface AddReviewProp {
+    rating: number,
+    comment: string
+}
+
+
+export async function addReview(body: AddReviewProp, productId: string): Promise<Boolean> {
+    try {
+        await apiClient.post(`/products/${productId}/reviews`, body);
+        return true;
+    } catch (error) {
+        console.error('Add review failed:', error);
+        return false;
+    }
+}
+

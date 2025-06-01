@@ -1,16 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import useCartStore from "@/store/useCartStore";
 import { useNavigate } from "react-router-dom";
 import useCheckoutStore from "@/store/useCheckOutStore";
-import { useAuthStore } from "@/store/useAuthStore";
+import { userStore } from "@/store/userStore";
 
 const CartSummary: React.FC = () => {
     const navigate = useNavigate();
     const { goToNextStep } = useCheckoutStore();
     const { clearCart, selectAll, deselectAll } = useCartStore();
+    const [showClearCartDialog, setShowClearCartDialog] = useState(false);
+
     const total = useCartStore(state => state.totalPrice);
     const totalQuantity = useCartStore(state => state.totalItems);
-    const user = useAuthStore(state => state.user);
+    const user = userStore(state => state.user);
 
     // Disable nếu chưa đăng nhập hoặc không có sản phẩm
     const isCheckoutDisabled = totalQuantity === 0 || !user;
@@ -19,6 +21,11 @@ const CartSummary: React.FC = () => {
         if (isCheckoutDisabled) return;
         navigate('/user/checkout');
         goToNextStep();
+    };
+
+    const handleClearCart = () => {
+        clearCart();
+        setShowClearCartDialog(false);
     };
 
     return (
@@ -56,10 +63,34 @@ const CartSummary: React.FC = () => {
                     </tr>
                 </tbody>
             </table>
+            {/* Dialog xác nhận */}
+            {showClearCartDialog && (
+                <div style={{ backgroundColor: 'rgba(0,0,0,0.7)' }} className="fixed inset-0 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+                        <h3 className="text-lg font-semibold mb-4">Xác nhận xóa giỏ hàng</h3>
+                        <p className="mb-6">Bạn có chắc chắn muốn xóa toàn bộ giỏ hàng?</p>
+
+                        <div className="flex gap-3">
+                            <button
+                                className="flex-1 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                onClick={handleClearCart}
+                            >
+                                Xóa
+                            </button>
+                            <button
+                                className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-100 transition"
+                                onClick={() => setShowClearCartDialog(false)}
+                            >
+                                Hủy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <button
                 className={`w-full py-3 rounded font-semibold mb-3 transition ${isCheckoutDisabled
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-red-600 text-white hover:bg-red-700"
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-red-600 text-white hover:bg-red-700"
                     }`}
                 onClick={handleNext}
                 disabled={isCheckoutDisabled}
@@ -82,7 +113,7 @@ const CartSummary: React.FC = () => {
                 Bỏ chọn tất cả
             </button>
             <button className="w-full border border-gray-400 text-gray-700 py-3 rounded font-semibold hover:bg-gray-100 transition"
-                onClick={clearCart}>
+                onClick={() => setShowClearCartDialog(true)}>
                 Xóa giỏ hàng
             </button>
             {!user && (

@@ -34,11 +34,11 @@ const CustomImage: React.FC<CustomImageProps> = ({
             )}
             {error && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                    <span className="text-gray-400">Không thể tải ảnh</span>
+                    <span className="text-gray-400">Error</span>
                 </div>
             )}
             <img
-                src={`https://picsum.photos/300/300?random=${src}`}
+                src={src}
                 alt={alt}
                 {...rest}
                 className={`w-full h-full object-cover transition-opacity duration-300 ${loading ? "opacity-0" : "opacity-100"

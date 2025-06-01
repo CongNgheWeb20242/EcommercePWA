@@ -6,7 +6,8 @@ import { persist } from 'zustand/middleware'
 
 interface CartState {
     // State
-    cartIconRef: React.RefObject<HTMLButtonElement | null>;
+    cartIconRefMobile: React.RefObject<HTMLButtonElement | null>;
+    cartIconRefDesktop: React.RefObject<HTMLButtonElement | null>;
     productImageRef: React.RefObject<HTMLDivElement | null>;
     items: CartItem[];
     totalItems: number;
@@ -14,14 +15,15 @@ interface CartState {
     shippingFee: number;
 
     // Actions
-    setCartIconRef: (ref: React.RefObject<HTMLButtonElement | null>) => void;
+    setCartIconRefMobile: (ref: React.RefObject<HTMLButtonElement | null>) => void;
+    setCartIconRefDesktop: (ref: React.RefObject<HTMLButtonElement | null>) => void;
     setproductImageRef: (ref: React.RefObject<HTMLDivElement | null>) => void;
-    addItem: (product: Product, size: string, quantity?: number) => void;
-    removeItem: (productId: string) => void;
-    increaseQuantity: (productId: string) => void;
-    decreaseQuantity: (productId: string) => void;
+    addItem: (product: Product, size: string, color: string, quantity?: number) => void;
+    removeItem: (productId: string, size: string, color: string) => void;
+    increaseQuantity: (productId: string, size: string, color: string) => void;
+    decreaseQuantity: (productId: string, size: string, color: string) => void;
     updateSize: (productId: string, size: string) => void;
-    selectItem: (productId: string, select: Boolean) => void;
+    selectItem: (productId: string, size: string, color: string, select: Boolean) => void;
     selectAll: () => void;
     deselectAll: () => void;
     clearCart: () => void;
@@ -30,15 +32,20 @@ interface CartState {
 export const useCartStore = create<CartState>()(
     persist(
         (set, get) => ({
-            cartIconRef: React.createRef<HTMLButtonElement>(),
+            cartIconRefDesktop: React.createRef<HTMLButtonElement>(),
+            cartIconRefMobile: React.createRef<HTMLButtonElement>(),
             productImageRef: React.createRef<HTMLDivElement>(),
             items: [],
             totalItems: 0,
             totalPrice: 0,
             shippingFee: 0,
 
-            setCartIconRef: (ref) => {
-                set({ cartIconRef: ref });
+            setCartIconRefMobile: (ref) => {
+                set({ cartIconRefMobile: ref });
+            },
+
+            setCartIconRefDesktop: (ref) => {
+                set({ cartIconRefDesktop: ref });
             },
 
             setproductImageRef: (ref) => {
@@ -46,11 +53,11 @@ export const useCartStore = create<CartState>()(
             },
 
             // Thêm sản phẩm vào giỏ hàng
-            addItem: (product, size, quantity = 1) => {
+            addItem: (product, size, color, quantity = 1) => {
                 const { items } = get();
                 // Kiểm tra sản phẩm đã có trong giỏ hàng chưa (cùng ID và cùng size)
                 const existingItemIndex = items.findIndex(
-                    item => item._id === product._id && item.selectSize === size
+                    item => item._id === product._id && item.selectSize === size && item.selectColor === color
                 );
 
                 let updatedItems: CartItem[];
@@ -70,6 +77,7 @@ export const useCartStore = create<CartState>()(
                         {
                             ...product,
                             selectSize: size,
+                            selectColor: color,
                             quantity,
                             selected: false
                         }
@@ -79,13 +87,15 @@ export const useCartStore = create<CartState>()(
             },
 
             // Xóa sản phẩm khỏi giỏ hàng
-            removeItem: (productId) => {
+            removeItem: (productId, size, color) => {
                 const { items } = get();
-                const itemToRemove = items.find(item => item._id === productId);
+                const itemToRemove = items.find(
+                    item => item._id === productId && item.selectSize === size && item.selectColor === color
+                );
 
                 if (!itemToRemove) return;
 
-                const updatedItems = items.filter(item => item._id !== productId);
+                const updatedItems = items.filter(item => !(item._id === productId && item.selectSize === size && item.selectColor === color));
                 if (itemToRemove.selected) {
                     const newTotalItems = get().totalItems - itemToRemove.quantity;
                     const newTotalPrice = get().totalPrice - (itemToRemove.price * itemToRemove.quantity);
@@ -98,14 +108,16 @@ export const useCartStore = create<CartState>()(
             },
 
             // Tăng số lượng sản phẩm
-            increaseQuantity: (productId) => {
+            increaseQuantity: (productId, size, color) => {
                 const { items } = get();
-                const existingItem = items.find(item => item._id === productId);
+                const existingItem = items.find(
+                    item => item._id === productId && item.selectSize === size && item.selectColor === color
+                );
 
                 if (!existingItem) return;
 
                 const updatedItems = items.map(item => {
-                    if (item._id === productId) {
+                    if (item._id === productId && item.selectSize === size && item.selectColor === color) {
                         return { ...item, quantity: item.quantity + 1 };
                     }
                     return item;
@@ -122,20 +134,22 @@ export const useCartStore = create<CartState>()(
             },
 
             // Giảm số lượng sản phẩm
-            decreaseQuantity: (productId) => {
+            decreaseQuantity: (productId, size, color) => {
                 const { items } = get();
-                const existingItem = items.find(item => item._id === productId);
+                const existingItem = items.find(
+                    item => item._id === productId && item.selectSize === size && item.selectColor === color
+                );
 
                 if (!existingItem) return;
 
                 // Nếu số lượng = 1, xóa sản phẩm khỏi giỏ hàng
                 if (existingItem.quantity === 1) {
-                    return get().removeItem(productId);
+                    return get().removeItem(productId, size, color);
                 }
 
                 // Giảm số lượng
                 const updatedItems = items.map(item => {
-                    if (item._id === productId) {
+                    if (item._id === productId && item.selectSize === size && item.selectColor === color) {
                         return { ...item, quantity: item.quantity - 1 };
                     }
                     return item;
@@ -165,13 +179,13 @@ export const useCartStore = create<CartState>()(
             },
 
             // Chọn/Bỏ chọn sản phẩm để thanh toán
-            selectItem: (productId, select) => {
+            selectItem: (productId, size, color, select) => {
                 const { items } = get();
                 var newTotalItems = get().totalItems;
                 var newTotalPrice = get().totalPrice;
 
                 const updatedItems = items.map(item => {
-                    if (item._id === productId) {
+                    if (item._id === productId && item.selectSize === size && item.selectColor === color) {
                         if (select) {
                             newTotalItems += item.quantity;
                             newTotalPrice += item.price * item.quantity;

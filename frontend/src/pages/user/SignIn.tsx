@@ -1,23 +1,24 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import google_icon from '../../assets/common/google_icon.png';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from '@/store/useAuthStore';
-import { googleLoginUrl, login } from '@/services/auth/authService';
-import axios from 'axios';
-import { useUserStore } from '@/store/userStore';
+import { userStore } from '@/store/userStore';
+import { googleLoginUrl } from '@/services/auth/authService';
 
 const SignInForm = () => {
   const navigate = useNavigate();
-  const { setUser } = useUserStore();
-  const { logIn, error, setError, loading, setLoading } = useAuthStore();
+  const { logIn, error, setError, loading } = userStore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
   const [passwordVisible, setPasswordVisible] = useState(false);
+
+  useEffect(() => {
+    setError(null)
+  }, []);
 
 
   const handleInputChange = (id: string, value: string) => {
@@ -35,6 +36,10 @@ const SignInForm = () => {
     navigate("/user/register");
   };
 
+  const handleForgetPasswordClick = () => {
+    navigate("/user/forgetpassword");
+  };
+
   const handleSignIn = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
@@ -47,50 +52,20 @@ const SignInForm = () => {
       return;
     }
 
-    const userData1 = {
+    const userData = {
       email: formData.email,
       password: formData.password,
     };
 
-    const success = await logIn(userData1);
-    try {
-      const userData = {
-        email: formData.email,
-        password: formData.password,
-      };
+    const user = await logIn(userData);
 
-      const user = await login(userData);
-
-      if (user.user) {
-        console.log('Login successful:', user.user);
-        setUser(user.user);
-        await new Promise(resolve => setTimeout(resolve, 1000)); //wait 1 sec
-
-        // Điều hướng dựa trên vai trò
-        if (user.user.isAdmin) {
-          console.log('Admin user detected, navigating to admin dashboard');
-          navigate('/admin/products');
-        } else if (success) {
-          navigate('/home');
-        }
-      } else {
-        alert('Đăng nhập thất bại!');
+    if (user != null) {
+      if (user.isAdmin == true) {
+        console.log('Admin user detected, navigating to admin dashboard');
+        navigate('/admin/products');
       }
-
-    } catch (error) {
-      console.error('Login error:', error);
-
-      if (axios.isAxiosError(error)) {
-        if (error.response?.data?.message) {
-          setError(error.response.data.message);
-        } else {
-          setError('Login failed. Please try again later.');
-        }
-      } else {
-        setError('Login failed. Please try again later.');
-      }
-    } finally {
-      setLoading(false);
+      else
+        navigate('/home');
     }
   };
 
@@ -150,9 +125,10 @@ const SignInForm = () => {
               <FontAwesomeIcon icon={passwordVisible ? faEyeSlash : faEye} />
             </button>
           </div>
-          <a href="#" className="text-sm text-blue-500 hover:underline mt-1 block text-right">
+          <button className="text-sm text-blue-500 hover:underline mt-1 block text-right"
+            onClick={handleForgetPasswordClick}>
             Forgot password?
-          </a>
+          </button>
         </div>
 
         {/* Create Account Button */}

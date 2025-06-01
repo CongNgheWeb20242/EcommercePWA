@@ -2,17 +2,16 @@ import { createPaymentURL } from '@/services/api/paymentServices';
 import { CustomerInfo } from '@/types/CustomerInfo';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useAuthStore } from './useAuthStore';
+import { userStore } from './userStore';
 import useCartStore from './useCartStore';
 import { deliverOrder } from '@/services/api/orderService';
 
-export type OrderStatus = 'cart' | 'information' | 'payment' | 'shipping' | 'complete';
+export type OrderStatus = 'cart' | 'information' | 'payment' | 'complete';
 
 interface CheckoutState {
-    currentStep: number; // 1: Cart, 2: Information, 3: Payment, 4: Shipping, 5: Complete
+    currentStep: number; // 1: Cart, 2: Information, 3: Payment, 4: Complete
     customerInfo: CustomerInfo;
     paymentStatus: 'pending' | 'completed' | 'failed';
-    shippingStatus: 'pending' | 'processing' | 'shipped' | 'delivered';
     orderId?: string;
     paymentURL?: string;
 
@@ -23,7 +22,6 @@ interface CheckoutState {
     getOrderStatus: () => OrderStatus;
     updateCustomerInfo: (info: Partial<CustomerInfo>) => void;
     setPaymentStatus: (status: 'pending' | 'completed' | 'failed') => void;
-    setShippingStatus: (status: 'pending' | 'processing' | 'shipped' | 'delivered') => void;
     setorderId: (id: string) => void;
     resetCheckout: () => void;
     needsPaymentStep: () => boolean;
@@ -68,11 +66,13 @@ export const useCheckoutStore = create<CheckoutState>()(
 
                     switch (nextStep) {
                         case 3:
-                            if (!needsPaymentStep())
+                            if (!needsPaymentStep()) {
+                                deliverOrder(get().orderId!);
                                 nextStep = 4;
+                            }
                             else {
                                 const createPayment = async () => {
-                                    const user = useAuthStore.getState().user; // Lấy state trực tiếp
+                                    const user = userStore.getState().user; // Lấy state trực tiếp
                                     const selectCartItem = useCartStore.getState().items.filter(item => item.selected === true);
 
                                     await createPaymentURL({
@@ -83,8 +83,13 @@ export const useCheckoutStore = create<CheckoutState>()(
                                         detailedAddress: `${get().customerInfo.ward}, ${get().customerInfo.district}, ${get().customerInfo.province}`,
                                         note: get().customerInfo.notes || '',
                                         paymentMethod: get().customerInfo.paymentMethod,
+<<<<<<< HEAD
                                         shippingFee: 0, //TODO: Cần tính toán phí vận chuyển
                                         taxRate: 0, //TODO: Cần tính toán thuế
+=======
+                                        shippingFee: 0,
+                                        taxRate: 0,
+>>>>>>> 7620e58a6b92a0aacd5ef40a23da2e20a89f1ead
                                         user: user!._id,
                                         products: selectCartItem.map(item => ({
                                             id: item._id,
@@ -104,7 +109,7 @@ export const useCheckoutStore = create<CheckoutState>()(
                             }
                             break;
 
-                        case 5:
+                        case 4:
                             deliverOrder(get().orderId!);
                             break;
 
@@ -122,9 +127,8 @@ export const useCheckoutStore = create<CheckoutState>()(
                 switch (currentStep) {
                     case 1: orderStatus = 'cart'; break;
                     case 2: orderStatus = 'information'; break;
-                    case 3: orderStatus = needsPaymentStep() ? 'payment' : 'shipping'; break;
-                    case 4: orderStatus = needsPaymentStep() ? 'shipping' : 'complete'; break;
-                    case 5: orderStatus = 'complete'; break;
+                    case 3: orderStatus = needsPaymentStep() ? 'payment' : 'complete'; break;
+                    case 4: orderStatus = 'complete'; break;
                 }
                 return orderStatus;
             },
@@ -147,9 +151,6 @@ export const useCheckoutStore = create<CheckoutState>()(
 
             // Cập nhật trạng thái thanh toán
             setPaymentStatus: (status) => set({ paymentStatus: status }),
-
-            // Cập nhật trạng thái giao hàng
-            setShippingStatus: (status) => set({ shippingStatus: status }),
 
             // Đặt mã thanh toán
             setorderId: (id) => set({ orderId: id }),
@@ -179,7 +180,6 @@ export const useCheckoutStore = create<CheckoutState>()(
                     paymentMethod: 'cod' as const,
                 },
                 paymentStatus: 'pending',
-                shippingStatus: 'pending',
             }),
         }),
 

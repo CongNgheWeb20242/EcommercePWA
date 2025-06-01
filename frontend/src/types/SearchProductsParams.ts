@@ -7,6 +7,7 @@ export interface SearchProductsParams {
     rating?: number;
     brand?: string;
     color?: string;
+    sexual?: string;
     order?: SortType;
     page?: number;
     pageSize?: number;

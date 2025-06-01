@@ -21,26 +21,38 @@ export default function ProductInfo({ product }: { product: Product }) {
 
     const [flyImage, setFlyImage] = useState<FlyImageState | null>(null);
 
-    const { cartIconRef, productImageRef } = useCartStore();
+    const { cartIconRefDesktop, cartIconRefMobile, productImageRef } = useCartStore();
+    const [errorMessage, setErrorMessage] = useState("");
 
     const handleAddToCart = () => {
-        if (!productImageRef.current || !cartIconRef.current) return;
+        if (!selectedSize || !selectedColor) {
+            setErrorMessage("Vui lòng chọn size và màu sắc trước khi thêm vào giỏ hàng");
+            return;
+        }
+
+        addItem(product, selectedSize, selectedColor, quantity);
+        setErrorMessage("");
+
+        // Chọn đúng ref theo thiết bị
+        const cartIconRef = window.innerWidth < 768 ? cartIconRefMobile : cartIconRefDesktop;
+
+        if (!productImageRef.current || !cartIconRef.current) {
+            console.log("productImageRef or cartIconRef is null");
+            return;
+        }
 
         const imgRect = productImageRef.current.getBoundingClientRect();
         const cartRect = cartIconRef.current.getBoundingClientRect();
-
-        addItem(product, selectedSize, quantity)
-
         setFlyImage({
-            src: product._id, // TODO: Thay bằng URL hình ảnh thực tế
+            src: product.image,
             start: { x: imgRect.left, y: imgRect.top, w: imgRect.width, h: imgRect.height },
             end: { x: cartRect.left, y: cartRect.top, w: cartRect.width, h: cartRect.height },
         });
-
     };
 
+
     return (
-        <div className="md:w-1/2">
+        <div >
             {/* Bảng hướng dẫn chọn size */}
             {showSizeTable && (
                 <div style={{ backgroundColor: 'rgba(0,0,0,0.7)' }} className="fixed inset-0 flex items-center justify-center z-50">
@@ -71,38 +83,33 @@ export default function ProductInfo({ product }: { product: Product }) {
                 />
             )}
 
-            {/*Tên sản phẩm */}
-            <div className="flex items-center gap-2 mb-2">
-                <h1 className="text-4xl font-bold mb-2">
+            {/* Tên, sao, số đánh giá */}
+            <div className="mb-2 flex flex-row items-center justify-between gap-2 lg:flex-col lg:items-start lg:gap-0">
+                {/* Tên sản phẩm */}
+                <h1 className="text-lg font-bold lg:text-2xl xl:text-4xl mb-0 lg:mb-2">
                     {product.name}
                 </h1>
-            </div>
 
-            {/* Đánh giá & số lượng đánh giá */}
-            <div className="flex items-center gap-4 mb-4">
-                <span className="flex items-center gap-1 text-yellow-500 font-bold text-xl">
-                    {product.averageRating} {renderStars(product.averageRating)}
-                </span>
-                <span className="text-gray-600 text-xl">{product.reviews.length} Đánh Giá</span>
+                {/* Cụm sao và số đánh giá */}
+                <div className="flex items-center gap-1 text-yellow-500 font-bold text-base lg:text-xl lg:mb-2">
+                    <span>
+                        {Number(product.averageRating).toFixed(1)} {renderStars(product.averageRating)}
+                    </span>
+                    <span className="text-gray-600 text-base lg:text-xl ml-2 font-normal">
+                        {product.reviews.length} Đánh Giá
+                    </span>
+                </div>
             </div>
 
             {/* Giá */}
             <div className="flex items-center gap-4 mb-2">
-                <span className="text-red-600 font-bold text-2xl">
+                <span className="text-red-600 font-bold text-xl sm:text-2xl">
                     {product.price.toLocaleString("vi-VN", {
                         style: "currency",
                         currency: "VND",
                     })}
                 </span>
             </div>
-
-            {/* //TODO: Thêm nếu đủ tgian */}
-            {/* Vận chuyển */}
-            {/* <div className="flex items-center gap-2 text-gray-600 mb-2">
-                <FontAwesomeIcon icon={faTruck} />
-                <span>Nhận từ <b>26 Th05 - 29 Th05</b>, phí giao ₫0</span>
-                <span className="ml-2 text-xs text-red-500 cursor-pointer">Chi tiết</span>
-            </div> */}
 
 
             {/* Màu sắc */}
@@ -113,7 +120,7 @@ export default function ProductInfo({ product }: { product: Product }) {
                         <button
                             key={color}
                             onClick={() => setSelectedColor(color)}
-                            className={`px-3 py-1 rounded border ${selectedColor === color ? "border-red-500 bg-red-50 font-bold" : "border-gray-300 bg-white"}`}
+                            className={`px-3 py-1 rounded border text-sm ${selectedColor === color ? "border-red-500 bg-red-50 font-bold" : "border-gray-300 bg-white"}`}
                         >
                             {color}
                         </button>
@@ -153,6 +160,13 @@ export default function ProductInfo({ product }: { product: Product }) {
                     >+</button>
                 </div>
             </div>
+
+            {/* Thông báo lỗi */}
+            {errorMessage && (
+                <div className="mb-3 w-full bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded text-sm text-center">
+                    {errorMessage}
+                </div>
+            )}
 
             {/* Nút hành động */}
             <div className="flex gap-4 mt-6">
