@@ -13,9 +13,8 @@ export const googleCallback = (req, res, next) => {
       return res.status(401).json({ message: 'Google login failed' });
     }
     const token = generateToken(user._id, res);
-
-    // 🔁 Redirect về FE localhost sau khi login
-    res.redirect(`http://localhost:5173/oauth-success?token=${token}`);
+    
+    res.redirect(`https://ecommercepwa-fe.netlify.app/oauth-success?token=${token}`);
   })(req, res, next);
 };
 
