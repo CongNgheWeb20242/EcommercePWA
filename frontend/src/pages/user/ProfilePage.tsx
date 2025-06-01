@@ -57,10 +57,6 @@ const ProfilePage: React.FC = () => {
     }
     const fetchOrders = async (isReload: Boolean) => {
         if (!user?._id) return;
-<<<<<<< HEAD
-
-=======
->>>>>>> 7620e58a6b92a0aacd5ef40a23da2e20a89f1ead
         setLoading(true);
         const orders = await getUserOrder();
         if (orders && !isReload)
