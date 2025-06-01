@@ -191,13 +191,7 @@ export const forgetPassword = async (req, res) => {
   user.resetToken = token;
   await user.save();
 
-  // Kiểm tra môi trường hiện tại
-  const isDevP = process.env.NODE_ENV === 'development';
-  const FE_BASE_URL = isDevP
-    ? 'http://localhost:3000'
-    : 'https://ecommercepwa-fe.netlify.app';
-
-  const resetUrl = `${FE_BASE_URL}/api/user/reset-password/${token}`;
+  const resetUrl = `https://ecommercepwa-be.onrender.com/api/user/reset-password/${token}`;
 
   try {
     await sendResetPasswordEmail(user.email, resetUrl);
@@ -252,7 +246,6 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// Test
 // Tạo một route GET để test reset password UI đơn giản
 export const getResetPassword = async (req, res) => {
   const { token } = req.params;
