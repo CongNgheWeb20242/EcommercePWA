@@ -12,8 +12,8 @@ export const googleCallback = (req, res, next) => {
     if (err || !user) {
       return res.status(401).json({ message: 'Google login failed' });
     }
-    const token = generateToken(user._id, res);
-    
+    const token = generateToken(user, res);
+
     res.redirect(`https://ecommercepwa-fe.netlify.app/oauth-success?token=${token}`);
   })(req, res, next);
 };
@@ -115,7 +115,7 @@ export const login = async (req, res) => {
     if (!isPasswordCorrect) {
       return res.status(400).json({ message: 'Invalid Credentials' });
     }
-    const token = generateToken(user._id, res);
+    const token = generateToken(user, res);
     res.status(200).json({
       _id: user._id,
       email: user.email,
@@ -157,7 +157,7 @@ export const signup = async (req, res) => {
     });
 
     if (newUser) {
-      const token = generateToken(newUser._id, res);
+      const token = generateToken(newUser, res);
       await newUser.save();
 
       return res.status(201).json({
@@ -184,7 +184,7 @@ export const forgetPassword = async (req, res) => {
     return res.status(404).json({ message: 'User not found' });
   }
 
-  const token = generateToken(user._id, res);
+  const token = generateToken(user, res);
   user.resetToken = token;
   await user.save();
 
