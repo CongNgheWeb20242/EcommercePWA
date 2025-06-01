@@ -38,7 +38,7 @@ export const isAuth = (req, res, next) => {
       if (err) {
         res.status(401).send({ message: 'Invalid Token' });
       } else {
-        const user = await User.findById(decode.userId);
+        const user = await User.findById(decode._id);
         if (!user) {
           return res.status(401).send({ message: 'User Not Found' });
         }
