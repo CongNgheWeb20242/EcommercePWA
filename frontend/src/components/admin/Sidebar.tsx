@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/store/userStore';
 import { useState } from 'react';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface SidebarProps {
   open?: boolean;
@@ -51,7 +52,10 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel }: {
 const Sidebar = ({ open = false, onClose }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  
   const { logout } = useUserStore();
+  const { logOut } = useAuthStore();
+
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
@@ -66,6 +70,7 @@ const Sidebar = ({ open = false, onClose }: SidebarProps) => {
       message: 'Bạn có chắc chắn muốn đăng xuất khỏi trang quản trị không?',
       onConfirm: () => {
         logout();
+        logOut();
         navigate('/user/login');
         setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
       },
