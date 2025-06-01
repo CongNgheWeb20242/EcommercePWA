@@ -4,6 +4,7 @@ import { generateToken } from '../lib/utils.js';
 import cloudinary from '../lib/cloudinary.js';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
+import sendResetPasswordEmail from "../lib/resend.js"
 
 // SSO
 export const googleCallback = (req, res, next) => {
