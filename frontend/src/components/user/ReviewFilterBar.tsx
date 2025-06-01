@@ -55,20 +55,26 @@ export default function ReviewFilterBar({
             : "0.0";
 
     return (
-        <div className="bg-red-50 rounded border border-red-100 p-6 mb-6">
-            <div className="flex items-center gap-8 mb-3">
-                <div className="flex flex-col items-center mr-8">
+        <div className="bg-red-50 rounded border border-red-100 p-4 sm:p-6 mb-6">
+            <div className="
+    flex flex-col gap-4
+    sm:flex-row sm:items-center sm:gap-8
+    mb-3
+  ">
+                {/* Điểm trung bình và sao */}
+                <div className="flex flex-col items-center sm:mr-8">
                     <span className="text-red-600 text-3xl font-bold leading-8">{avgRating}</span>
                     <span className="text-gray-600 text-sm">trên 5</span>
                     <span>{renderStars(Number(avgRating))}</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                {/* Các filter */}
+                <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                     {REVIEW_FILTERS.map((f) => (
                         <button
                             key={f.label}
                             className={`px-4 py-1 rounded border text-sm font-semibold transition
-                                ${f.active ? "bg-red-500 text-white border-red-500" : "bg-white border-gray-300 text-gray-700"}
-                            `}
+            ${f.active ? "bg-red-500 text-white border-red-500" : "bg-white border-gray-300 text-gray-700"}
+          `}
                             onClick={() => onFilter(f.value)}
                         >
                             {f.label}
@@ -78,5 +84,6 @@ export default function ReviewFilterBar({
                 </div>
             </div>
         </div>
+
     );
 }

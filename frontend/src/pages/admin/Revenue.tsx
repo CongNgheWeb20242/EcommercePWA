@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useUserStore } from '../../store/userStore';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { axiosInstance } from '../../config/axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import toast from 'react-hot-toast';
+import { userStore } from '@/store/userStore';
 
 // Dữ liệu mẫu cứng để hiển thị khi API lỗi hoặc không có dữ liệu
 const DEFAULT_DATA = {
@@ -34,14 +34,14 @@ const StatCard = ({ title, value }: StatCardProps) => (
 );
 
 const Revenue = () => {
-  const { user: currentUser } = useUserStore();
+  const { user: currentUser } = userStore();
   const [redirectToHome, setRedirectToHome] = useState(false);
   const [data, setData] = useState(DEFAULT_DATA);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingMockData, setUsingMockData] = useState(false);
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'quarter'>('day');
-  
+
   // Kiểm tra quyền admin
   useEffect(() => {
     console.log("Kiểm tra quyền admin:", currentUser);
@@ -57,11 +57,11 @@ const Revenue = () => {
       try {
         const response = await axiosInstance.get('/orders/summary');
         console.log('API Response:', response.data);
-        
-        if (response.data && 
-            response.data.users && 
-            response.data.orders && 
-            response.data.dailyOrders) {
+
+        if (response.data &&
+          response.data.users &&
+          response.data.orders &&
+          response.data.dailyOrders) {
           setData(response.data);
           setUsingMockData(false);
         } else {
@@ -91,13 +91,13 @@ const Revenue = () => {
     console.log("Không phải admin, chuyển hướng về trang chủ");
     return <Navigate to="/" replace />;
   }
-  
+
   // Tính toán các chỉ số
   const totalUsers = data.users && data.users[0] ? data.users[0].numUsers : 0;
-  const totalOrders = data.orders && data.orders[0] ? data.orders[0].numOrders : 0; 
+  const totalOrders = data.orders && data.orders[0] ? data.orders[0].numOrders : 0;
   const totalSales = data.orders && data.orders[0] ? data.orders[0].totalSales : 0;
   const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
-  
+
   // Hàm gộp dữ liệu theo tháng
   const groupByMonth = (data: typeof DEFAULT_DATA.dailyOrders) => {
     const result: Record<string, { orders: number; sales: number }> = {};
@@ -144,42 +144,42 @@ const Revenue = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản lý Doanh Thu</h1>
       </div>
-      
+
       {loading && (
         <div className="p-4 mb-6 bg-blue-100 text-blue-700 rounded-md">
           <p>⏳ Đang tải dữ liệu...</p>
         </div>
       )}
-      
+
       {error && (
         <div className="p-4 mb-6 bg-red-100 text-red-700 rounded-md">
           <p>⚠️ {error}</p>
         </div>
       )}
-      
+
       {usingMockData && !loading && (
         <div className="p-4 mb-6 bg-blue-100 text-blue-700 rounded-md">
           <p>⚠️ Đang hiển thị dữ liệu mẫu. Dữ liệu thực tế sẽ được hiển thị khi API hoạt động.</p>
         </div>
       )}
-      
+
       {/* Các thẻ thống kê chính */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        <StatCard 
-          title="Tổng doanh thu" 
-          value={`$${totalSales.toLocaleString()}`} 
+        <StatCard
+          title="Tổng doanh thu"
+          value={`$${totalSales.toLocaleString()}`}
         />
-        <StatCard 
-          title="Giá trị trung bình/đơn hàng" 
-          value={`$${averageOrderValue.toLocaleString()}`} 
+        <StatCard
+          title="Giá trị trung bình/đơn hàng"
+          value={`$${averageOrderValue.toLocaleString()}`}
         />
-        <StatCard 
-          title="Tổng số đơn hàng" 
-          value={totalOrders.toLocaleString()} 
+        <StatCard
+          title="Tổng số đơn hàng"
+          value={totalOrders.toLocaleString()}
         />
-        <StatCard 
-          title="Tổng số khách hàng" 
-          value={totalUsers.toLocaleString()} 
+        <StatCard
+          title="Tổng số khách hàng"
+          value={totalUsers.toLocaleString()}
         />
       </div>
 

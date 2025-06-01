@@ -5,7 +5,6 @@ import { Order } from '@/types/Order';
 export async function getUserOrder(): Promise<Order[] | null> {
     try {
         const response = await apiClient.get<Order[]>(`/orders/mine`);
-        console.log('Fetch user order:', response);
         return response.data;
     } catch (error) {
         console.error('Fetch user order failed:', error);

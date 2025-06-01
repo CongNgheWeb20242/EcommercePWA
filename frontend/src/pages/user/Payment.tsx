@@ -15,15 +15,12 @@ export default function Payment() {
     // Polling kiểm tra trạng thái đơn hàng
     useEffect(() => {
         if (!orderId) return;
-        console.log("run")
         setIsPolling(true);
 
         const interval = setInterval(async () => {
             try {
                 console.log(orderId)
                 const order = await getOrderById(orderId);
-                if (order == null)
-                    console.log("null")
                 setOrderStatus(order?.paymentResult?.status ? order?.paymentResult?.status : "pending");
                 if (order?.paymentResult?.status && order?.paymentResult?.status === "success") {
                     clearInterval(interval);

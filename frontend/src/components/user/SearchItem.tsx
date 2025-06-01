@@ -18,7 +18,7 @@ const SearchItem: React.FC<SearchItemProps> = ({ product, onClick }) => {
             onClick={handleClick}
         >
             <CustomImage
-                src={product._id} //TODO
+                src={product.image}
                 alt={product.name}
                 className="w-10 h-10 object-cover rounded mr-3"
             />

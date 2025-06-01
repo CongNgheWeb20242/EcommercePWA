@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
 import './ChatWidget.css'; // Sẽ tạo file CSS này sau
-import { useUserStore } from '@/store/userStore';
+import { userStore } from '@/store/userStore';
 
 // Định nghĩa kiểu cho tin nhắn (nên đồng bộ với backend)
 interface IChatMessage {
@@ -19,16 +19,16 @@ interface IChatMessage {
 }
 
 // Địa chỉ backend của bạn - Cần cập nhật cho đúng
-const SOCKET_SERVER_URL = process.env.NODE_ENV === 'production' 
-                            ? 'YOUR_PRODUCTION_BACKEND_URL' // Ví dụ: https://api.yourdomain.com
-                            : 'http://localhost:3000';     // Giả sử backend chạy ở port 3000
+const SOCKET_SERVER_URL = process.env.NODE_ENV === 'production'
+  ? 'YOUR_PRODUCTION_BACKEND_URL' // Ví dụ: https://api.yourdomain.com
+  : 'http://localhost:3000';     // Giả sử backend chạy ở port 3000
 
 const ChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState(''); // Sẽ được dùng cho caption khi gửi ảnh sau
   const [messages, setMessages] = useState<IChatMessage[]>([]);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
-  
+
   // State cho việc gửi ảnh
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -37,9 +37,9 @@ const ChatWidget: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null); // Ref cho input file
-  
+
   // Lấy user thực tế từ Zustand store
-  const user = useUserStore((state) => state.user);
+  const user = userStore((state) => state.user);
 
   const currentUserInfo = user ? { // Đổi tên biến để rõ ràng hơn
     id: user._id,
@@ -87,8 +87,8 @@ const ChatWidget: React.FC = () => {
         }
         // Nếu widget đang mở khi kết nối (hoặc mở lại), fetch lịch sử chat
         if (isOpen && currentUserId) {
-            console.log('UserChat: Fetching chat history on connect (widget is open).')
-            fetchChatHistory(currentUserId); 
+          console.log('UserChat: Fetching chat history on connect (widget is open).')
+          fetchChatHistory(currentUserId);
         }
       });
 
@@ -103,7 +103,7 @@ const ChatWidget: React.FC = () => {
       socketRef.current.on('chatMessageError', (error) => {
         console.error('UserChat: Chat message error:', error);
       });
-    } 
+    }
     // Không cần `else` ở đây, vì nếu socket đã connect và user/room không đổi, không cần làm gì thêm
     // Việc fetch history khi mở widget đã được xử lý trong toggleChat
 
@@ -153,7 +153,7 @@ const ChatWidget: React.FC = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     // currentUserId được lấy từ user state ở trên, đảm bảo là ID của user hiện tại
-    if (!socketRef.current || !currentUserInfo || !currentUserId ) return;
+    if (!socketRef.current || !currentUserInfo || !currentUserId) return;
 
     if (isUploadingImage || (!message.trim() && !selectedImage)) {
       return;
@@ -166,10 +166,10 @@ const ChatWidget: React.FC = () => {
       reader.onload = async () => {
         const base64Image = reader.result as string;
         if (!base64Image) {
-            console.error("UserChat: FileReader did not produce a base64 string.");
-            alert("Lỗi khi đọc file ảnh. Vui lòng thử lại.");
-            setIsUploadingImage(false);
-            return;
+          console.error("UserChat: FileReader did not produce a base64 string.");
+          alert("Lỗi khi đọc file ảnh. Vui lòng thử lại.");
+          setIsUploadingImage(false);
+          return;
         }
         try {
           console.log("UserChat: Sending image to backend...");
@@ -185,9 +185,9 @@ const ChatWidget: React.FC = () => {
           if (!uploadResponse.ok) {
             let errorData = { message: 'Lỗi không xác định từ server.' };
             try {
-                errorData = await uploadResponse.json();
+              errorData = await uploadResponse.json();
             } catch { // Bỏ qua tham số lỗi nếu không dùng
-                console.error("UserChat: Could not parse error response from server", await uploadResponse.text());
+              console.error("UserChat: Could not parse error response from server", await uploadResponse.text());
             }
             console.error("UserChat: Error uploading image", uploadResponse.status, errorData);
             throw new Error(errorData.message || 'Lỗi khi tải ảnh lên.');
@@ -202,14 +202,14 @@ const ChatWidget: React.FC = () => {
               name: currentUserInfo.name,
               role: currentUserInfo.role,
             },
-            message: message.trim() || undefined, 
+            message: message.trim() || undefined,
             imageUrl,
             messageType: 'image',
           };
           socketRef.current?.emit('chatMessage', chatMessageData);
-          
+
           setMessage('');
-          handleRemoveImage(); 
+          handleRemoveImage();
 
         } catch (error) {
           console.error("UserChat: Lỗi khi gửi ảnh:", error);
@@ -223,7 +223,7 @@ const ChatWidget: React.FC = () => {
         alert('Không thể đọc file ảnh đã chọn.');
         setIsUploadingImage(false);
       };
-    } else if (message.trim()) { 
+    } else if (message.trim()) {
       const chatMessageData: Omit<IChatMessage, '_id' | 'createdAt'> = {
         conversationId: currentUserId, // Sử dụng currentUserId
         sender: {
@@ -239,7 +239,7 @@ const ChatWidget: React.FC = () => {
     }
   };
 
-  const fetchChatHistory = async (convId: string) => { 
+  const fetchChatHistory = async (convId: string) => {
     if (!convId) return;
     console.log(`UserChat: Fetching chat history for ${convId}`);
     try {
@@ -289,13 +289,13 @@ const ChatWidget: React.FC = () => {
           </div>
           <div className="chat-messages">
             {messages.map((msg, index) => (
-              <div 
+              <div
                 key={msg._id || ('user-msg-' + index)}
                 className={'message-item ' + (msg.sender.role === currentUserInfo?.role ? 'sent' : 'received')}>
-                
-                {/* Không hiển thị tên người gửi nếu là currentUser gửi */} 
+
+                {/* Không hiển thị tên người gửi nếu là currentUser gửi */}
                 {msg.sender.role !== currentUserInfo?.role && (
-                    <span className="message-sender">{msg.sender.name}:</span>
+                  <span className="message-sender">{msg.sender.name}:</span>
                 )}
 
                 {msg.messageType === 'image' && msg.imageUrl ? (
@@ -332,14 +332,14 @@ const ChatWidget: React.FC = () => {
               aria-label="Tải ảnh lên"
               disabled={isUploadingImage}
             />
-            <button 
-              type="button" 
-              onClick={() => fileInputRef.current?.click()} 
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
               className="attach-button-user"
               disabled={isUploadingImage}
             >
               {/* Sử dụng icon SVG hoặc text. Ví dụ đơn giản: */}
-              📎 
+              📎
             </button>
             <input
               type="text"

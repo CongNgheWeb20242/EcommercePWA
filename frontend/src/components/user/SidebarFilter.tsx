@@ -76,7 +76,7 @@ export default function SidebarFilter({ show, onClose, onSearchTextChange }: Sid
     return (
         <aside
             className={`
-                h-screen bg-white border-r overflow-y-auto
+                h-[90vh] bg-white border-r overflow-y-auto
                 sticky top-20
                 transition-all duration-300
             `}

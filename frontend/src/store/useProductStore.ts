@@ -61,6 +61,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
             price: undefined,
             rating: undefined,
             order: undefined,
+            sexual: undefined,
             page: 1,
             pageSize: 12,
             append: false
