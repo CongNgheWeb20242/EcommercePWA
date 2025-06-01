@@ -14,7 +14,9 @@ export const googleCallback = (req, res, next) => {
     }
     const token = generateToken(user, res);
 
-    res.redirect(`https://ecommercepwa-fe.netlify.app/oauth-success?token=${token}`);
+    res.redirect(
+      `https://ecommercepwa-fe.netlify.app/oauth-success?token=${token}`
+    );
   })(req, res, next);
 };
 
@@ -188,31 +190,25 @@ export const forgetPassword = async (req, res) => {
   user.resetToken = token;
   await user.save();
 
-  // Check môi trường hiện tại:
+  // Kiểm tra môi trường hiện tại
   const isDevP = process.env.NODE_ENV === 'development';
-  // Test từ BE nên để cổng 3000
   const FE_BASE_URL = isDevP
     ? 'http://localhost:3000'
-    : 'https://yourdomain.com';
+    : 'https://ecommercepwa-fe.netlify.app';
 
   const resetUrl = `${FE_BASE_URL}/api/user/reset-password/${token}`;
 
-  // Tạm thời comment lại phần gửi email
-  /*
   try {
     await sendResetPasswordEmail(user.email, resetUrl);
-    res.status(200).json({ message: 'Reset password link sent to your email' });
+    return res
+      .status(200)
+      .json({ message: 'Reset password link has been sent to your email' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error sending reset password email' });
+    console.error('Error sending reset password email:', error);
+    return res
+      .status(500)
+      .json({ message: 'Failed to send reset password email' });
   }
-  */
-
-  // Tạm thời trả về link reset password
-  res.status(200).json({
-    message: 'Reset password link generated',
-    resetUrl: resetUrl,
-  });
 };
 
 // Reset password thực sự
