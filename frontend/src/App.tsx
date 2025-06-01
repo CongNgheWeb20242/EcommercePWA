@@ -64,7 +64,7 @@ const App = () => {
         <Route path="/user/profile" element={<UserLayout><ProfilePage /></UserLayout>} />
 
         {/* Route nhận callback từ Google SSO */}
-        <Route path="/user/oauth-success" element={<UserLayout><OAuthSuccess /></UserLayout>} />
+        <Route path="/oauth-success" element={<UserLayout><OAuthSuccess /></UserLayout>} />
 
         <Route path="/user/products" element={<UserLayout><UserProducts key={'Tất Cả Sản Phẩm'} searchText={'Tất Cả Sản Phẩm'} /></UserLayout>} />
         <Route path="/user/products/men" element={<UserLayout><UserProducts key={'Thời Trang Nam'} searchText={'Thời Trang Nam'} /></UserLayout>} />
