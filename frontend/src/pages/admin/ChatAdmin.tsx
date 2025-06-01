@@ -23,7 +23,7 @@ interface IConversation {
 }
 
 const SOCKET_SERVER_URL = process.env.NODE_ENV === 'production'
-  ? 'YOUR_PRODUCTION_BACKEND_URL'
+  ? 'https://ecommercepwa-be.onrender.com'
   : 'http://localhost:3000';
 
 const API_BASE_URL = SOCKET_SERVER_URL;
