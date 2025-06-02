@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { axiosInstance } from '../../config/axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import { useUserStore } from '../../store/userStore';
 import { Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { userStore } from '@/store/userStore';
+
+const STATUS_TEXTS = ['Đang chuẩn bị hàng', 'Đang giao', 'Đã giao'];
 
 // Định nghĩa các interfaces cần thiết
 interface OrderItem {
@@ -39,6 +41,7 @@ interface Order {
   paidAt?: string;
   isDelivered: boolean;
   deliveredAt?: string;
+  status?: number;
   itemsPrice: number;
   shippingPrice: number;
   taxPrice: number;
@@ -85,13 +88,14 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, o
 
 // Component chính hiển thị danh sách đơn hàng
 const Orders = () => {
-  const { user: currentUser } = useUserStore();
+  const { user: currentUser } = userStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [redirectToHome, setRedirectToHome] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null);
-  
+  const [actionDropdownOrderId, setActionDropdownOrderId] = useState<string | null>(null);
+
   // State cho hộp thoại xác nhận
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -102,7 +106,7 @@ const Orders = () => {
     isOpen: false,
     title: '',
     message: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   // Kiểm tra quyền admin
@@ -127,33 +131,35 @@ const Orders = () => {
           'Authorization': `Bearer ${currentUser.token}`,
         }
       });
-      
+
       const ordersData = response.data;
-      
+
       if (!Array.isArray(ordersData) || ordersData.length === 0) {
         setOrders([]);
         toast.error('Không có đơn hàng nào trong hệ thống.');
         setLoading(false);
         return;
       }
-      
+
       // Xử lý dữ liệu đơn hàng
       const processedOrders = ordersData.map((order: Order) => {
         let userName = '';
         let userPhone = '';
-        
+
         if (typeof order.user === 'object' && order.user !== null) {
           userName = order.user.name || 'Không xác định';
           userPhone = order.user.phone || '';
         }
-        
+
         return {
           ...order,
           userName,
-          userPhone
+          userPhone,
+          // Nếu status không có từ API, mặc định là 0 (Đang chuẩn bị)
+          status: order.status !== undefined ? order.status : 0,
         };
       });
-      
+
       setOrders(processedOrders);
     } catch (err) {
       console.error("Error fetching orders:", err);
@@ -168,7 +174,7 @@ const Orders = () => {
     if (!redirectToHome) {
       fetchOrders();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [redirectToHome]);
 
   // Chuyển hướng nếu không phải admin
@@ -194,7 +200,7 @@ const Orders = () => {
     if (searchDigits) { // Chỉ tìm SĐT nếu có nhập số
       const shippingPhone = normalizePhone(order.shippingAddress?.phone);
       const userModelPhone = normalizePhone(order.userPhone); // SĐT từ User model (hiện tại backend không gửi, nên sẽ là chuỗi rỗng)
-      
+
       if (shippingPhone.includes(searchDigits) || userModelPhone.includes(searchDigits)) {
         phoneMatch = true;
       }
@@ -214,57 +220,66 @@ const Orders = () => {
   };
 
   // Hàm cập nhật trạng thái đơn hàng
-  const handleUpdateStatus = async (orderId: string, isDelivered: boolean) => {
+  const handleUpdateStatus = async (orderId: string, newStatus: number) => {
     if (!currentUser || !currentUser.isAdmin) {
       toast.error('Bạn không có quyền thực hiện hành động này');
       return;
     }
 
-    // Tìm đối tượng order từ orderId
     const order = orders.find(o => o._id === orderId);
     if (!order) {
       toast.error('Không tìm thấy đơn hàng!');
       return;
     }
 
-    // Chỉ xử lý logic cho isDelivered = true (Xác nhận)
-    // và chỉ khi đơn hàng chưa được giao (để tránh gọi confirmAction không cần thiết nếu nút bị click dù đã disabled)
-    if (!isDelivered && !order.isDelivered) { 
-      return; 
+    // Kiểm tra xem trạng thái mới có khác trạng thái hiện tại không
+    if (order.status === newStatus) {
+      toast('Đơn hàng đã ở trạng thái này.');
+      return;
     }
 
     const confirmAction = async () => {
       try {
-        // Logic cho isDelivered === true (Xác nhận đơn hàng)
-        await axiosInstance.put(`/orders/${orderId}/deliver`, {}, {
-          headers: {
-            'Authorization': `Bearer ${currentUser.token}`,
+        const response = await axiosInstance.put<{ message: string, order: Order }>(
+          `/orders/${orderId}/status`,
+          { status: newStatus },
+          {
+            headers: {
+              Authorization: `Bearer ${currentUser.token}`,
+            }
           }
-        });
-          
-        setOrders(currentOrders => currentOrders.map(o => 
-          o._id === orderId ? { 
-            ...o, 
-            isDelivered: true,
-            deliveredAt: new Date().toISOString()
-          } : o
-        ));
-          
-        toast.success('Đã xác nhận đơn hàng thành công');
+        );
+        const updatedOrderFromServer = response.data.order;
+
+        setOrders(currentOrders => currentOrders.map(o => {
+          if (o._id === orderId) {
+            // Bắt đầu bằng cách lấy tất cả các trường từ server
+            // Sau đó, ghi đè status và các trường liên quan dựa trên newStatus
+            // để đảm bảo giao diện người dùng phản ánh hành động vừa thực hiện.
+            return {
+              ...o, // Giữ lại các trường client đã xử lý như userName, userPhone
+              ...updatedOrderFromServer, // Áp dụng các thay đổi từ server (ví dụ: updatedAt)
+              status: newStatus, // Đảm bảo status được cập nhật theo hành động của admin
+              isDelivered: newStatus === 2, // Cập nhật isDelivered dựa trên newStatus
+              deliveredAt: newStatus === 2 ? new Date().toISOString() : undefined, // Sửa: dùng undefined thay vì null
+            };
+          }
+          return o;
+        }));
+
+        toast.success(`Đã cập nhật trạng thái đơn hàng thành "${STATUS_TEXTS[newStatus]}"`);
 
       } catch (err) {
-          toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
+        toast.error('Lỗi khi cập nhật trạng thái đơn hàng');
         console.error('Error updating order status:', err);
       }
       setConfirmDialog({ ...confirmDialog, isOpen: false });
     };
 
-    // Luôn hiển thị hộp thoại xác nhận cho hành động "Xác Nhận"
     showConfirmDialog(
-      order.isDelivered ? 'Thông Báo' : 'Xác nhận đơn hàng',
-      order.isDelivered ? 'Đơn hàng này đã được xác nhận giao.' : 'Bạn có chắc chắn muốn xác nhận đơn hàng này không?',
-      // Nếu đã giao, hành động confirm chỉ là đóng dialog. Nếu chưa, thì thực hiện confirmAction.
-      order.isDelivered ? () => setConfirmDialog({ ...confirmDialog, isOpen: false }) : confirmAction 
+      'Xác nhận cập nhật trạng thái',
+      `Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng thành "${STATUS_TEXTS[newStatus]}" không?`,
+      confirmAction
     );
   };
 
@@ -334,13 +349,13 @@ const Orders = () => {
                   >
                     {index === 0 ? (
                       <>
-                        <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           {order.shippingAddress?.fullName || 'Trần Trọng Luân'}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           {order.shippingAddress?.phone || order.userPhone || '0899804328'}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell align-middle max-w-[180px] truncate" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell align-middle max-w-[180px] truncate" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           <span title={order.shippingAddress?.address || 'ngõ 36 bắc ninh'}>
                             {order.shippingAddress?.address || 'ngõ 36 bắc ninh'}
                           </span>
@@ -356,33 +371,86 @@ const Orders = () => {
                     <td className="px-4 py-3 whitespace-nowrap text-center">{item.quantity || (index % 3 === 0 ? 3 : (index % 2 === 0 ? 1 : 2))}</td>
                     {index === 0 ? (
                       <>
-                        <td className="px-4 py-3 whitespace-nowrap text-right font-semibold align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap text-right font-semibold align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           {(order.totalPrice || 1950000).toLocaleString()} đ
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                             {order.isPaid ? 'Đã Thanh Toán' : 'Chưa Thanh Toán'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
                           {order.paidAt ? new Date(order.paidAt).toLocaleDateString('vi-VN') : 'N/A'}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${order.isDelivered ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {order.isDelivered ? 'Đã Giao' : 'Chuẩn Bị Hàng'}
-                          </span>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
+                          {(() => {
+                            let statusText = 'Chưa xác định';
+                            let statusColor = 'bg-gray-100 text-gray-700';
+                            switch (order.status) {
+                              case 0:
+                                statusText = STATUS_TEXTS[0];
+                                statusColor = 'bg-yellow-100 text-yellow-700';
+                                break;
+                              case 1:
+                                statusText = STATUS_TEXTS[1];
+                                statusColor = 'bg-blue-100 text-blue-700';
+                                break;
+                              case 2:
+                                statusText = STATUS_TEXTS[2];
+                                statusColor = 'bg-green-100 text-green-700';
+                                break;
+                            }
+                            return (
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${statusColor}`}>
+                                {statusText}
+                              </span>
+                            );
+                          })()}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{verticalAlign:'middle'}}>
-                          <div className="flex flex-col sm:flex-row gap-1 justify-center">
-                            <button
-                              onClick={() => handleUpdateStatus(order._id, true)}
-                              className={`bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm transition ${
-                                order.isDelivered ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                              }`}
-                              disabled={order.isDelivered} // Vô hiệu hóa nếu đã giao
-                            >
-                              {order.isDelivered ? 'Đã Xác Nhận' : 'Xác Nhận'}
-                            </button>
+                        <td className="px-4 py-3 whitespace-nowrap text-center align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
+                          <div className="relative inline-block text-left">
+                            <div>
+                              <button
+                                type="button"
+                                className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-3 py-1.5 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500"
+                                id={`menu-button-${order._id}`}
+                                // aria-expanded={`${!!(actionDropdownOrderId === order._id)}`} // Tạm thời bình luận để tránh lỗi linter
+                                aria-haspopup="true"
+                                onClick={() => setActionDropdownOrderId(actionDropdownOrderId === order._id ? null : order._id)}
+                              >
+                                Hành động
+                                <svg className="-mr-1 ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
+
+                            {actionDropdownOrderId === order._id && (
+                              <div
+                                className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20"
+                                role="menu"
+                                aria-orientation="vertical"
+                                aria-labelledby={`menu-button-${order._id}`}
+                              >
+                                <div className="py-1" role="none">
+                                  {STATUS_TEXTS.map((text, statusValue) => (
+                                    <button
+                                      key={statusValue}
+                                      onClick={() => {
+                                        handleUpdateStatus(order._id, statusValue);
+                                        setActionDropdownOrderId(null);
+                                      }}
+                                      disabled={order.status === statusValue}
+                                      className={`${order.status === statusValue ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                        } block w-full text-left px-4 py-2 text-xs`}
+                                      role="menuitem"
+                                    >
+                                      {text}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </>
@@ -390,7 +458,7 @@ const Orders = () => {
                   </tr>
                 )),
                 // Dòng phân cách đậm giữa các đơn hàng
-                <tr key={`divider_${order._id}`}> 
+                <tr key={`divider_${order._id}`}>
                   <td colSpan={11} className="p-0">
                     <div style={{ borderTop: '3px solid #d1d5db', margin: 0 }}></div>
                   </td>
@@ -400,7 +468,7 @@ const Orders = () => {
           </tbody>
         </table>
       </div>
-          
+
       {/* Phân trang */}
       <div className="flex justify-center mt-4">
         <nav className="flex items-center space-x-2">
@@ -414,7 +482,7 @@ const Orders = () => {
       </div>
 
       {/* Hộp thoại xác nhận */}
-      <ConfirmDialog 
+      <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}

@@ -10,4 +10,14 @@ const authApiClient = axios.create({
   timeout: 20000
 });
 
+authApiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+);
+
 export default authApiClient;

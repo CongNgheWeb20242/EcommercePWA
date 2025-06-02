@@ -14,7 +14,7 @@ import {
   getResetPassword,
   googleCallback
 } from '../controllers/userController.js';
-import { protectedRoute, isAdmin } from '../middlewares/authMiddleware.js';
+import { protectedRoute, isAdmin, isAdminOrSelf } from '../middlewares/authMiddleware.js';
 import passport from 'passport';
 
 const router = express.Router();
@@ -27,7 +27,7 @@ router.get('/google/callback', googleCallback);
 router.get('/', protectedRoute, isAdmin, getAllUsers);
 
 // GET user by id
-router.get('/:id', protectedRoute, isAdmin, getUser);
+router.get('/:id', protectedRoute, getUser);
 
 // Update profile by user
 router.put('/profile', protectedRoute, updateUser);

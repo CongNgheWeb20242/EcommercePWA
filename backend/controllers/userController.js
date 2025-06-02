@@ -4,6 +4,7 @@ import { generateToken } from '../lib/utils.js';
 import cloudinary from '../lib/cloudinary.js';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
+import { sendResetPasswordEmail } from "../lib/resend.js"
 
 // SSO
 export const googleCallback = (req, res, next) => {
@@ -12,10 +13,11 @@ export const googleCallback = (req, res, next) => {
     if (err || !user) {
       return res.status(401).json({ message: 'Google login failed' });
     }
-    const token = generateToken(user._id, res);
+    const token = generateToken(user, res);
 
-    // 🔁 Redirect về FE localhost sau khi login
-    res.redirect(`http://localhost:5173/oauth-success?token=${token}`);
+    res.redirect(
+      `https://ecommercepwa-fe.netlify.app/oauth-success?token=${token}`
+    );
   })(req, res, next);
 };
 
@@ -116,7 +118,7 @@ export const login = async (req, res) => {
     if (!isPasswordCorrect) {
       return res.status(400).json({ message: 'Invalid Credentials' });
     }
-    const token = generateToken(user._id, res);
+    const token = generateToken(user, res);
     res.status(200).json({
       _id: user._id,
       email: user.email,
@@ -158,7 +160,7 @@ export const signup = async (req, res) => {
     });
 
     if (newUser) {
-      const token = generateToken(newUser._id, res);
+      const token = generateToken(newUser, res);
       await newUser.save();
 
       return res.status(201).json({
@@ -185,35 +187,23 @@ export const forgetPassword = async (req, res) => {
     return res.status(404).json({ message: 'User not found' });
   }
 
-  const token = generateToken(user._id, res);
+  const token = generateToken(user, res);
   user.resetToken = token;
   await user.save();
 
-  // Check môi trường hiện tại:
-  const isDevP = process.env.NODE_ENV === 'development';
-  // Test từ BE nên để cổng 3000
-  const FE_BASE_URL = isDevP
-    ? 'http://localhost:3000'
-    : 'https://yourdomain.com';
+  const resetUrl = `https://ecommercepwa-be.onrender.com/api/user/reset-password/${token}`;
 
-  const resetUrl = `${FE_BASE_URL}/api/user/reset-password/${token}`;
-
-  // Tạm thời comment lại phần gửi email
-  /*
   try {
     await sendResetPasswordEmail(user.email, resetUrl);
-    res.status(200).json({ message: 'Reset password link sent to your email' });
+    return res
+      .status(200)
+      .json({ message: 'Reset password link has been sent to your email' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error sending reset password email' });
+    console.error('Error sending reset password email:', error);
+    return res
+      .status(500)
+      .json({ message: 'Failed to send reset password email' });
   }
-  */
-
-  // Tạm thời trả về link reset password
-  res.status(200).json({
-    message: 'Reset password link generated',
-    resetUrl: resetUrl,
-  });
 };
 
 // Reset password thực sự
@@ -256,7 +246,6 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// Test
 // Tạo một route GET để test reset password UI đơn giản
 export const getResetPassword = async (req, res) => {
   const { token } = req.params;

@@ -12,7 +12,7 @@ export default function OrderedProductList() {
                 .map((item) => (
                     <div key={item._id} className="flex items-center gap-2">
                         <CustomImage
-                            src={item._id} // TODO
+                            src={item.image}
                             alt={item.name}
                             className="w-16 h-16 object-cover rounded bg-white"
                         />

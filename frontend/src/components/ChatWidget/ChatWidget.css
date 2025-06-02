@@ -1,0 +1,244 @@
+.chat-widget-container {
+  position: fixed;
+  bottom: 24px;
+  right: 90px;
+  z-index: 1000;
+}
+
+.chat-toggle-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.unread-indicator {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  border-radius: 50%;
+  border: 1px solid white;
+}
+
+.chat-window {
+  width: 320px;
+  height: 450px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-top: 10px;
+  /* Khoảng cách với nút toggle */
+}
+
+.chat-header {
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-close-button-header {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 5px;
+  line-height: 1;
+}
+
+.chat-messages {
+  flex-grow: 1;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message-item {
+  padding: 8px 12px;
+  border-radius: 15px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.message-item .message-sender {
+  font-weight: bold;
+  display: block;
+  font-size: 0.8em;
+  margin-bottom: 2px;
+  color: #555;
+}
+
+.message-item .message-text {
+  font-size: 0.95em;
+}
+
+.message-item .message-time {
+  font-size: 0.7em;
+  color: #888;
+  display: block;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.message-item.sent {
+  background-color: #dcf8c6;
+  align-self: flex-end;
+  border-bottom-right-radius: 5px;
+}
+
+.message-item.sent .message-sender {
+  display: none;
+  /* Không cần hiển thị tên người gửi cho tin nhắn của chính mình */
+}
+
+.message-item.received {
+  background-color: #f1f0f0;
+  align-self: flex-start;
+  border-bottom-left-radius: 5px;
+}
+
+.chat-input-form {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #eee;
+}
+
+.chat-input {
+  flex-grow: 1;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+.send-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.send-button:hover {
+  background-color: #218838;
+}
+
+/* Class để ẩn các phần tử một cách trực quan nhưng vẫn giữ khả năng truy cập */
+.visually-hidden {
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
+  /* Đảm bảo ẩn hoàn toàn trên một số trình duyệt */
+}
+
+/* CSS cho thanh cuộn (tuỳ chọn, cho đẹp hơn) */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #007bff;
+  border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #0056b3;
+}
+
+/* Responsive adjustments for mobile devices */
+@media (max-width: 600px) {
+  .chat-widget-container {
+    /* Xếp chồng "Chat với Admin" lên trên Chatbot AI trên mobile */
+    right: 24px;
+    /* Căn phải giống Chatbot AI (right-6 ~ 24px) */
+    bottom: 90px;
+    /* bottom Chatbot AI (24px) + height Chatbot AI (56px) + gap (10px) */
+    /* z-index: 1000; giữ nguyên từ rule chính */
+  }
+
+  .chat-widget-container.open .chat-toggle-button {
+    display: none;
+  }
+
+  .chat-toggle-button {
+    /* Nút "Chat với Admin" trên mobile */
+    position: relative;
+    /* Cho phép nút nằm trong .chat-widget-container đã được định vị fixed */
+    /* Không cần bottom, right ở đây nữa vì container đã định vị */
+    bottom: auto;
+    right: auto;
+
+    /* Giữ lại các điều chỉnh kích thước cho mobile */
+    padding: 12px 18px;
+    font-size: 18px;
+    /* z-index: 1001; /* Có thể giữ hoặc bỏ nếu z-index của container là đủ */
+  }
+
+  .chat-window {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    margin-top: 0;
+    box-shadow: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    /* Đảm bảo cửa sổ chat nổi trên cùng khi mở full màn hình */
+  }
+
+  .chat-header {
+    padding: 12px 15px;
+    font-size: 1.1em;
+  }
+
+  .chat-close-button-header {
+    font-size: 28px;
+  }
+
+  .chat-messages {
+    padding: 15px;
+  }
+
+  .chat-input-form {
+    padding: 12px;
+  }
+
+  .chat-input {
+    padding: 12px 15px;
+    font-size: 15px;
+  }
+
+  .send-button {
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+}

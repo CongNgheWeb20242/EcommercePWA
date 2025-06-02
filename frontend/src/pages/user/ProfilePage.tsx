@@ -1,26 +1,33 @@
 // ProfilePage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     UserIcon,
     EnvelopeIcon,
     PhoneIcon,
     MapPinIcon,
     ArrowRightOnRectangleIcon,
-    EyeIcon,
-    EyeSlashIcon,
     PencilIcon,
     ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import useOrderStore from '@/store/useOrderStore';
-import { useAuthStore } from '@/store/useAuthStore';
+import { userStore } from '@/store/userStore';
 import { Order } from '@/types/Order';
 import { getUserOrder } from '@/services/api/orderService';
 import { useNavigate } from 'react-router-dom';
+import { updateProfile } from '@/services/api/userService';
+import Avatar from '@/components/ui/avatar';
+import OrderDetailModal from '@/components/user/OrderDetailModal';
 
 const ProfilePage: React.FC = () => {
     const navigate = useNavigate()
-    const { logOut } = useAuthStore()
-    const [showPassword, setShowPassword] = useState(false);
+    const { logOut } = userStore()
+    const [_showPassword, _setShowPassword] = useState(false);
+
+    const [isUploading, setIsUploading] = useState(false);
+    const [_uploadError, setUploadError] = useState('');
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Order Store
     const {
@@ -35,11 +42,9 @@ const ProfilePage: React.FC = () => {
         clearOrderHistory
     } = useOrderStore();
 
-    // Auth Store (giả sử có)
-    const { user } = useAuthStore(); // Lấy thông tin user hiện tại
+    const { user } = userStore();
 
     if (!user) {
-        // Nếu chưa đăng nhập, hiển thị thông báo và nút chuyển sang trang đăng nhập
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
                 <div className="text-2xl font-semibold mb-4">Bạn chưa đăng nhập</div>
@@ -55,7 +60,6 @@ const ProfilePage: React.FC = () => {
     }
     const fetchOrders = async (isReload: Boolean) => {
         if (!user?._id) return;
-        console.log(user)
         setLoading(true);
         const orders = await getUserOrder();
         if (orders && !isReload)
@@ -68,13 +72,8 @@ const ProfilePage: React.FC = () => {
     useEffect(() => {
         clearCurrentOrder();
         clearOrderHistory();
-    }, []);
-
-    // Fetch orders khi component mount
-    useEffect(() => {
-
         fetchOrders(false);
-    }, [user?._id, setLoading, addToOrderHistory]);
+    }, []);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -109,23 +108,85 @@ const ProfilePage: React.FC = () => {
         }).format(price);
     };
 
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setIsUploading(true);
+            setUploadError('');
+
+            // Chuyển ảnh sang base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+
+            const base64Image = await new Promise<string>((resolve, reject) => {
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = error => reject(error);
+            });
+
+            // Gọi API cập nhật
+            const currentUser = userStore.getState().user;
+            if (!currentUser) return;
+
+            await updateProfile({
+                name: currentUser.name,
+                profilePic: base64Image
+            });
+
+            // Cập nhật store
+            userStore.getState().setUser({ ...currentUser, profilePic: base64Image });
+
+        } catch (err) {
+            setUploadError('Có lỗi xảy ra khi tải lên ảnh đại diện');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+            />
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                    {/* Profile Card - Giữ nguyên như cũ */}
+                    {/* Profile Card */}
                     <div className="lg:col-span-4 xl:col-span-3">
                         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                             {/* Header */}
                             <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-center">
                                 <div className="relative inline-block">
                                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg">
-                                        <UserIcon className="w-12 h-12 text-gray-600" />
+                                        {user.profilePic ?
+                                            <Avatar
+                                                src={user.profilePic}
+                                                alt={user.name}
+                                                className="w-full h-full rounded-full object-cover aspect-square"
+                                            /> :
+                                            <UserIcon className="w-12 h-12 text-gray-600" />
+                                        }
                                     </div>
-                                    <button className="absolute -bottom-1 -right-1 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow">
-                                        <PencilIcon className="w-4 h-4 text-gray-600" />
+                                    <button
+                                        className="absolute -bottom-1 -right-1 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow"
+                                        onClick={handleAvatarClick}
+                                        disabled={isUploading}
+                                    >
+                                        {isUploading ? (
+                                            <ArrowPathIcon className="w-4 h-4 text-gray-600 animate-spin" />
+                                        ) : (
+                                            <PencilIcon className="w-4 h-4 text-gray-600" />
+                                        )}
                                     </button>
                                 </div>
                                 <h2 className="text-xl font-bold text-white mt-4">{user.name}</h2>
@@ -147,7 +208,7 @@ const ProfilePage: React.FC = () => {
                                         <PhoneIcon className="w-5 h-5 text-gray-500" />
                                         <div className="flex-1">
                                             <p className="text-sm text-gray-500">Số điện thoại</p>
-                                            <p className="font-medium text-gray-900">{user.phone}</p>
+                                            <p className="font-medium text-gray-900">{user.phone ? user.phone : "Chưa cung cấp"}</p>
                                         </div>
                                     </div>
 
@@ -155,31 +216,7 @@ const ProfilePage: React.FC = () => {
                                         <MapPinIcon className="w-5 h-5 text-gray-500" />
                                         <div className="flex-1">
                                             <p className="text-sm text-gray-500">Địa chỉ</p>
-                                            <p className="font-medium text-gray-900">{user.address}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                        <div className="w-5 h-5 text-gray-500 flex items-center justify-center">
-                                            🔒
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm text-gray-500">Mật khẩu</p>
-                                            <div className="flex items-center space-x-2">
-                                                <p className="font-medium text-gray-900">
-                                                    {showPassword ? "mypassword123" : "••••••••••"}
-                                                </p>
-                                                <button
-                                                    onClick={() => setShowPassword(!showPassword)}
-                                                    className="p-1 hover:bg-gray-200 rounded"
-                                                >
-                                                    {showPassword ? (
-                                                        <EyeSlashIcon className="w-4 h-4 text-gray-500" />
-                                                    ) : (
-                                                        <EyeIcon className="w-4 h-4 text-gray-500" />
-                                                    )}
-                                                </button>
-                                            </div>
+                                            <p className="font-medium text-gray-900">{user.address ? user.address : "Chưa cung cấp"}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -196,7 +233,7 @@ const ProfilePage: React.FC = () => {
                     {/* Activity Table - Updated để sử dụng orderHistory */}
                     <div className="lg:col-span-8 xl:col-span-9">
                         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <div className="p-6 border-b border-gray-100 flex justify-between items-center gap-10">
                                 <div>
                                     <h3 className="text-2xl font-bold text-gray-900">Hoạt Động Gần Đây</h3>
                                     <p className="text-gray-500 mt-1">Lịch sử đặt hàng và giao dịch của bạn</p>
@@ -244,7 +281,8 @@ const ProfilePage: React.FC = () => {
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
                                             {orderHistory.map((order) => (
-                                                <tr key={order._id} className="hover:bg-gray-50 transition-colors">
+                                                <tr key={order._id} className="hover:bg-gray-50 transition-colors"
+                                                    onClick={() => setSelectedOrder(order)}>
                                                     <td className="px-6 py-4">
                                                         <div className="font-mono text-sm font-medium text-gray-900">
                                                             #{order._id?.slice(-6).toUpperCase()}
@@ -289,6 +327,10 @@ const ProfilePage: React.FC = () => {
                                         </tbody>
                                     </table>
                                 </div>
+                            )}
+
+                            {selectedOrder && (
+                                <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
                             )}
 
                             {/* Pagination */}

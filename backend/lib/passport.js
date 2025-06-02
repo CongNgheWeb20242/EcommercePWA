@@ -5,9 +5,6 @@ import User from '../models/userModel.js';
 
 dotenv.config();
 
-console.log("Passport strategy loaded"); // thử log ra
-
-// Tạm thời comment lại Google OAuth. Bỏ comment khối này
 passport.use(
   new GoogleStrategy(
     {

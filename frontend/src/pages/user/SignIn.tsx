@@ -1,17 +1,14 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import google_icon from '../../assets/common/google_icon.png';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from '@/store/useAuthStore';
-import { googleLoginUrl, login } from '@/services/auth/authService';
-import axios from 'axios';
-import { useUserStore } from '@/store/userStore';
+import { userStore } from '@/store/userStore';
+import { googleLoginUrl } from '@/services/auth/authService';
 
 const SignInForm = () => {
   const navigate = useNavigate();
-  const { setUser } = useUserStore();
-  const { logIn, error, setError, loading, setLoading } = useAuthStore();
+  const { logIn, error, setError, loading } = userStore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -19,6 +16,9 @@ const SignInForm = () => {
 
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  useEffect(() => {
+    setError(null)
+  }, []);
 
   const handleInputChange = (id: string, value: string) => {
     setFormData({
@@ -42,59 +42,29 @@ const SignInForm = () => {
   const handleSignIn = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
+      setError('Vui lòng nhập đúng định dạng email');
       return;
     }
 
     if (!formData.password) {
-      setError('Please enter valid password');
+      setError('Vui lòng nhập mật khẩu');
       return;
     }
 
-    const userData1 = {
+    const userData = {
       email: formData.email,
       password: formData.password,
     };
 
-    const success = await logIn(userData1);
-    try {
-      const userData = {
-        email: formData.email,
-        password: formData.password,
-      };
+    const user = await logIn(userData);
 
-      const user = await login(userData);
-
-      if (user.user) {
-        console.log('Login successful:', user.user);
-        setUser(user.user);
-        await new Promise(resolve => setTimeout(resolve, 1000)); //wait 1 sec
-
-        // Điều hướng dựa trên vai trò
-        if (user.user.isAdmin) {
-          console.log('Admin user detected, navigating to admin dashboard');
-          navigate('/admin/products');
-        } else if (success) {
-          navigate('/home');
-        }
-      } else {
-        alert('Đăng nhập thất bại!');
+    if (user != null) {
+      if (user.isAdmin == true) {
+        console.log('Admin user detected, navigating to admin dashboard');
+        navigate('/admin/products');
       }
-
-    } catch (error) {
-      console.error('Login error:', error);
-
-      if (axios.isAxiosError(error)) {
-        if (error.response?.data?.message) {
-          setError(error.response.data.message);
-        } else {
-          setError('Login failed. Please try again later.');
-        }
-      } else {
-        setError('Login failed. Please try again later.');
-      }
-    } finally {
-      setLoading(false);
+      else
+        navigate('/home');
     }
   };
 
@@ -106,7 +76,7 @@ const SignInForm = () => {
     <div className="flex h-[700px] items-center justify-center bg-gray-100">
       <div className="bg-white w-[400px] p-8 rounded-lg shadow-md">
         {/* Tiêu đề */}
-        <h1 className="text-2xl font-bold mb-6 text-center">Login to your account</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center">Đăng nhập vào tài khoản</h1>
 
         {/* Error */}
         {error && (
@@ -134,13 +104,13 @@ const SignInForm = () => {
         {/* Password Field */}
         <div className="mb-4">
           <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
+            Mật khẩu
           </label>
           <div className="flex items-center border rounded-md px-4 py-2 mt-1">
             <input
               type={passwordVisible ? 'text' : 'password'}
               id="password"
-              placeholder="Enter your password"
+              placeholder="Nhập mật khẩu"
               className="w-full focus:outline-none"
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
@@ -149,14 +119,14 @@ const SignInForm = () => {
             <button
               className="text-gray-500 hover:text-gray-700 ml-2"
               onClick={togglePasswordVisibility}
-              aria-label={passwordVisible ? "Hide password" : "Show password"}
+              aria-label={passwordVisible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
             >
               <FontAwesomeIcon icon={passwordVisible ? faEyeSlash : faEye} />
             </button>
           </div>
           <button className="text-sm text-blue-500 hover:underline mt-1 block text-right"
             onClick={handleForgetPasswordClick}>
-            Forgot password?
+            Quên mật khẩu?
           </button>
         </div>
 
@@ -166,31 +136,29 @@ const SignInForm = () => {
           disabled={loading}
           onClick={handleSignIn}
         >
-          {loading ? 'Logging in...' : 'Login now'}
-
+          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>
 
         {/* Continue with Google */}
         <button className="w-full bg-gray-100 flex items-center justify-center py-2 rounded-md font-medium hover:bg-gray-200 transition mb-4"
           onClick={handleGoogleSignIn}>
           <img src={google_icon} alt="Google Logo" className="w-5 h-5 mr-2" />
-          Continue with Google
+          Đăng nhập với Google
         </button>
 
         {/* Footer */}
         <p className="text-sm text-center text-gray-500">
-          Don't have an account?{' '}
+          Bạn chưa có tài khoản?{' '}
           <button
             onClick={handleSignupClick}
             className="text-blue-500 hover:underline"
           >
-            Sign up
+            Đăng ký
           </button>
         </p>
       </div>
     </div>
   );
 };
-
 
 export default SignInForm;

@@ -5,8 +5,7 @@ import User from '../models/userModel.js';
 import Product from '../models/productModel.js';
 import { isAuth } from '../lib/utils.js';
 import { isAdmin } from '../middlewares/authMiddleware.js';
-import { v4 as uuidv4 } from 'uuid'; // Nếu muốn dùng uuid
-
+import { v4 as uuidv4 } from 'uuid';
 const orderRouter = express.Router();
 
 orderRouter.get(
@@ -208,6 +207,30 @@ orderRouter.get(
       .populate('orderItems.product');
 
     res.json(orders);
+  })
+);
+
+orderRouter.put(
+  '/:id/status',
+  isAuth,
+  expressAsyncHandler(async (req, res) => {
+    const { status } = req.body;
+    // Kiểm tra hợp lệ
+    if (![0, 1, 2].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    order.status = status;
+    await order.save();
+
+    if (order.user && order.user.email) {
+      await sendOrderStatusEmail(order.user.email, order.order_id, status);
+    }
+
+    res.json({ message: 'Order status updated', order });
   })
 );
 

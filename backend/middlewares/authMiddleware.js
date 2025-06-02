@@ -10,7 +10,15 @@ export const isAdmin = async (req, res, next) => {
   next();
 }
 
-// protectedRoute là middleware để bảo vệ các route cần xác thực người dùng
+// Cho phép admin hoặc chính user đó truy cập
+export const isAdminOrSelf = (req, res, next) => {
+  if (req.user.isAdmin || req.user._id.toString() === req.params.id) {
+    return next();
+  }
+  return res.status(403).json({ message: "Forbidden" });
+};
+
+
 export const protectedRoute = async (req, res, next) => {
   try {
     // Get token from request
@@ -29,7 +37,7 @@ export const protectedRoute = async (req, res, next) => {
       return res.status(401).json({ message: 'Unauthorized - Invalid Token' });
     }
 
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded._id).select('-password');
     if (!user) {
       return res.status(400).json({ message: 'User not Found' });
     }

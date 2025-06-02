@@ -31,14 +31,12 @@ function delay(ms: number) {
 
 
 export async function createPaymentURL(body: CreatePaymentURLBody): Promise<CreatePaymentURLResponse | null> {
-    await delay(3000);
+    await delay(1000);
     try {
-        console.log('Creating payment with body:', body);
         const response = await apiClient.post<CreatePaymentURLResponse>(
             "/payment/create_payment_url",
             body
         );
-        console.log('Create payment response:', response);
         return response.data;
     } catch (error) {
         console.error('Create payment failed:', error);
