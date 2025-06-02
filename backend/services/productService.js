@@ -124,9 +124,7 @@ export const updateProduct = async (id, productData) => {
 
   await product.save();
 
-  return await Product.findById(id)
-    .populate('category')
-    .populate('reviews');
+  return await Product.findById(id).populate('category').populate('reviews');
 };
 
 export const deleteProduct = async (id) => {
@@ -198,18 +196,24 @@ export const searchProducts = async (queryParams, user = null) => {
     order = '',
     query = '',
     brand = '',
-    color = '', 
+    color = '',
+    sexual = '',
   } = queryParams;
-  
+
   page = parseInt(page, 10);
   pageSize = parseInt(pageSize, 10);
+
+  const sexualFilter =
+  sexual && sexual !== 'all' ? { sexual } : {};
 
   const queryFilter =
     query && query !== 'all' ? { name: { $regex: query, $options: 'i' } } : {};
   const categoryFilter = category && category !== 'all' ? { category } : {};
   let ratingFilter = {};
   if (ratingFrom !== '' && ratingTo !== '') {
-    ratingFilter = { averageRating: { $gte: Number(ratingFrom), $lte: Number(ratingTo) } };
+    ratingFilter = {
+      averageRating: { $gte: Number(ratingFrom), $lte: Number(ratingTo) },
+    };
   } else if (ratingFrom !== '') {
     ratingFilter = { averageRating: { $gte: Number(ratingFrom) } };
   } else if (ratingTo !== '') {
@@ -225,26 +229,22 @@ export const searchProducts = async (queryParams, user = null) => {
         }
       : {};
   const brandFilter =
-    brand && brand !== 'all'
-      ? { brand: { $regex: brand, $options: 'i' } }
-      : {};
+    brand && brand !== 'all' ? { brand: { $regex: brand, $options: 'i' } } : {};
   const colorFilter =
-    color && color !== 'all'
-      ? { color: { $in: [color] } }
-      : {};
+    color && color !== 'all' ? { color: { $in: [color] } } : {};
   const visibilityFilter = !user || !user.isAdmin ? { isVisible: true } : {};
   const sortOrder =
     order === 'featured'
       ? { featured: -1 }
       : order === 'lowest'
-      ? { price: 1 }
-      : order === 'highest'
-      ? { price: -1 }
-      : order === 'toprated'
-      ? { rating: -1 }
-      : order === 'newest'
-      ? { createdAt: -1 }
-      : { _id: -1 };
+        ? { price: 1 }
+        : order === 'highest'
+          ? { price: -1 }
+          : order === 'toprated'
+            ? { rating: -1 }
+            : order === 'newest'
+              ? { createdAt: -1 }
+              : { _id: -1 };
 
   const products = await Product.find({
     ...queryFilter,
@@ -254,6 +254,7 @@ export const searchProducts = async (queryParams, user = null) => {
     ...visibilityFilter,
     ...brandFilter,
     ...colorFilter,
+    ...sexualFilter,
   })
     .populate('category')
     .populate('reviews')
@@ -269,6 +270,7 @@ export const searchProducts = async (queryParams, user = null) => {
     ...brandFilter,
     ...colorFilter,
     ...visibilityFilter,
+    ...sexualFilter,
   });
   return {
     products,
