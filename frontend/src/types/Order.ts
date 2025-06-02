@@ -28,7 +28,7 @@ export interface PaymentResult {
     update_time?: string;
     amount?: number;
     bankCode?: string; // VNPay
-    payType?: string; // MoMo: 'captureWallet', 'payWithATM'
+    payType?: string;
 }
 
 export interface Order {

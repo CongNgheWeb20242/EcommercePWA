@@ -1,7 +1,7 @@
 .chat-widget-container {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 24px;
+  right: 90px;
   z-index: 1000;
 }
 
@@ -37,7 +37,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  margin-top: 10px; /* Khoảng cách với nút toggle */
+  margin-top: 10px;
+  /* Khoảng cách với nút toggle */
 }
 
 .chat-header {
@@ -102,8 +103,10 @@
   align-self: flex-end;
   border-bottom-right-radius: 5px;
 }
-.message-item.sent .message-sender{
-  display: none; /* Không cần hiển thị tên người gửi cho tin nhắn của chính mình */
+
+.message-item.sent .message-sender {
+  display: none;
+  /* Không cần hiển thị tên người gửi cho tin nhắn của chính mình */
 }
 
 .message-item.received {
@@ -148,7 +151,8 @@
   width: 1px;
   overflow: hidden;
   clip: rect(1px, 1px, 1px, 1px);
-  white-space: nowrap; /* Đảm bảo ẩn hoàn toàn trên một số trình duyệt */
+  white-space: nowrap;
+  /* Đảm bảo ẩn hoàn toàn trên một số trình duyệt */
 }
 
 /* CSS cho thanh cuộn (tuỳ chọn, cho đẹp hơn) */
@@ -171,17 +175,31 @@
 
 /* Responsive adjustments for mobile devices */
 @media (max-width: 600px) {
+  .chat-widget-container {
+    /* Xếp chồng "Chat với Admin" lên trên Chatbot AI trên mobile */
+    right: 24px;
+    /* Căn phải giống Chatbot AI (right-6 ~ 24px) */
+    bottom: 90px;
+    /* bottom Chatbot AI (24px) + height Chatbot AI (56px) + gap (10px) */
+    /* z-index: 1000; giữ nguyên từ rule chính */
+  }
+
   .chat-widget-container.open .chat-toggle-button {
     display: none;
   }
 
   .chat-toggle-button {
-    position: fixed;
-    bottom: 15px;
-    right: 15px;
+    /* Nút "Chat với Admin" trên mobile */
+    position: relative;
+    /* Cho phép nút nằm trong .chat-widget-container đã được định vị fixed */
+    /* Không cần bottom, right ở đây nữa vì container đã định vị */
+    bottom: auto;
+    right: auto;
+
+    /* Giữ lại các điều chỉnh kích thước cho mobile */
     padding: 12px 18px;
     font-size: 18px;
-    z-index: 1001;
+    /* z-index: 1001; /* Có thể giữ hoặc bỏ nếu z-index của container là đủ */
   }
 
   .chat-window {
@@ -194,6 +212,7 @@
     top: 0;
     left: 0;
     z-index: 1000;
+    /* Đảm bảo cửa sổ chat nổi trên cùng khi mở full màn hình */
   }
 
   .chat-header {
@@ -222,4 +241,4 @@
     padding: 12px 20px;
     font-size: 15px;
   }
-} 
+}

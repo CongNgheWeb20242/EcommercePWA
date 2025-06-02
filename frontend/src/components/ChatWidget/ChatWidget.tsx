@@ -18,9 +18,8 @@ interface IChatMessage {
   createdAt?: string; // Timestamp từ MongoDB
 }
 
-// Địa chỉ backend của bạn - Cần cập nhật cho đúng
 const SOCKET_SERVER_URL = process.env.NODE_ENV === 'production'
-  ? 'YOUR_PRODUCTION_BACKEND_URL' // Ví dụ: https://api.yourdomain.com
+  ? 'https://ecommercepwa-be.onrender.com' // Cập nhật URL ở đây
   : 'http://localhost:3000';     // Giả sử backend chạy ở port 3000
 
 const ChatWidget: React.FC = () => {
