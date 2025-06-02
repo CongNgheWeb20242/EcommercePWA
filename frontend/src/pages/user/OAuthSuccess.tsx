@@ -28,7 +28,11 @@ const OAuthSuccess = () => {
         setTimeout(() => {
             if (token) {
                 try {
-                    const user: User = jwtDecode<User>(token);
+                    var user: User = jwtDecode<User>(token);
+                    user.name = user.email
+                        ? user.email.split('@')[0].split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                        : '';
+
                     if (!user || !user._id || !user.email) {
                         handleError('Token không hợp lệ');
                         return;
