@@ -48,7 +48,7 @@ async function askQuestion(question) {
                 <strong>Giá:</strong> ${product.price.toLocaleString()} VNĐ
               </p>
               <a
-                href="http://localhost:5173/user/product/${product._id}"
+                href="https://ecommercepwa-fe.netlify.app/user/product/${product._id}"
                 target="_blank"
                 style="font-size: 14px; text-decoration: underline; color: #007bff;"
               >Xem sản phẩm</a>
