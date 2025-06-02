@@ -5,7 +5,7 @@ import { forget_password } from "@/services/auth/authService";
 
 const ForgotPasswordForm: React.FC = () => {
     const navigate = useNavigate();
-    const { error, setError, loading } = userStore();
+    const { error, setError, loading, setLoading } = userStore();
     const [email, setEmail] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
 
@@ -13,10 +13,11 @@ const ForgotPasswordForm: React.FC = () => {
         e.preventDefault();
         setSuccessMsg("");
         setError("");
-
+        setLoading(true);
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             setError("Vui lòng nhập đúng định dạng email.");
+            setLoading(false);
             return;
         }
         const prop = {
@@ -28,6 +29,7 @@ const ForgotPasswordForm: React.FC = () => {
         } else {
             setError(result || "Có lỗi xảy ra. Vui lòng thử lại.");
         }
+        setLoading(false);
     };
 
     return (

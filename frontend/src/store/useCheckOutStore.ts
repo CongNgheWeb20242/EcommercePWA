@@ -70,38 +70,36 @@ export const useCheckoutStore = create<CheckoutState>()(
                                 deliverOrder(get().orderId!);
                                 nextStep = 4;
                             }
-                            else {
-                                const createPayment = async () => {
-                                    const user = userStore.getState().user; // Lấy state trực tiếp
-                                    const selectCartItem = useCartStore.getState().items.filter(item => item.selected === true);
+                            const createPayment = async () => {
+                                const user = userStore.getState().user; // Lấy state trực tiếp
+                                const selectCartItem = useCartStore.getState().items.filter(item => item.selected === true);
 
-                                    await createPaymentURL({
-                                        fullName: get().customerInfo.fullName,
-                                        phone: get().customerInfo.phone,
-                                        email: get().customerInfo.email,
-                                        address: get().customerInfo.address,
-                                        detailedAddress: `${get().customerInfo.ward}, ${get().customerInfo.district}, ${get().customerInfo.province}`,
-                                        note: get().customerInfo.notes || '',
-                                        paymentMethod: get().customerInfo.paymentMethod,
-                                        shippingFee: 0,
-                                        taxRate: 0,
-                                        user: user!._id,
-                                        products: selectCartItem.map(item => ({
-                                            id: item._id,
-                                            price: item.price,
-                                            quantity: item.quantity,
-                                        })),
-                                    }).then(response => {
-                                        if (response && response.success) {
-                                            set({
-                                                paymentURL: response.paymentUrl,
-                                                orderId: response.order._id,
-                                            });
-                                        }
-                                    })
-                                }
-                                createPayment();
+                                await createPaymentURL({
+                                    fullName: get().customerInfo.fullName,
+                                    phone: get().customerInfo.phone,
+                                    email: get().customerInfo.email,
+                                    address: get().customerInfo.address,
+                                    detailedAddress: `${get().customerInfo.ward}, ${get().customerInfo.district}, ${get().customerInfo.province}`,
+                                    note: get().customerInfo.notes || '',
+                                    paymentMethod: get().customerInfo.paymentMethod,
+                                    shippingFee: 0,
+                                    taxRate: 0,
+                                    user: user!._id,
+                                    products: selectCartItem.map(item => ({
+                                        id: item._id,
+                                        price: item.price,
+                                        quantity: item.quantity,
+                                    })),
+                                }).then(response => {
+                                    if (response && response.success) {
+                                        set({
+                                            paymentURL: response.paymentUrl,
+                                            orderId: response.order._id,
+                                        });
+                                    }
+                                })
                             }
+                            createPayment();
                             break;
 
                         case 4:

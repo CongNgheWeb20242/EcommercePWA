@@ -1,46 +1,6 @@
-import logo from '../../assets/common/logo.png';
-import home_bg from '../../assets/common/home_bg.jpg';
+import Banner from '@/components/user/Banner';
 import NikeCollection from '@/components/user/Collection';
 import ChatWidget from '@/services/chat-bot/components/ChatWidget';
-
-const Banner = () => (
-  <div className="relative bg-black text-white h-[200px] md:h-[600px] overflow-hidden">
-    {/* Background Image */}
-    <img
-      src={home_bg}
-      alt="Air Jordan I"
-      className="absolute inset-0 w-full h-full object-contain z-10 md:w-auto md:h-[70%] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
-    />
-
-    {/* Overlay */}
-    <div className="absolute inset-0 bg-black/60 md:bg-black/30 z-20"></div>
-
-    {/* Content Container */}
-    <div className="relative z-30 h-full flex flex-col justify-end md:justify-center pb-4 md:pb-0 px-4 md:px-10 lg:px-20">
-      {/* Mobile: Content ở dưới cùng */}
-      <div className="md:flex md:flex-row md:items-center md:justify-between">
-        {/* Left Content (Logo) */}
-        <div className="mb-2 md:mb-0 flex-shrink-0">
-          <img
-            src={logo}
-            alt="Jordan Logo"
-            className="h-20 w-auto md:h-[200px] lg:h-[300px]"
-          />
-        </div>
-
-        {/* Right Content (Text) */}
-        <div className="text-left md:text-center md:w-[380px] lg:w-[600px]">
-          <h2 className="text-base md:text-xl uppercase font-bold mb-1 md:mb-4">Air Jordan I</h2>
-          <h1 className="text-2xl md:text-6xl lg:text-7xl uppercase font-extrabold leading-tight">
-            The One That Started It All
-          </h1>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-
 
 
 const Features = () => (

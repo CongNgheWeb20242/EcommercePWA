@@ -16,6 +16,7 @@ import { getUserOrder } from '@/services/api/orderService';
 import { useNavigate } from 'react-router-dom';
 import { updateProfile } from '@/services/api/userService';
 import Avatar from '@/components/ui/avatar';
+import OrderDetailModal from '@/components/user/OrderDetailModal';
 
 const ProfilePage: React.FC = () => {
     const navigate = useNavigate()
@@ -24,6 +25,8 @@ const ProfilePage: React.FC = () => {
 
     const [isUploading, setIsUploading] = useState(false);
     const [_uploadError, setUploadError] = useState('');
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Order Store
@@ -69,12 +72,8 @@ const ProfilePage: React.FC = () => {
     useEffect(() => {
         clearCurrentOrder();
         clearOrderHistory();
-    }, []);
-
-    useEffect(() => {
-
         fetchOrders(false);
-    }, [user?._id, setLoading, addToOrderHistory]);
+    }, []);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -282,7 +281,8 @@ const ProfilePage: React.FC = () => {
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
                                             {orderHistory.map((order) => (
-                                                <tr key={order._id} className="hover:bg-gray-50 transition-colors">
+                                                <tr key={order._id} className="hover:bg-gray-50 transition-colors"
+                                                    onClick={() => setSelectedOrder(order)}>
                                                     <td className="px-6 py-4">
                                                         <div className="font-mono text-sm font-medium text-gray-900">
                                                             #{order._id?.slice(-6).toUpperCase()}
@@ -327,6 +327,10 @@ const ProfilePage: React.FC = () => {
                                         </tbody>
                                     </table>
                                 </div>
+                            )}
+
+                            {selectedOrder && (
+                                <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
                             )}
 
                             {/* Pagination */}

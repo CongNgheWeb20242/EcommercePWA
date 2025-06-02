@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { googleLoginUrl } from '@/services/auth/authService';
 import { userStore } from '@/store/userStore';
 
-
 const SignUpForm = () => {
   const navigate = useNavigate();
   const { signUp, error, setError, loading } = userStore();
@@ -46,18 +45,18 @@ const SignUpForm = () => {
 
   const handleSignUp = async () => {
     if (!formData.name) {
-      setError('Please enter valid name');
+      setError('Vui lòng nhập họ tên');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
+      setError('Vui lòng nhập đúng định dạng email');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Mật khẩu xác nhận không khớp');
       return;
     }
 
@@ -76,7 +75,7 @@ const SignUpForm = () => {
     <div className="flex h-[700px] items-center justify-center bg-gray-100">
       <div className="bg-white w-[400px] p-8 rounded-lg shadow-md">
         {/* Tiêu đề */}
-        <h1 className="text-2xl font-bold mb-6 text-center">Create an account</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center">Tạo tài khoản mới</h1>
 
         {/* Error */}
         {error && (
@@ -88,12 +87,12 @@ const SignUpForm = () => {
         {/* Name Field */}
         <div className="mb-4">
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Name
+            Họ tên
           </label>
           <input
-            type="name"
+            type="text"
             id="name"
-            placeholder="your name"
+            placeholder="Nhập họ tên"
             className="w-full border rounded-md px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={formData.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
@@ -120,13 +119,13 @@ const SignUpForm = () => {
         {/* Password Field */}
         <div className="mb-4">
           <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
+            Mật khẩu
           </label>
           <div className="flex items-center border rounded-md px-4 py-2 mt-1">
             <input
               type={passwordVisible ? 'text' : 'password'}
               id="password"
-              placeholder="Enter your password"
+              placeholder="Nhập mật khẩu"
               className="w-full focus:outline-none"
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
@@ -137,14 +136,14 @@ const SignUpForm = () => {
             </button>
           </div>
 
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mt-4">
-            Confirm Password
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mt-4">
+            Xác nhận mật khẩu
           </label>
           <div className="flex items-center border rounded-md px-4 py-2 mt-1">
             <input
               type={confirmPasswordVisible ? 'text' : 'password'}
-              id="password"
-              placeholder="Enter your password"
+              id="confirmPassword"
+              placeholder="Nhập lại mật khẩu"
               className="w-full focus:outline-none"
               value={formData.confirmPassword}
               onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
@@ -162,30 +161,29 @@ const SignUpForm = () => {
           onClick={handleSignUp}
           disabled={loading}
         >
-          {loading ? 'Creating account...' : 'Create account'}
+          {loading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
         </button>
 
         {/* Continue with Google */}
         <button className="w-full bg-gray-100 flex items-center justify-center py-2 rounded-md font-medium hover:bg-gray-200 transition mb-4"
           onClick={handleGoogleSignIn}>
           <img src={google_icon} alt="Google Logo" className="w-5 h-5 mr-2" />
-          Continue with Google
+          Đăng ký với Google
         </button>
 
         {/* Footer */}
         <p className="text-sm text-center text-gray-500">
-          Already Have An Account?{' '}
+          Đã có tài khoản?{' '}
           <button
             onClick={handleSigninClick}
             className="text-blue-500 hover:underline"
           >
-            Log In
+            Đăng nhập
           </button>
         </p>
       </div>
     </div>
   );
 };
-
 
 export default SignUpForm;
