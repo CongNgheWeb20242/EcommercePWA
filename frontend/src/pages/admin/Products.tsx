@@ -770,10 +770,22 @@ const Products = () => {
                     <div className="text-xs text-gray-500 truncate max-w-[80px] sm:max-w-xs">{product.description}</div>
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                    ${product.price.toLocaleString()}
+                    {product.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500 hidden md:table-cell">
-                    {typeof product.category === 'object' ? product.category.name : product.category}
+                    {(() => {
+                      // Kiểm tra nếu product.category là object và có name thì dùng name đó
+                      if (typeof product.category === 'object' && product.category !== null && 'name' in product.category) {
+                        return product.category.name;
+                      }
+                      // Nếu product.category là string (ID), tìm trong mảng categories
+                      if (typeof product.category === 'string' && Array.isArray(categories)) {
+                        const foundCategory = categories.find(cat => cat._id === product.category);
+                        return foundCategory ? foundCategory.name : product.category; // Hiển thị ID nếu không tìm thấy tên
+                      }
+                      // Trường hợp dự phòng, hiển thị category nếu là string, hoặc 'Không rõ'
+                      return typeof product.category === 'string' ? product.category : 'Không rõ';
+                    })()}
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -978,7 +990,7 @@ const Products = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Giá (USD)*
+                    Giá (VND)*
                   </label>
                   <input
                     type="number"

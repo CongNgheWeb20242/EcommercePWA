@@ -41,7 +41,8 @@ export interface Order {
     shippingPrice: number;
     taxPrice: number;
     totalPrice: number;
-    user: string; // ObjectId as string
+    user: string;
+    status: number;
     isPaid: boolean;
     paidAt?: Date;
     isDelivered: boolean;

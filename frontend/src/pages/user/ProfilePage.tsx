@@ -96,9 +96,16 @@ const ProfilePage: React.FC = () => {
     };
 
     const getStatusText = (order: Order) => {
-        if (order.isDelivered) return "Đã Giao Hàng";
-        if (order.isPaid) return "Đã Thanh Toán";
-        return "Người Bán Đang Chuẩn Bị Hàng";
+        switch (order.status) {
+            case 0:
+                return "Người Bán Đang Chuẩn Bị Hàng";
+            case 1:
+                return "Đơn hàng đang giao";
+            case 2:
+                return "Đã Giao Hàng";
+            default:
+                return "Người Bán Đang Chuẩn Bị Hàng";
+        }
     };
 
     const formatPrice = (price: number) => {
