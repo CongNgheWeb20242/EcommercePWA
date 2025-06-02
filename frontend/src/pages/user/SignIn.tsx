@@ -5,10 +5,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { userStore } from '@/store/userStore';
 import { googleLoginUrl } from '@/services/auth/authService';
+import useCartStore from '@/store/useCartStore';
 
 const SignInForm = () => {
   const navigate = useNavigate();
   const { logIn, error, setError, loading } = userStore();
+  const { clearCart } = useCartStore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -59,6 +61,7 @@ const SignInForm = () => {
     const user = await logIn(userData);
 
     if (user != null) {
+      clearCart();
       if (user.isAdmin == true) {
         console.log('Admin user detected, navigating to admin dashboard');
         navigate('/admin/products');

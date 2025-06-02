@@ -16,7 +16,7 @@ const Navbar = () => {
 
   const cartIconRefDesktop = React.useRef<HTMLButtonElement>(null);
   const cartIconRefMobile = React.useRef<HTMLButtonElement>(null);
-  const { setCartIconRefDesktop, setCartIconRefMobile } = useCartStore();
+  const { setCartIconRefDesktop, setCartIconRefMobile, clearCart } = useCartStore();
 
   useEffect(() => {
     if (cartIconRefDesktop.current) {
@@ -53,6 +53,7 @@ const Navbar = () => {
   };
 
   const handleLogoutClick = () => {
+    clearCart();
     logOut();
     navigate('/user/login');
   };
