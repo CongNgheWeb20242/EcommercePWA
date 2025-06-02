@@ -26,15 +26,15 @@ export default function Products({ searchText }: ProductsProps) {
     // Reset khi _searchText thay đổi
     const queryMap: { [key: string]: string | undefined } = {
         "Tất Cả Sản Phẩm": "",
-        "Thời trang Nam": "male",
-        "Thời trang Nữ": "female"
+        "Thời Trang Nam": "male",
+        "Thời Trang Nữ": "female"
     };
 
     useEffect(() => {
         clearSearchParams();
         setCurrentPage(1);
 
-        const query = queryMap[_searchText] ?? _searchText;
+        const query = queryMap[_searchText];
 
         fetchProducts({
             page: 1,
