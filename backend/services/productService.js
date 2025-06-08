@@ -150,11 +150,10 @@ export const addReview = async (productId, reviewData) => {
 
     // Create a new review
     const review = new Review({
-      user: reviewData.userId,
-      name: reviewData.name,
+      userId: reviewData.userId,
+      productId: productId,
       rating: Number(reviewData.rating),
       comment: reviewData.comment,
-      product: productId,
     });
 
     // Save the review
@@ -203,8 +202,7 @@ export const searchProducts = async (queryParams, user = null) => {
   page = parseInt(page, 10);
   pageSize = parseInt(pageSize, 10);
 
-  const sexualFilter =
-  sexual && sexual !== 'all' ? { sexual } : {};
+  const sexualFilter = sexual && sexual !== 'all' ? { sexual } : {};
 
   const queryFilter =
     query && query !== 'all' ? { name: { $regex: query, $options: 'i' } } : {};
