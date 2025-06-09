@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 // Sửa lại schema Order
 const orderSchema = new mongoose.Schema(
-  { // Danh sách sản phẩm trong đơn hàng
+  {
+    // Danh sách sản phẩm trong đơn hàng
     order_id: { type: String, required: true },
     orderItems: [
       {
@@ -18,6 +19,7 @@ const orderSchema = new mongoose.Schema(
     // Địa chỉ giao hàng
     shippingAddress: {
       fullName: { type: String, required: true },
+      phone: { type: String, required: true },
       address: { type: String, required: true },
       city: { type: String, required: true },
       // Mã bưu điện
@@ -55,7 +57,7 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: Number,
       enum: [0, 1, 2], // 0: đang chuẩn bị hàng, 1: đang giao, 2: đã giao
-      default: 0
+      default: 0,
     },
   },
   {
