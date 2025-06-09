@@ -133,6 +133,7 @@ const Orders = () => {
       });
 
       const ordersData = response.data;
+      console.log('Orders data:', ordersData);
 
       if (!Array.isArray(ordersData) || ordersData.length === 0) {
         setOrders([]);
@@ -183,31 +184,33 @@ const Orders = () => {
   }
 
   // Lọc đơn hàng theo từ khóa tìm kiếm
-  const filteredOrders = orders.filter(order => {
-    if (!searchTerm.trim()) return true; // Giữ nguyên: nếu ô tìm kiếm rỗng, hiện tất cả
+  const filteredOrders = orders
+    .filter(order => {
+      if (!searchTerm.trim()) return true; // Giữ nguyên: nếu ô tìm kiếm rỗng, hiện tất cả
 
-    const normalizeText = (str: string = '') => (str || '').toLowerCase().trim();
-    const normalizePhone = (str: string = '') => (str || '').replace(/\D/g, '');
+      const normalizeText = (str: string = '') => (str || '').toLowerCase().trim();
+      const normalizePhone = (str: string = '') => (str || '').replace(/\D/g, '');
 
-    const lcSearchTermText = normalizeText(searchTerm); // Chuỗi tìm kiếm đã chuẩn hóa cho tên
-    const searchDigits = normalizePhone(searchTerm); // Các chữ số từ chuỗi tìm kiếm cho SĐT
+      const lcSearchTermText = normalizeText(searchTerm); // Chuỗi tìm kiếm đã chuẩn hóa cho tên
+      const searchDigits = normalizePhone(searchTerm); // Các chữ số từ chuỗi tìm kiếm cho SĐT
 
-    // 1. Tìm kiếm theo Tên Người Dùng
-    const nameMatch = normalizeText(order.userName).includes(lcSearchTermText);
+      // 1. Tìm kiếm theo Tên Người Dùng
+      const nameMatch = normalizeText(order.userName).includes(lcSearchTermText);
 
-    // 2. Tìm kiếm theo Số Điện Thoại (chỉ khi searchDigits không rỗng)
-    let phoneMatch = false;
-    if (searchDigits) { // Chỉ tìm SĐT nếu có nhập số
-      const shippingPhone = normalizePhone(order.shippingAddress?.phone);
-      const userModelPhone = normalizePhone(order.userPhone); // SĐT từ User model (hiện tại backend không gửi, nên sẽ là chuỗi rỗng)
+      // 2. Tìm kiếm theo Số Điện Thoại (chỉ khi searchDigits không rỗng)
+      let phoneMatch = false;
+      if (searchDigits) { // Chỉ tìm SĐT nếu có nhập số
+        const shippingPhone = normalizePhone(order.shippingAddress?.phone);
+        const userModelPhone = normalizePhone(order.userPhone); // SĐT từ User model (hiện tại backend không gửi, nên sẽ là chuỗi rỗng)
 
-      if (shippingPhone.includes(searchDigits) || userModelPhone.includes(searchDigits)) {
-        phoneMatch = true;
+        if (shippingPhone.includes(searchDigits) || userModelPhone.includes(searchDigits)) {
+          phoneMatch = true;
+        }
       }
-    }
 
-    return nameMatch || phoneMatch;
-  });
+      return nameMatch || phoneMatch;
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); // Sắp xếp theo thời gian tạo, mới nhất lên đầu
 
   // Hiển thị hộp thoại xác nhận
   const showConfirmDialog = (title: string, message: string, onConfirm: () => void) => {
@@ -350,14 +353,14 @@ const Orders = () => {
                     {index === 0 ? (
                       <>
                         <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
-                          {order.shippingAddress?.fullName || 'Trần Trọng Luân'}
+                          {order.shippingAddress?.fullName}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap align-middle" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
-                          {order.shippingAddress?.phone || order.userPhone || '0899804328'}
+                          {order.shippingAddress?.phone}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell align-middle max-w-[180px] truncate" rowSpan={order.orderItems.length} style={{ verticalAlign: 'middle' }}>
-                          <span title={order.shippingAddress?.address || 'ngõ 36 bắc ninh'}>
-                            {order.shippingAddress?.address || 'ngõ 36 bắc ninh'}
+                          <span title={order.shippingAddress?.address}>
+                            {order.shippingAddress?.address}
                           </span>
                         </td>
                       </>
