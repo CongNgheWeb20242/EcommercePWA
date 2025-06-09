@@ -13,7 +13,7 @@ orderRouter.get(
   isAuth,
   isAdmin,
   expressAsyncHandler(async (req, res) => {
-    const orders = await Order.find().populate('user', 'name email phone');
+    const orders = await Order.find().populate('user', 'name email');
     res.send(orders);
   })
 );
