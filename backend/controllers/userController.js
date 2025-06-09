@@ -249,6 +249,15 @@ export const resetPassword = async (req, res) => {
     user.resetToken = null; // clear token sau khi dùng
     await user.save();
 
+    const isFormRequest = req.headers['content-type']?.includes(
+      'application/x-www-form-urlencoded'
+    );
+
+    if (isFormRequest) {
+      // Redirect về frontend sau khi đặt lại mật khẩu thành công
+      return res.redirect('https://ecommercepwa-fe.netlify.app/user/login');
+    }
+
     return res.json({ message: 'Đặt lại mật khẩu thành công.' });
   } catch (error) {
     console.error('Lỗi reset password', error);
@@ -264,15 +273,64 @@ export const getResetPassword = async (req, res) => {
     <html>
       <head>
         <title>Reset Password</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+          }
+          .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+          }
+          h2 {
+            text-align: center;
+            margin-bottom: 24px;
+          }
+          label {
+            font-weight: bold;
+          }
+          input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+          }
+          button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+          }
+          button:hover {
+            background-color: #0056b3;
+          }
+        </style>
       </head>
       <body>
-        <h2>Đặt lại mật khẩu</h2>
-        <form method="POST" action="/api/user/reset-password">
-          <input type="hidden" name="token" value="${token}" />
-          <label>Mật khẩu mới:</label><br/>
-          <input type="password" name="password" required /><br/><br/>
-          <button type="submit">Đặt lại</button>
-        </form>
+        <div class="container">
+          <h2>Đặt lại mật khẩu</h2>
+          <form method="POST" action="/api/user/reset-password">
+            <input type="hidden" name="token" value="${token}" />
+            <label for="password">Mật khẩu mới:</label>
+            <input type="password" name="password" id="password" required />
+            <button type="submit">Đặt lại</button>
+          </form>
+        </div>
       </body>
     </html>
   `;
