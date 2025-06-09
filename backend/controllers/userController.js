@@ -4,7 +4,7 @@ import { generateToken } from '../lib/utils.js';
 import cloudinary from '../lib/cloudinary.js';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
-import { sendResetPasswordEmail } from "../lib/resend.js"
+import { sendResetPasswordEmail } from '../lib/resend.js';
 
 // SSO
 export const googleCallback = (req, res, next) => {
@@ -73,10 +73,12 @@ export const deleteUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    const { name, password, profilePic } = req.body;
+    const { name, password, profilePic, phone, address } = req.body;
     if (user) {
       user.name = name || user.name;
-      // Đang phân vân có nên thay cả email hay không
+      user.phone = phone || user.phone;
+      user.address = address || user.address;
+
       if (password) {
         user.password = await bcrypt.hash(password, 10);
       }
@@ -88,12 +90,13 @@ export const updateUser = async (req, res) => {
         });
         user.profilePic = uploadResponse.secure_url; // URL ảnh từ cloudinary
       }
-      // Updated
       const updatedUser = await user.save();
 
       res.status(200).json({
         _id: updatedUser._id,
         name: updatedUser.name,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
         profilePic: updatedUser.profilePic,
       });
     } else {
